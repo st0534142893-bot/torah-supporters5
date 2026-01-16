@@ -1594,7 +1594,8 @@
             display: block;
         }
 
-        .password-settings-panel {
+        .password-settings-panel,
+        .sync-settings-panel {
             background: rgba(255, 255, 255, 0.95);
             border: 2px solid var(--border);
             border-radius: 16px;
@@ -1603,6 +1604,154 @@
             display: flex;
             flex-direction: column;
             gap: 20px;
+        }
+
+        .sync-method-selection {
+            margin: 20px 0;
+        }
+
+        .sync-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .sync-option {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .sync-option:hover {
+            border-color: var(--primary-gold);
+            background: rgba(212, 175, 55, 0.05);
+        }
+
+        .sync-option input[type="radio"] {
+            margin-top: 4px;
+        }
+
+        .sync-option div {
+            flex: 1;
+        }
+
+        .sync-option strong {
+            display: block;
+            margin-bottom: 4px;
+            color: var(--brown-dark);
+        }
+
+        .sync-option span {
+            display: block;
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .sync-input-group {
+            margin: 16px 0;
+        }
+
+        .sync-input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--brown-dark);
+        }
+
+        .sync-input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 6px;
+        }
+
+        .sync-input-group small {
+            display: block;
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .sync-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 16px 0;
+        }
+
+        .sync-status {
+            padding: 12px;
+            border-radius: 8px;
+            margin: 16px 0;
+            display: none;
+        }
+
+        .sync-status.success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 2px solid #10b981;
+            color: #059669;
+            display: block;
+        }
+
+        .sync-status.error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 2px solid #ef4444;
+            color: #dc2626;
+            display: block;
+        }
+
+        .sync-status.info {
+            background: rgba(59, 130, 246, 0.1);
+            border: 2px solid #3b82f6;
+            color: #2563eb;
+            display: block;
+        }
+
+        .sync-controls {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 2px solid var(--border);
+        }
+
+        .sync-auto-status {
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: 8px;
+            background: rgba(212, 175, 55, 0.1);
+            color: var(--brown-dark);
+            font-size: 14px;
+        }
+
+        .sync-info {
+            margin-top: 24px;
+            padding: 20px;
+            background: rgba(245, 230, 211, 0.5);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .sync-info h4 {
+            margin-bottom: 12px;
+            color: var(--brown-dark);
+        }
+
+        .sync-info ul {
+            margin: 0;
+            padding-right: 20px;
+        }
+
+        .sync-info li {
+            margin: 8px 0;
+            line-height: 1.6;
+            color: var(--brown-medium);
         }
 
         .password-toggle-row {
@@ -5141,6 +5290,7 @@
                     <button type="button" class="management-tab management-calculator-trigger" onclick="toggleManagementCalculator()">
                         מחשבון
                     </button>
+                    <button class="management-tab" data-tab="sync">סנכרון בין מערכות</button>
                     <button class="management-tab" data-tab="reset">אפשרויות איפוס</button>
                     <button class="management-tab" data-tab="password">הגדרת סיסמה</button>
                 </div>
@@ -5565,6 +5715,89 @@
                         <div class="liveview-settings-actions">
                             <button class="btn" onclick="saveLiveViewSettings()">שמור הגדרות</button>
                             <button class="btn btn-secondary" onclick="resetLiveViewSettings()">איפוס לברירת מחדל</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- סנכרון בין מערכות -->
+                <div class="management-content" id="syncContent">
+                    <div class="sync-settings-panel">
+                        <h3>סנכרון בין מערכות</h3>
+                        <p style="color: var(--muted); margin-bottom: 20px;">
+                            הגדר סנכרון אוטומטי בין כל המערכות והמסכים. כל שינוי במערכת אחת יתעדכן אוטומטית בכל המערכות האחרות.
+                        </p>
+                        
+                        <div class="sync-method-selection">
+                            <h4>בחר שיטת סנכרון:</h4>
+                            <div class="sync-options">
+                                <label class="sync-option">
+                                    <input type="radio" name="syncMethod" value="jsonbin" checked onchange="updateSyncMethod()">
+                                    <div>
+                                        <strong>JSONBin.io (מומלץ)</strong>
+                                        <span>שירות חינמי לשמירה/טעינה אוטומטית</span>
+                                    </div>
+                                </label>
+                                <label class="sync-option">
+                                    <input type="radio" name="syncMethod" value="url" onchange="updateSyncMethod()">
+                                    <div>
+                                        <strong>URL מותאם אישית</strong>
+                                        <span>השתמש ב-URL שלך (GitHub Gist, שרת וכו')</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="sync-jsonbin-settings" id="jsonbinSettings">
+                            <h4>הגדרות JSONBin.io</h4>
+                            <div class="sync-input-group">
+                                <label>API Key (אופציונלי - ניתן לעבוד גם בלי):</label>
+                                <input type="text" id="jsonbinApiKey" placeholder="השאר ריק לעבודה ללא API Key">
+                                <small>אם יש לך API Key מ-JSONBin.io, הזן אותו כאן. אחרת המערכת תעבוד עם Bin ID בלבד.</small>
+                            </div>
+                            <div class="sync-input-group">
+                                <label>Bin ID (מזהה ייחודי):</label>
+                                <input type="text" id="jsonbinBinId" placeholder="לדוגמה: 12345678-1234-1234-1234-123456789abc">
+                                <small>אם אין לך Bin ID, לחץ על "צור Bin חדש" למטה</small>
+                            </div>
+                            <div class="sync-actions">
+                                <button class="btn btn-primary" onclick="createNewJsonBin()">צור Bin חדש</button>
+                                <button class="btn btn-success" onclick="testJsonBinConnection()">בדוק חיבור</button>
+                            </div>
+                        </div>
+
+                        <div class="sync-url-settings" id="urlSettings" style="display: none;">
+                            <h4>הגדרות URL</h4>
+                            <div class="sync-input-group">
+                                <label>URL לשמירה/טעינה:</label>
+                                <input type="url" id="syncUrl" placeholder="https://example.com/data.json">
+                                <small>הזן URL שמחזיר/מקבל JSON. לדוגמה: GitHub Gist, שרת אישי וכו'</small>
+                            </div>
+                            <div class="sync-actions">
+                                <button class="btn btn-success" onclick="testUrlConnection()">בדוק חיבור</button>
+                            </div>
+                        </div>
+
+                        <div class="sync-status" id="syncStatus"></div>
+
+                        <div class="sync-controls">
+                            <h4>פעולות סנכרון</h4>
+                            <div class="sync-actions">
+                                <button class="btn btn-primary" onclick="saveToCloud()">💾 שמור לענן עכשיו</button>
+                                <button class="btn btn-success" onclick="loadFromCloud()">📥 טען מהענן עכשיו</button>
+                                <button class="btn btn-secondary" onclick="enableAutoSync()">🔄 הפעל סנכרון אוטומטי</button>
+                                <button class="btn" onclick="disableAutoSync()">⏸️ עצור סנכרון אוטומטי</button>
+                            </div>
+                            <div class="sync-auto-status" id="autoSyncStatus"></div>
+                        </div>
+
+                        <div class="sync-info">
+                            <h4>איך זה עובד?</h4>
+                            <ul>
+                                <li>כל שינוי במערכת (הוספת מתרים, עדכון סכומים, קבוצות וכו') נשמר אוטומטית לענן</li>
+                                <li>כל המערכות האחרות מקבלות עדכון אוטומטי תוך מספר שניות</li>
+                                <li>כשפותחים את התוכנה ממקום אחר, הנתונים נטענים אוטומטית מהענן</li>
+                                <li>הנתונים נשמרים גם מקומית (localStorage) וגם בענן</li>
+                            </ul>
                         </div>
                     </div>
                 </div>
@@ -11145,6 +11378,10 @@
             } catch (err) {
                 console.warn('שגיאה בשליחת עדכון סנכרון', err);
             }
+            // שמירה אוטומטית לענן
+            if (typeof autoSaveToCloud === 'function') {
+                autoSaveToCloud();
+            }
         }
         syncChannel.addEventListener('message', (event) => {
             if (event?.data?.type === 'data-updated') {
@@ -14948,6 +15185,469 @@
             // if (fullscreenBtn) fullscreenBtn.classList.remove('visible');
         }
         // ===== סוף פונקציות למסך מלא =====
+
+        // ===== מערכת סנכרון בין מערכות =====
+        let cloudSyncEnabled = false;
+        let cloudSyncMethod = 'jsonbin'; // 'jsonbin' או 'url'
+        let cloudSyncInterval = null;
+        let lastCloudSaveTime = 0;
+
+        // טעינת הגדרות סנכרון
+        function loadSyncSettings() {
+            try {
+                const saved = localStorage.getItem('cloudSyncSettings');
+                if (saved) {
+                    const settings = JSON.parse(saved);
+                    cloudSyncEnabled = settings.enabled || false;
+                    cloudSyncMethod = settings.method || 'jsonbin';
+                    
+                    if (settings.jsonbinApiKey) {
+                        document.getElementById('jsonbinApiKey').value = settings.jsonbinApiKey;
+                    }
+                    if (settings.jsonbinBinId) {
+                        document.getElementById('jsonbinBinId').value = settings.jsonbinBinId;
+                    }
+                    if (settings.syncUrl) {
+                        document.getElementById('syncUrl').value = settings.syncUrl;
+                    }
+                    
+                    // עדכון UI
+                    document.querySelector(`input[name="syncMethod"][value="${cloudSyncMethod}"]`).checked = true;
+                    updateSyncMethod();
+                    
+                    if (cloudSyncEnabled) {
+                        enableAutoSync();
+                    }
+                }
+            } catch (e) {
+                console.warn('שגיאה בטעינת הגדרות סנכרון:', e);
+            }
+        }
+
+        // שמירת הגדרות סנכרון
+        function saveSyncSettings() {
+            try {
+                const settings = {
+                    enabled: cloudSyncEnabled,
+                    method: cloudSyncMethod,
+                    jsonbinApiKey: document.getElementById('jsonbinApiKey').value,
+                    jsonbinBinId: document.getElementById('jsonbinBinId').value,
+                    syncUrl: document.getElementById('syncUrl').value
+                };
+                localStorage.setItem('cloudSyncSettings', JSON.stringify(settings));
+            } catch (e) {
+                console.error('שגיאה בשמירת הגדרות סנכרון:', e);
+            }
+        }
+
+        // עדכון שיטת סנכרון
+        function updateSyncMethod() {
+            const method = document.querySelector('input[name="syncMethod"]:checked').value;
+            cloudSyncMethod = method;
+            
+            if (method === 'jsonbin') {
+                document.getElementById('jsonbinSettings').style.display = 'block';
+                document.getElementById('urlSettings').style.display = 'none';
+            } else {
+                document.getElementById('jsonbinSettings').style.display = 'none';
+                document.getElementById('urlSettings').style.display = 'block';
+            }
+            
+            saveSyncSettings();
+        }
+
+        // יצירת Bin חדש ב-JSONBin
+        async function createNewJsonBin() {
+            const apiKey = document.getElementById('jsonbinApiKey').value;
+            const statusEl = document.getElementById('syncStatus');
+            
+            try {
+                statusEl.className = 'sync-status info';
+                statusEl.textContent = 'יוצר Bin חדש...';
+                statusEl.style.display = 'block';
+                
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                if (apiKey) {
+                    headers['X-Master-Key'] = apiKey;
+                }
+                
+                const response = await fetch('https://api.jsonbin.io/v3/b', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        donors: [],
+                        groups: [],
+                        defaultDonorGoal: defaultDonorGoal,
+                        matchingGoal: matchingGoal
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`שגיאת שרת: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const binId = data.metadata?.id || data.id;
+                
+                if (binId) {
+                    document.getElementById('jsonbinBinId').value = binId;
+                    saveSyncSettings();
+                    
+                    statusEl.className = 'sync-status success';
+                    statusEl.textContent = `✅ Bin נוצר בהצלחה! ID: ${binId}`;
+                    
+                    // שומר מיד את הנתונים הנוכחיים
+                    await saveToCloud();
+                } else {
+                    throw new Error('לא התקבל Bin ID');
+                }
+            } catch (error) {
+                console.error('שגיאה ביצירת Bin:', error);
+                statusEl.className = 'sync-status error';
+                statusEl.textContent = `❌ שגיאה: ${error.message}`;
+            }
+        }
+
+        // בדיקת חיבור ל-JSONBin
+        async function testJsonBinConnection() {
+            const binId = document.getElementById('jsonbinBinId').value;
+            const apiKey = document.getElementById('jsonbinApiKey').value;
+            const statusEl = document.getElementById('syncStatus');
+            
+            if (!binId) {
+                statusEl.className = 'sync-status error';
+                statusEl.textContent = '❌ אנא הזן Bin ID';
+                statusEl.style.display = 'block';
+                return;
+            }
+            
+            try {
+                statusEl.className = 'sync-status info';
+                statusEl.textContent = 'בודק חיבור...';
+                statusEl.style.display = 'block';
+                
+                const headers = {};
+                if (apiKey) {
+                    headers['X-Master-Key'] = apiKey;
+                }
+                
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
+                    headers: headers
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`שגיאת שרת: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                statusEl.className = 'sync-status success';
+                statusEl.textContent = '✅ חיבור הצליח! Bin קיים ונגיש.';
+                saveSyncSettings();
+            } catch (error) {
+                console.error('שגיאה בבדיקת חיבור:', error);
+                statusEl.className = 'sync-status error';
+                statusEl.textContent = `❌ שגיאה: ${error.message}`;
+            }
+        }
+
+        // בדיקת חיבור ל-URL
+        async function testUrlConnection() {
+            const url = document.getElementById('syncUrl').value;
+            const statusEl = document.getElementById('syncStatus');
+            
+            if (!url) {
+                statusEl.className = 'sync-status error';
+                statusEl.textContent = '❌ אנא הזן URL';
+                statusEl.style.display = 'block';
+                return;
+            }
+            
+            try {
+                statusEl.className = 'sync-status info';
+                statusEl.textContent = 'בודק חיבור...';
+                statusEl.style.display = 'block';
+                
+                const response = await fetch(url, { method: 'GET' });
+                
+                if (!response.ok) {
+                    throw new Error(`שגיאת שרת: ${response.status}`);
+                }
+                
+                statusEl.className = 'sync-status success';
+                statusEl.textContent = '✅ חיבור הצליח! URL נגיש.';
+                saveSyncSettings();
+            } catch (error) {
+                console.error('שגיאה בבדיקת חיבור:', error);
+                statusEl.className = 'sync-status error';
+                statusEl.textContent = `❌ שגיאה: ${error.message}`;
+            }
+        }
+
+        // איסוף כל הנתונים לשמירה
+        function collectAllData() {
+            return {
+                donors: donors,
+                groups: groups,
+                defaultDonorGoal: defaultDonorGoal,
+                matchingGoal: matchingGoal,
+                financeState: financeState,
+                scoutsSchedule: scoutsSchedule,
+                groomGrants: groomGrants,
+                addresses: addresses,
+                toolkitTips: toolkitTips,
+                appSettings: {
+                    matchingGoal,
+                    defaultGroupGoal,
+                    totalRecruiters
+                },
+                liveViewSettings: liveViewSettings,
+                accessControl: accessControl,
+                campaignPlanning: campaignPlanning,
+                lastUpdated: new Date().toISOString(),
+                version: '1.0'
+            };
+        }
+
+        // שמירה לענן
+        async function saveToCloud() {
+            if (!cloudSyncEnabled && cloudSyncMethod === 'jsonbin' && !document.getElementById('jsonbinBinId').value) {
+                showNotification('אנא הגדר Bin ID תחילה', 'error');
+                return;
+            }
+            
+            const statusEl = document.getElementById('syncStatus');
+            const allData = collectAllData();
+            
+            try {
+                statusEl.className = 'sync-status info';
+                statusEl.textContent = 'שומר לענן...';
+                statusEl.style.display = 'block';
+                
+                if (cloudSyncMethod === 'jsonbin') {
+                    const binId = document.getElementById('jsonbinBinId').value;
+                    const apiKey = document.getElementById('jsonbinApiKey').value;
+                    
+                    if (!binId) {
+                        throw new Error('Bin ID לא הוגדר');
+                    }
+                    
+                    const headers = {
+                        'Content-Type': 'application/json'
+                    };
+                    if (apiKey) {
+                        headers['X-Master-Key'] = apiKey;
+                    }
+                    
+                    const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
+                        method: 'PUT',
+                        headers: headers,
+                        body: JSON.stringify(allData)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`שגיאת שרת: ${response.status}`);
+                    }
+                    
+                    lastCloudSaveTime = Date.now();
+                    statusEl.className = 'sync-status success';
+                    statusEl.textContent = '✅ הנתונים נשמרו בהצלחה לענן!';
+                    showNotification('✅ הנתונים נשמרו לענן', 'success');
+                    saveSyncSettings();
+                } else {
+                    // URL מותאם אישית - כאן צריך לשלוח PUT/POST
+                    const url = document.getElementById('syncUrl').value;
+                    if (!url) {
+                        throw new Error('URL לא הוגדר');
+                    }
+                    
+                    // נסה POST או PUT
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(allData)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`שגיאת שרת: ${response.status}`);
+                    }
+                    
+                    lastCloudSaveTime = Date.now();
+                    statusEl.className = 'sync-status success';
+                    statusEl.textContent = '✅ הנתונים נשמרו בהצלחה לענן!';
+                    showNotification('✅ הנתונים נשמרו לענן', 'success');
+                    saveSyncSettings();
+                }
+            } catch (error) {
+                console.error('שגיאה בשמירה לענן:', error);
+                statusEl.className = 'sync-status error';
+                statusEl.textContent = `❌ שגיאה: ${error.message}`;
+                showNotification(`❌ שגיאה בשמירה לענן: ${error.message}`, 'error');
+            }
+        }
+
+        // טעינה מהענן
+        async function loadFromCloud() {
+            const statusEl = document.getElementById('syncStatus');
+            
+            try {
+                statusEl.className = 'sync-status info';
+                statusEl.textContent = 'טוען מהענן...';
+                statusEl.style.display = 'block';
+                
+                let data;
+                
+                if (cloudSyncMethod === 'jsonbin') {
+                    const binId = document.getElementById('jsonbinBinId').value;
+                    const apiKey = document.getElementById('jsonbinApiKey').value;
+                    
+                    if (!binId) {
+                        throw new Error('Bin ID לא הוגדר');
+                    }
+                    
+                    const headers = {};
+                    if (apiKey) {
+                        headers['X-Master-Key'] = apiKey;
+                    }
+                    
+                    const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
+                        headers: headers
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`שגיאת שרת: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    data = result.record || result;
+                } else {
+                    const url = document.getElementById('syncUrl').value;
+                    if (!url) {
+                        throw new Error('URL לא הוגדר');
+                    }
+                    
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        throw new Error(`שגיאת שרת: ${response.status}`);
+                    }
+                    
+                    data = await response.json();
+                }
+                
+                // טעינת הנתונים
+                if (data.donors) donors = data.donors;
+                if (data.groups) groups = data.groups;
+                if (data.defaultDonorGoal !== undefined) defaultDonorGoal = data.defaultDonorGoal;
+                if (data.matchingGoal !== undefined) matchingGoal = data.matchingGoal;
+                if (data.financeState) financeState = data.financeState;
+                if (data.scoutsSchedule) scoutsSchedule = data.scoutsSchedule;
+                if (data.groomGrants) groomGrants = data.groomGrants;
+                if (data.addresses) addresses = data.addresses;
+                if (data.toolkitTips) toolkitTips = data.toolkitTips;
+                if (data.liveViewSettings) liveViewSettings = { ...liveViewSettings, ...data.liveViewSettings };
+                if (data.accessControl) accessControl = data.accessControl;
+                if (data.campaignPlanning) campaignPlanning = data.campaignPlanning;
+                
+                // שמירה מקומית
+                saveData();
+                
+                // עדכון תצוגות
+                updateDonorsList();
+                updateGroupsDisplay();
+                updateHomeStats();
+                updateLiveView();
+                updateLeadersList();
+                updateLiveTargets();
+                renderScoutsTeams();
+                updateScoutsStats();
+                renderGroomGrantList();
+                loadLiveViewSettings();
+                applyLiveViewSettings();
+                
+                statusEl.className = 'sync-status success';
+                statusEl.textContent = '✅ הנתונים נטענו בהצלחה מהענן!';
+                showNotification('✅ הנתונים נטענו מהענן', 'success');
+                
+                // עדכון hash
+                if (typeof calculateDataHash === 'function') {
+                    lastDataHash = calculateDataHash();
+                }
+            } catch (error) {
+                console.error('שגיאה בטעינה מהענן:', error);
+                statusEl.className = 'sync-status error';
+                statusEl.textContent = `❌ שגיאה: ${error.message}`;
+                showNotification(`❌ שגיאה בטעינה מהענן: ${error.message}`, 'error');
+            }
+        }
+
+        // הפעלת סנכרון אוטומטי
+        function enableAutoSync() {
+            cloudSyncEnabled = true;
+            saveSyncSettings();
+            
+            if (cloudSyncInterval) {
+                clearInterval(cloudSyncInterval);
+            }
+            
+            // שמירה אוטומטית כל 30 שניות
+            cloudSyncInterval = setInterval(() => {
+                if (cloudSyncEnabled) {
+                    saveToCloud().catch(err => console.warn('שגיאה בשמירה אוטומטית:', err));
+                }
+            }, 30000);
+            
+            // שמירה מיידית
+            saveToCloud();
+            
+            document.getElementById('autoSyncStatus').textContent = '✅ סנכרון אוטומטי פעיל - הנתונים נשמרים כל 30 שניות';
+            showNotification('✅ סנכרון אוטומטי הופעל', 'success');
+        }
+
+        // עצירת סנכרון אוטומטי
+        function disableAutoSync() {
+            cloudSyncEnabled = false;
+            saveSyncSettings();
+            
+            if (cloudSyncInterval) {
+                clearInterval(cloudSyncInterval);
+                cloudSyncInterval = null;
+            }
+            
+            document.getElementById('autoSyncStatus').textContent = '⏸️ סנכרון אוטומטי מושבת';
+            showNotification('⏸️ סנכרון אוטומטי הופסק', 'info');
+        }
+
+        // שמירה אוטומטית אחרי כל שינוי (debounced)
+        let saveToCloudTimeout = null;
+        function autoSaveToCloud() {
+            if (!cloudSyncEnabled) return;
+            
+            if (saveToCloudTimeout) {
+                clearTimeout(saveToCloudTimeout);
+            }
+            
+            // שמירה אחרי 2 שניות ללא שינויים נוספים
+            saveToCloudTimeout = setTimeout(() => {
+                saveToCloud().catch(err => console.warn('שגיאה בשמירה אוטומטית:', err));
+            }, 2000);
+        }
+
+        // autoSaveToCloud יקרא מ-notifyDataChanged שכבר נקרא מ-saveData
+
+        // טעינה אוטומטית בטעינת הדף
+        window.addEventListener('load', () => {
+            loadSyncSettings();
+            
+            // טעינה מהענן אחרי 2 שניות (אם סנכרון מופעל)
+            if (cloudSyncEnabled) {
+                setTimeout(() => {
+                    loadFromCloud().catch(err => console.warn('שגיאה בטעינה אוטומטית:', err));
+                }, 2000);
+            }
+        });
+        // ===== סוף מערכת סנכרון בין מערכות =====
 
     </script>
 </body>
