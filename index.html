@@ -5393,100 +5393,153 @@
 
                 <!-- היסטוריה -->
                 <div class="management-content" id="historyContent">
-                    <div class="history-settings-panel" style="padding: 20px;">
-                        <h3 style="margin-bottom: 20px;">📜 היסטוריית פעולות במערכת</h3>
+                    <div style="padding: 25px; background: #fafafa; min-height: 100%;">
                         
-                        <!-- הגדרות מחשב -->
-                        <div style="background: #e3f2fd; border: 2px solid #2196f3; border-radius: 10px; padding: 15px; margin-bottom: 20px;">
-                            <h4 style="color: #1565c0; margin-bottom: 15px;">🖥️ זיהוי מחשב זה</h4>
-                            <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
-                                <div style="flex: 1; min-width: 200px;">
-                                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">שם המחשב:</label>
-                                    <input type="text" id="computerNameInput" placeholder="לדוגמה: מחשב משרד / לפטופ בית" 
-                                           style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;">
-                                </div>
-                                <div style="width: 120px;">
-                                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">מספר מחשב:</label>
-                                    <input type="number" id="computerIdInput" placeholder="1" min="1" 
-                                           style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;">
-                                </div>
-                                <button class="btn btn-primary" onclick="saveComputerSettings()" style="height: 40px;">💾 שמור</button>
+                        <!-- כותרת -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <span style="font-size: 24px; color: #666;">🕐</span>
+                                <h2 style="margin: 0; font-size: 22px; font-weight: 600; color: #333;">היסטוריית פעולות</h2>
                             </div>
-                            <small style="display: block; margin-top: 10px; color: #1565c0;">
-                                ההגדרות האלה יעזרו לזהות מאיזה מחשב בוצעה כל פעולה בהיסטוריה.
-                            </small>
-                        </div>
-                        
-                        <!-- סינון היסטוריה -->
-                        <div style="background: rgba(255, 255, 255, 0.8); border-radius: 10px; padding: 15px; margin-bottom: 20px; border: 1px solid var(--border);">
-                            <h4 style="margin-bottom: 15px;">🔍 סינון היסטוריה</h4>
-                            <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
-                                <div>
-                                    <label style="display: block; margin-bottom: 5px; font-size: 13px;">מתאריך:</label>
-                                    <input type="date" id="historyStartDate" style="padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
+                            
+                            <!-- כפתור ייצוא עם תפריט -->
+                            <div style="position: relative;">
+                                <button onclick="toggleHistoryExportMenu()" class="history-export-btn" style="
+                                    display: flex; align-items: center; gap: 8px;
+                                    background: linear-gradient(135deg, #28a745, #20c997);
+                                    color: white; border: none; padding: 10px 20px;
+                                    border-radius: 8px; cursor: pointer; font-weight: 500;
+                                    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+                                    transition: all 0.2s;">
+                                    <span>📥</span> ייצא לאקסל <span style="font-size: 10px;">▼</span>
+                                </button>
+                                <div id="historyExportMenu" style="
+                                    display: none; position: absolute; top: 100%; left: 0; right: auto;
+                                    background: white; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+                                    min-width: 200px; z-index: 100; margin-top: 5px; overflow: hidden;">
+                                    <div onclick="exportHistoryToExcel(); toggleHistoryExportMenu();" style="padding: 12px 16px; cursor: pointer; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #eee;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'">
+                                        <span>📊</span> הכל (מכירות + קניות)
+                                    </div>
+                                    <div onclick="exportHistoryToExcel('manual'); toggleHistoryExportMenu();" style="padding: 12px 16px; cursor: pointer; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #eee;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'">
+                                        <span>✏️</span> ידני בלבד
+                                    </div>
+                                    <div onclick="exportHistoryToExcel('nedarim'); toggleHistoryExportMenu();" style="padding: 12px 16px; cursor: pointer; display: flex; align-items: center; gap: 10px;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'">
+                                        <span>🔗</span> נדרים פלוס בלבד
+                                    </div>
                                 </div>
-                                <div>
-                                    <label style="display: block; margin-bottom: 5px; font-size: 13px;">עד תאריך:</label>
-                                    <input type="date" id="historyEndDate" style="padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
-                                </div>
-                                <div>
-                                    <label style="display: block; margin-bottom: 5px; font-size: 13px;">מקור:</label>
-                                    <select id="historySourceFilter" style="padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
-                                        <option value="">הכל</option>
-                                        <option value="manual">ידני</option>
-                                        <option value="nedarim">נדרים פלוס</option>
-                                        <option value="import">ייבוא</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label style="display: block; margin-bottom: 5px; font-size: 13px;">סוג פעולה:</label>
-                                    <select id="historyActionFilter" style="padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
-                                        <option value="">הכל</option>
-                                        <option value="payment">תשלום</option>
-                                        <option value="add">הוספה</option>
-                                        <option value="update">עדכון</option>
-                                        <option value="delete">מחיקה</option>
-                                    </select>
-                                </div>
-                                <button class="btn btn-primary" onclick="loadHistory()">🔄 טען היסטוריה</button>
-                                <button class="btn btn-secondary" onclick="clearHistoryFilters()">🗑️ נקה סינון</button>
                             </div>
                         </div>
                         
-                        <!-- כפתורי ייצוא -->
-                        <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-                            <button class="btn btn-success" onclick="exportHistoryToExcel()">📥 ייצוא לאקסל</button>
-                            <button class="btn btn-info" onclick="exportHistoryToExcel('manual')">📥 ייצוא ידניים בלבד</button>
-                            <button class="btn btn-warning" onclick="exportHistoryToExcel('nedarim')" style="background: #ff9800; color: white;">📥 ייצוא נדרים פלוס בלבד</button>
+                        <!-- סרגל סינון -->
+                        <div style="
+                            display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+                            background: white; padding: 15px 20px; border-radius: 10px;
+                            box-shadow: 0 1px 4px rgba(0,0,0,0.05); margin-bottom: 20px;">
+                            
+                            <!-- סוג פעולה -->
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <label style="color: #666; font-size: 14px;">סוג פעולה:</label>
+                                <select id="historyActionFilter" style="
+                                    padding: 8px 30px 8px 12px; border: 1px solid #ddd; border-radius: 6px;
+                                    background: white; font-size: 14px; cursor: pointer; min-width: 100px;">
+                                    <option value="">הכל</option>
+                                    <option value="payment">תשלום</option>
+                                    <option value="add">הוספה</option>
+                                    <option value="update">עדכון</option>
+                                    <option value="delete">מחיקה</option>
+                                </select>
+                            </div>
+                            
+                            <!-- מקור -->
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <label style="color: #666; font-size: 14px;">מקור:</label>
+                                <select id="historySourceFilter" style="
+                                    padding: 8px 30px 8px 12px; border: 1px solid #ddd; border-radius: 6px;
+                                    background: white; font-size: 14px; cursor: pointer; min-width: 120px;">
+                                    <option value="">הכל</option>
+                                    <option value="manual">ידני</option>
+                                    <option value="nedarim">נדרים פלוס</option>
+                                    <option value="import">ייבוא</option>
+                                </select>
+                            </div>
+                            
+                            <!-- תאריך -->
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="color: #666; font-size: 14px;">חודשי</span>
+                                <input type="month" id="historyMonthFilter" style="
+                                    padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px;
+                                    font-size: 14px; cursor: pointer;">
+                            </div>
+                            
+                            <!-- כפתורי פעולה -->
+                            <div style="display: flex; gap: 8px; margin-right: auto;">
+                                <button onclick="loadHistory()" style="
+                                    background: #4285f4; color: white; border: none;
+                                    padding: 8px 16px; border-radius: 6px; cursor: pointer;
+                                    font-size: 14px; font-weight: 500;">
+                                    🔄 טען
+                                </button>
+                                <button onclick="clearHistoryFilters()" style="
+                                    background: #f5f5f5; color: #666; border: 1px solid #ddd;
+                                    padding: 8px 16px; border-radius: 6px; cursor: pointer;
+                                    font-size: 14px;">
+                                    נקה
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- הגדרות מחשב - קטן ונקי -->
+                        <div style="
+                            display: flex; align-items: center; gap: 15px; flex-wrap: wrap;
+                            background: white; padding: 12px 20px; border-radius: 10px;
+                            box-shadow: 0 1px 4px rgba(0,0,0,0.05); margin-bottom: 20px; font-size: 14px;">
+                            <span style="color: #666;">🖥️ זיהוי מחשב:</span>
+                            <input type="text" id="computerNameInput" placeholder="שם המחשב" 
+                                   style="padding: 6px 12px; border: 1px solid #ddd; border-radius: 6px; width: 150px;">
+                            <input type="number" id="computerIdInput" placeholder="#" min="1" 
+                                   style="padding: 6px 12px; border: 1px solid #ddd; border-radius: 6px; width: 60px;">
+                            <button onclick="saveComputerSettings()" style="
+                                background: #4285f4; color: white; border: none;
+                                padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px;">
+                                שמור
+                            </button>
                         </div>
                         
                         <!-- סטטוס -->
-                        <div id="historyStatus" style="display: none; padding: 10px; border-radius: 6px; margin-bottom: 15px;"></div>
+                        <div id="historyStatus" style="display: none; padding: 12px 16px; border-radius: 8px; margin-bottom: 15px; font-size: 14px;"></div>
                         
                         <!-- טבלת היסטוריה -->
-                        <div style="overflow-x: auto;">
-                            <table id="historyTable" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                        <div style="background: white; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); overflow: hidden;">
+                            <table id="historyTable" style="width: 100%; border-collapse: collapse;">
                                 <thead>
-                                    <tr style="background: var(--primary-gold); color: white;">
-                                        <th style="padding: 12px 8px; text-align: right;">תאריך</th>
-                                        <th style="padding: 12px 8px; text-align: right;">שעה</th>
-                                        <th style="padding: 12px 8px; text-align: right;">פעולה</th>
-                                        <th style="padding: 12px 8px; text-align: right;">סוג</th>
-                                        <th style="padding: 12px 8px; text-align: right;">שם</th>
-                                        <th style="padding: 12px 8px; text-align: right;">פרטים</th>
-                                        <th style="padding: 12px 8px; text-align: right;">סכום</th>
-                                        <th style="padding: 12px 8px; text-align: right;">מקור</th>
-                                        <th style="padding: 12px 8px; text-align: right;">מחשב</th>
+                                    <tr style="background: #f8f9fa; border-bottom: 2px solid #e9ecef;">
+                                        <th style="padding: 14px 12px; text-align: right; font-weight: 600; color: #495057; font-size: 13px;">תאריך</th>
+                                        <th style="padding: 14px 12px; text-align: right; font-weight: 600; color: #495057; font-size: 13px;">שעה</th>
+                                        <th style="padding: 14px 12px; text-align: right; font-weight: 600; color: #495057; font-size: 13px;">סוג</th>
+                                        <th style="padding: 14px 12px; text-align: right; font-weight: 600; color: #495057; font-size: 13px;">שם</th>
+                                        <th style="padding: 14px 12px; text-align: right; font-weight: 600; color: #495057; font-size: 13px;">פרטים</th>
+                                        <th style="padding: 14px 12px; text-align: right; font-weight: 600; color: #495057; font-size: 13px;">סכום</th>
+                                        <th style="padding: 14px 12px; text-align: right; font-weight: 600; color: #495057; font-size: 13px;">מקור</th>
+                                        <th style="padding: 14px 12px; text-align: right; font-weight: 600; color: #495057; font-size: 13px;">מחשב</th>
                                     </tr>
                                 </thead>
                                 <tbody id="historyTableBody">
-                                    <tr><td colspan="9" style="text-align: center; padding: 30px; color: var(--muted);">לחץ "טען היסטוריה" לטעינת הנתונים</td></tr>
+                                    <tr><td colspan="8" style="text-align: center; padding: 50px 20px; color: #999; font-size: 15px;">
+                                        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                            <span style="font-size: 40px; opacity: 0.5;">📋</span>
+                                            <span>לחץ "טען" לטעינת היסטוריית הפעולות</span>
+                                        </div>
+                                    </td></tr>
                                 </tbody>
                             </table>
                         </div>
                         
                         <!-- סיכום -->
-                        <div id="historySummary" style="margin-top: 15px; padding: 10px; background: rgba(212, 175, 55, 0.1); border-radius: 8px; display: none;">
+                        <div id="historySummary" style="
+                            margin-top: 15px; padding: 15px 20px; 
+                            background: white; border-radius: 10px;
+                            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+                            display: none; font-size: 14px; color: #666;">
                         </div>
                     </div>
                 </div>
@@ -5932,94 +5985,6 @@
 
                         <div class="default-goal-note" style="margin-top: 15px;">השינוי ישפיע על מתרימים חדשים ויעדכן מתרימים קיימים שמשתמשים ביעד ברירת המחדל.</div>
                         <div class="nedarim-sync-status" id="nedarimSyncStatus"></div>
-                        
-                        <!-- סנכרון דרך GitHub Gist -->
-                        <div style="margin-top: 30px; padding-top: 30px; border-top: 2px solid var(--border);">
-                            <h3 style="margin-bottom: 15px;">סנכרון בין מחשבים דרך GitHub Gist</h3>
-                            
-                            <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 10px; padding: 15px; margin-bottom: 20px;">
-                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                                    <span style="font-size: 24px;">ℹ️</span>
-                                    <strong style="color: #856404; font-size: 16px;">הבדל חשוב: GitHub vs GitHub Gist</strong>
-                                </div>
-                                <ul style="color: #856404; margin: 0; padding-right: 20px; line-height: 1.8;">
-                                    <li><strong>GitHub (קוד):</strong> אם תעלה את הקוד של התוכנה ל-GitHub, זה רק יאחסן את הקוד. זה <strong>לא</strong> יעדכן את הנתונים (שמות מתרימים, סכומים) בכל המסכים. כדי לעדכן את הקוד במחשבים אחרים, תצטרך להוריד את הקוד המעודכן ידנית.</li>
-                                    <li><strong>GitHub Gist (נתונים):</strong> זה מה שצריך לסנכרן נתונים! Gist מאחסן את כל הנתונים (שמות קבוצות, מתרימים, הגדרות, סכומים) ומאפשר סנכרון אוטומטי בין כל המחשבים. כל שינוי במחשב אחד יתעדכן אוטומטית בכל המחשבים האחרים.</li>
-                                    <li><strong>איך זה עובד:</strong> כשאתה מעדכן נתונים במחשב אחד (למשל מוסיף תרומה), התוכנה שולחת את העדכון לנדרים פלוס, ואז שומרת את הנתונים המעודכנים ב-Gist. כל המחשבים האחרים קוראים את הנתונים המעודכנים מ-Gist ומעדכנים את המסכים שלהם.</li>
-                                </ul>
-                            </div>
-                            
-                            <p style="color: var(--muted); margin-bottom: 20px;">
-                                הגדר סנכרון אוטומטי דרך GitHub Gist כדי שכל הנתונים (שמות קבוצות, שמות מתרימים, הגדרות) יסונכרנו בין כל המחשבים. כל שינוי במערכת אחת יתעדכן אוטומטית בכל המערכות האחרות.
-                            </p>
-                            
-                            <div class="sync-input-group" style="margin-bottom: 20px;">
-                                <label style="display: block; margin-bottom: 8px; font-weight: 500;">GitHub Gist ID:</label>
-                                <input type="text" id="githubGistId" placeholder="לדוגמה: abc123def456" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px;">
-                                <small style="display: block; margin-top: 5px; color: var(--muted);">
-                                    אם אין לך Gist ID, לחץ על "צור Gist חדש" למטה. השתמש באותו Gist ID בכל המחשבים.
-                                </small>
-                            </div>
-                            
-                            <div class="sync-input-group" style="margin-bottom: 20px;">
-                                <label style="display: block; margin-bottom: 8px; font-weight: 500;">GitHub Personal Access Token <strong style="color: #dc3545;">(נדרש ל-Gist פרטי/Secret)</strong>:</label>
-                                <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxx" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px;" onchange="saveGistSyncSettings()">
-                                <small style="display: block; margin-top: 5px; color: var(--muted);">
-                                    <strong>⚠️ חשוב:</strong> אם ה-Gist שלך הוא Secret (פרטי), <strong>חובה</strong> להזין Token כדי לשמור ולעדכן נתונים!<br>
-                                    <strong>איך ליצור Token:</strong> GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token (classic) → בחר גישה: <code>gist</code> → Generate → העתק את ה-Token והדבק כאן
-                                </small>
-                        </div>
-
-                            <div class="sync-actions" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
-                                <button class="btn btn-primary" onclick="createNewGist()">צור Gist חדש (דורש Token)</button>
-                                <button class="btn btn-success" onclick="testGistConnection()">בדוק חיבור</button>
-                                <button class="btn btn-secondary" onclick="saveToGist()">💾 שמור ל-Gist עכשיו</button>
-                                <button class="btn btn-info" onclick="loadFromGist()">📥 טען מ-Gist עכשיו</button>
-                            </div>
-                            
-                            <div style="background: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 8px; padding: 12px; margin-bottom: 15px;">
-                                <strong style="color: #0066cc;">💡 טיפ:</strong>
-                                <p style="color: #0066cc; margin: 5px 0 0 0; line-height: 1.6;">
-                                    אם אין לך Token, תוכל ליצור Gist ידנית ב-GitHub: 
-                                    <a href="https://gist.github.com" target="_blank" style="color: #0066cc; text-decoration: underline;">https://gist.github.com</a> → 
-                                    צור קובץ חדש בשם <code>campaign-data.json</code> → 
-                                    העתק את ה-Gist ID מה-URL (החלק האחרון) והדבק בשדה "GitHub Gist ID" למעלה.
-                                </p>
-                            </div>
-                            
-                            <div class="sync-status" id="gistSyncStatus" style="display: none; padding: 10px; border-radius: 6px; margin-bottom: 15px;"></div>
-                            
-                            <div style="margin-top: 20px;">
-                                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 500;">
-                                    <input type="checkbox" id="autoGistSyncCheckbox" onchange="saveGistSyncSettings()" style="width: 20px; height: 20px; cursor: pointer;">
-                                    <span>🔄 הפעל סנכרון אוטומטי: שמירה כל 30 שניות וטעינה בעליית התוכנה</span>
-                                </label>
-                            </div>
-                            
-                            <div style="background: #d4edda; border: 2px solid #28a745; border-radius: 10px; padding: 15px; margin-top: 15px;">
-                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                                    <span style="font-size: 24px;">✅</span>
-                                    <strong style="color: #155724; font-size: 16px;">איך זה עובד?</strong>
-                                </div>
-                                <div style="background: #fff; border: 1px solid #28a745; border-radius: 8px; padding: 12px; margin-bottom: 15px;">
-                                    <strong style="color: #155724; font-size: 14px;">📋 הוראות שימוש:</strong>
-                                    <ol style="color: #155724; margin: 10px 0 0 0; padding-right: 25px; line-height: 1.8;">
-                                        <li><strong>במחשב הראשון:</strong> הזן את ה-Gist ID למעלה ולחץ על "בדוק חיבור"</li>
-                                        <li><strong>אם אין קובץ:</strong> לחץ על "שמור ל-Gist עכשיו" כדי ליצור את הקובץ עם הנתונים הנוכחיים</li>
-                                        <li><strong>בכל מחשב אחר:</strong> הזן את אותו Gist ID ולחץ על "טען מ-Gist עכשיו" - כל הנתונים יטענו אוטומטית!</li>
-                                        <li><strong>טעינה אוטומטית:</strong> בכל פעם שתפתח את התוכנה במחשב כלשהו, הנתונים יטענו אוטומטית מ-Gist (אם יש Gist ID)</li>
-                                        <li><strong>שמירה אוטומטית:</strong> כל שינוי שאתה עושה נשמר אוטומטית ל-Gist אחרי 3 שניות</li>
-                                    </ol>
-                                </div>
-                                <ul style="color: #155724; margin: 0; padding-right: 20px; line-height: 1.8;">
-                                    <li><strong>כל הנתונים נשמרים:</strong> שמות קבוצות, שמות מתרימים, הגדרות, סכומים, חלוקה לקבוצות - הכל!</li>
-                                    <li><strong>החלפה מלאה:</strong> כשטוענים מ-Gist, כל הנתונים המקומיים מוחלפים בנתונים מ-Gist - כך כל המחשבים זהים</li>
-                                    <li><strong>סנכרון אוטומטי:</strong> כל שינוי נשמר אוטומטית ל-Gist אחרי 3 שניות (גם אם הסנכרון האוטומטי לא מסומן)</li>
-                                    <li><strong>טעינה אוטומטית בעליית התוכנה:</strong> כשפותחים את התוכנה במחשב אחר, כל הנתונים נטענים אוטומטית מ-Gist (אם יש Gist ID)</li>
-                                    <li><strong>זה עובד בין כל המחשבים</strong> - פשוט השתמש באותו Gist ID בכל המחשבים</li>
-                            </ul>
-                            </div>
-                        </div>
                         
                         <!-- סנכרון דרך Google Sheets -->
                         <div style="margin-top: 30px; padding-top: 30px; border-top: 2px solid var(--border);">
@@ -6524,29 +6489,23 @@
         let appLockResolved = false;
         const AUTHORIZED_ALL_SECTION_KEY = '__all__';
         
-        // ===== הגדרות נדרים פלוס =====
+        // ===== הגדרות נדרים פלוס (מאובטח - הסודות בשרת!) =====
+        // ⚠️ כל ה-API keys והסיסמאות נמצאים בקובץ Code.gs בשרת!
+        // כאן נשמרים רק נתונים ציבוריים והגדרות תצוגה
         const NEDARIM_CONFIG = {
-            mosadId: '1000642',
-            matchingId: '715', // מזהה מצינג - Matching ID האמיתי (לא ה-mosadId)
-            // 💡 איך למצוא את ה-Matching ID:
-            // 1. הפעל "בדוק סכום כולל מ-API" בקונסול
-            // 2. חפש ב"ניסיון 4" את השדה "Matching" - למשל: "Nedarim:715:1:12::1:1"
-            // 3. המספר אחרי ה-Nedarim: הוא ה-Matching ID (715 במקרה הזה)
-            // 4. לחלופין, פתח https://www.matara.pro/nedarimplus/online/?mosad=1000642 ובדוק בקוד המקור
-            apiPassword: 'ep348', // ⚠️ לא משמש כשמשתמשים בפרוקסי - נשאר לתאימות
-            apiUrl: 'https://matara.pro/nedarimplus/Reports/Manage3.aspx', // API ניהול
-            onlineApiUrl: 'https://www.matara.pro/nedarimplus/online/Files/Manage.aspx', // API דף אונליין
-            matchPlusApiUrl: 'https://www.matara.pro/nedarimplus/V6/MatchPlus.aspx', // API MatchPlus
-            // ⚠️ הגדר כאן את ה-URL של השרת פרוקסי (Google Apps Script)
-            // הוראות: https://script.google.com - צור פרויקט חדש, העתק את הקוד מ-NedarimProxy.gs, פרסם כ-Web App
-            proxyUrl: 'https://script.google.com/macros/s/AKfycbwQs0FeHwstYtvYtD3wqr0ggTvZIsSCqv6K7Rdz90QnrCc5wKzAMMSrEVDsvVyH0FbY/exec', // שרת פרוקסי - Google Apps Script
-            useProxy: true, // ✅ משתמש בפרוקסי להסתרת API password
-            autoSyncInterval: 15 * 1000, // 15 שניות במילישניות (עדכון אוטומטי מהיר)
-            dataCheckInterval: 10 * 1000, // 10 שניות - בדיקת שינויים בנתונים מקומיים
-            lastTransactionId: 0, // נשמור את מזהה העסקה האחרונה
-            totalDonatedFromAPI: null, // הסכום הכולל מ-ShowGoal API (null = עדיין לא נטען)
-            goalFromAPI: null, // היעד מ-ShowGoal API (null = עדיין לא נטען)
-            apiDataLoaded: false // האם הנתונים נטענו מ-API
+            // הגדרות אלו יטענו מהשרת (לא חשופות כאן)
+            mosadId: '', // יטען מהשרת
+            matchingId: '', // יטען מהשרת
+            // הגדרות זמנים (לא סודיות)
+            autoSyncInterval: 15 * 1000, // 15 שניות במילישניות
+            dataCheckInterval: 10 * 1000, // 10 שניות
+            // מצב נתונים
+            lastTransactionId: 0,
+            totalDonatedFromAPI: null,
+            goalFromAPI: null,
+            apiDataLoaded: false,
+            // מציין שיש לעבוד דרך השרת
+            useServerProxy: true // ✅ כל הקריאות עוברות דרך Code.gs
         };
         let nedarimSyncTimer = null;
         
@@ -10299,6 +10258,30 @@
         // טעינת נתונים
             async function loadData() {
                 try {
+                    // 🔐 טעינת הגדרות ציבוריות מהשרת (ללא סודות!)
+                    if (isAppsScript()) {
+                        try {
+                            await new Promise((resolve) => {
+                                google.script.run
+                                    .withSuccessHandler((config) => {
+                                        if (config) {
+                                            NEDARIM_CONFIG.mosadId = config.mosadId || '';
+                                            NEDARIM_CONFIG.matchingId = config.matchingId || '';
+                                            console.log('✅ הגדרות ציבוריות נטענו מהשרת');
+                                        }
+                                        resolve();
+                                    })
+                                    .withFailureHandler((error) => {
+                                        console.warn('⚠️ שגיאה בטעינת הגדרות מהשרת:', error);
+                                        resolve();
+                                    })
+                                    .getPublicConfig();
+                            });
+                        } catch (e) {
+                            console.warn('⚠️ שגיאה בטעינת הגדרות:', e);
+                        }
+                    }
+                    
                     // טעינה אסינכרונית של כל הנתונים
                     const [savedDonors, savedGroups, savedDefaultGoal, savedFinance, savedToolkitTips, savedScouts, savedGroomGrants, savedAddresses, savedLiveViewSettings] = await Promise.all([
                         storageGetItemSync('donors'),
@@ -15126,33 +15109,36 @@
             return new Date();
         }
 
-        // פונקציה למשיכת כל המתרימים ממערכת המצ'ינג של נדרים פלוס
+        // ===== פונקציה מאובטחת למשיכת כל המתרימים ממערכת המצ'ינג של נדרים פלוס =====
+        // 🔐 כל הקריאות עוברות דרך השרת - הסודות לא חשופים ללקוח!
         async function fetchNedarimMatrim() {
-            try {
-                const formData = new FormData();
-                formData.append('Action', 'ExportMatchingMatrim');
-                formData.append('MosadNumber', NEDARIM_CONFIG.mosadId);
-                formData.append('ApiPassword', NEDARIM_CONFIG.apiPassword);
-
-                const response = await fetch(NEDARIM_CONFIG.apiUrl, {
-                    method: 'POST',
-                    body: formData
+            if (isAppsScript()) {
+                return new Promise((resolve, reject) => {
+                    console.log('🔐 מושך מתרימים דרך השרת המאובטח');
+                    google.script.run
+                        .withSuccessHandler((result) => {
+                            if (result && result.success) {
+                                resolve(result.data || []);
+                            } else {
+                                console.error('❌ שגיאה מהשרת:', result?.error);
+                                resolve(null);
+                            }
+                        })
+                        .withFailureHandler((error) => {
+                            console.error('❌ שגיאה בקריאה לשרת:', error);
+                            reject(error);
+                        })
+                        .getNedarimReport({ action: 'ExportMatchingMatrim' });
                 });
-
-                if (!response.ok) {
-                    throw new Error(`שגיאת שרת: ${response.status}`);
-                }
-
-                // הAPI מחזיר קובץ אקסל - צריך לטפל בזה אחרת
-                // בינתיים נשתמש בAPI אחר
-                return null;
-            } catch (error) {
-                console.error('שגיאה במשיכת מתרימים:', error);
-                throw error;
             }
+            
+            // אם לא ב-Apps Script, אין גישה
+            console.warn('⚠️ לא רץ ב-Apps Script - אין גישה למשיכת מתרימים');
+            return null;
         }
 
-        // פונקציה להעלאת תרומה אופליין לנדרים פלוס (תומכת גם בהפחתות - סכומים שליליים)
+        // ===== פונקציה מאובטחת להעלאת תרומה אופליין לנדרים פלוס (תומכת גם בהפחתות - סכומים שליליים) =====
+        // 🔐 כל הקריאות עוברות דרך השרת - הסודות לא חשופים ללקוח!
         async function uploadOfflineDonation(matrimName, clientName, amount, comments = '', groupName = '', matrimId = null) {
             try {
                 // בודק שהסכום תקין (מאפשר גם שלילי להפחתות)
@@ -15170,11 +15156,9 @@
                 let finalMatrimId = null;
                 let finalMatrimName = null;
                 if (matrimId !== null && matrimId !== undefined) {
-                    // משתמש במספר מתרים
                     finalMatrimId = String(matrimId);
                     finalMatrimName = `מספר מתרים: ${matrimId}`;
                 } else {
-                    // מוסיף את שם הקבוצה לשם המתרים אם יש
                     finalMatrimName = matrimName.trim();
                     if (groupName && groupName.trim() !== '') {
                         finalMatrimName = `${finalMatrimName} - ${groupName.trim()}`;
@@ -15182,17 +15166,7 @@
                     finalMatrimId = finalMatrimName;
                 }
 
-                const formData = new FormData();
-                formData.append('Action', 'MatchingOffLine');
-                formData.append('MosadNumber', NEDARIM_CONFIG.mosadId);
-                formData.append('ApiPassword', NEDARIM_CONFIG.apiPassword);
-                formData.append('MatrimId', finalMatrimId); // מספר מתרים או שם המתרים + שם הקבוצה
-                formData.append('ClientName', (clientName || 'תורם אנונימי').trim());
-                formData.append('Amount', validAmount.toString()); // יכול להיות שלילי להפחתות
-                formData.append('Comments', (comments || '').trim());
-                formData.append('AjaxId', Date.now().toString());
-
-                console.log('שולח תרומה לנדרים פלוס:', {
+                console.log('🔐 שולח תרומה לנדרים פלוס דרך השרת המאובטח:', {
                     matrimId: finalMatrimId,
                     matrimName: finalMatrimName,
                     clientName: clientName || 'תורם אנונימי',
@@ -15201,10 +15175,38 @@
                     isReduction: validAmount < 0
                 });
 
-                const response = await fetch(NEDARIM_CONFIG.apiUrl, {
-                    method: 'POST',
-                    body: formData
-                });
+                // ✅ שליחה דרך השרת המאובטח
+                if (isAppsScript()) {
+                    return new Promise((resolve, reject) => {
+                        google.script.run
+                            .withSuccessHandler((result) => {
+                                if (result && result.success) {
+                                    console.log('✅ העלאה הצליחה דרך השרת:', result);
+                                    resolve({ success: true, message: 'התרומה הועלתה בהצלחה' });
+                                } else {
+                                    console.error('❌ שגיאה מהשרת:', result?.error);
+                                    reject(new Error(result?.error || 'שגיאה בהעלאת תרומה'));
+                                }
+                            })
+                            .withFailureHandler((error) => {
+                                console.error('❌ שגיאה בקריאה לשרת:', error);
+                                reject(error);
+                            })
+                            .updateNedarimAmount({
+                                recruiterId: finalMatrimId,
+                                amount: validAmount,
+                                clientName: (clientName || 'תורם אנונימי').trim(),
+                                comments: (comments || '').trim()
+                            });
+                    });
+                }
+                
+                // 🔓 גיבוי - אם לא ב-Apps Script
+                console.warn('⚠️ לא רץ ב-Apps Script - אין גישה להעלאת תרומות');
+                throw new Error('פעולה זו זמינה רק כשהתוכנה רצה ב-Google Apps Script');
+                
+                // קוד ישן - לא יגיע לכאן
+                const response = { ok: false };
 
                 const responseText = await response.text();
                 console.log('📦 תגובה מנדרים פלוס (העלאה):', {
@@ -15265,45 +15267,41 @@
             }
         }
 
-        // פונקציה למשיכת מתרימים מ-MatchPlus API עם חיפוש
+        // ===== פונקציה מאובטחת למשיכת מתרימים מ-MatchPlus API עם חיפוש =====
+        // 🔐 כל הקריאות עוברות דרך השרת - הסודות לא חשופים ללקוח!
         async function fetchMatrimFromMatchPlusWithSearch(searchTerm = '') {
-            try {
-                const url = `${NEDARIM_CONFIG.matchPlusApiUrl}?Action=SearchMatrim&Name=${encodeURIComponent(searchTerm)}&MosadId=${NEDARIM_CONFIG.mosadId}`;
-                console.log('מושך מתרימים מ-MatchPlus עם חיפוש:', searchTerm || '(ריק)', url);
-                
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error(`שגיאת שרת: ${response.status} ${response.statusText}`);
-                }
-                
-                const data = await response.json();
-                
-                // בודק אם יש הגבלת פניות
-                if (data && typeof data === 'object' && !Array.isArray(data)) {
-                    const dataString = JSON.stringify(data).toLowerCase();
-                    if (dataString.includes('500') && (dataString.includes('פניות') || dataString.includes('מוגבלת') || dataString.includes('לא ניתן להציג'))) {
-                        throw new Error('הגבלת 500 פניות לשעה - נסה שוב מאוחר יותר');
-                    }
-                }
-                
-                // בודק אם התגובה היא מחרוזת עם הודעת שגיאה
-                if (typeof data === 'string') {
-                    const dataLower = data.toLowerCase();
-                    if (dataLower.includes('500') && (dataLower.includes('פניות') || dataLower.includes('מוגבלת') || dataLower.includes('לא ניתן להציג'))) {
-                        throw new Error('הגבלת 500 פניות לשעה - נסה שוב מאוחר יותר');
-                    }
-                }
-                
-                if (!Array.isArray(data)) {
-                    console.warn('תגובה לא צפויה מ-MatchPlus:', data);
-                    return [];
-                }
-                
-                return data;
-            } catch (error) {
-                console.error('שגיאה במשיכת מתרימים מ-MatchPlus:', error);
-                throw error;
+            // ✅ בדיקה אם רץ ב-Apps Script - משתמש בשרת המאובטח
+            if (isAppsScript()) {
+                return new Promise((resolve, reject) => {
+                    console.log('🔐 מושך מתרימים דרך השרת המאובטח עם חיפוש:', searchTerm || '(ריק)');
+                    
+                    google.script.run
+                        .withSuccessHandler((result) => {
+                            if (result && result.success) {
+                                const recruiters = result.recruiters || [];
+                                console.log(`✅ מצאנו ${recruiters.length} מתרימים דרך השרת`);
+                                resolve(recruiters);
+                            } else {
+                                console.error('❌ שגיאה מהשרת:', result?.error);
+                                // בודק הגבלת פניות
+                                if (result?.error && result.error.includes('500')) {
+                                    reject(new Error('הגבלת 500 פניות לשעה - נסה שוב מאוחר יותר'));
+                                } else {
+                                    resolve([]);
+                                }
+                            }
+                        })
+                        .withFailureHandler((error) => {
+                            console.error('❌ שגיאה בקריאה לשרת:', error);
+                            reject(error);
+                        })
+                        .searchNedarimRecruiters(searchTerm);
+                });
             }
+            
+            // 🔓 קוד גיבוי למקרה שלא רץ ב-Apps Script
+            console.warn('⚠️ לא רץ ב-Apps Script - אין גישה ל-API המאובטח');
+            return [];
         }
 
         // פונקציה למשיכת כל המתרימים מ-MatchPlus API (עושה חיפושים מרובים)
@@ -15418,72 +15416,71 @@
         // תיעוד רשמי: https://matara.pro/nedarimplus/ApiDocumentation.html
         // ⚠️ חשוב: יש לבדוק את התיעוד הרשמי כדי לוודא שהפניות והשדות תואמים
         // דף אונליין: https://www.matara.pro/nedarimplus/online/?mosad=1000642
+        // ===== פונקציה מאובטחת לקבלת סכום כולל מנדרים פלוס =====
+        // 🔐 כל הקריאות עוברות דרך השרת - הסודות לא חשופים ללקוח!
         async function fetchTotalFromMatchPlus() {
             // מאפס את המשתנים לפני חיפוש חדש
             let foundAmount = null;
             let foundGoal = null;
             
-            // אם משתמשים בפרוקסי, ננסה דרך הפרוקסי קודם (להסתרת API password)
-            if (NEDARIM_CONFIG.useProxy && NEDARIM_CONFIG.proxyUrl) {
+            // ✅ בדיקה אם רץ ב-Apps Script - משתמש בשרת המאובטח
+            if (isAppsScript()) {
                 try {
                     console.log('═══════════════════════════════════════════════════════');
-                    console.log('🔐 משתמש בשרת פרוקסי (API password מוסתר)');
-                    const proxyUrl = `${NEDARIM_CONFIG.proxyUrl}?action=ShowGoal&matchingId=${NEDARIM_CONFIG.matchingId}`;
-                    console.log('🔗 פרוקסי URL:', proxyUrl);
+                    console.log('🔐 משתמש בשרת מאובטח (כל הסודות בשרת!)');
                     
-                    const response = await fetch(proxyUrl);
-                    console.log('📡 תגובת הפרוקסי:', response.status, response.statusText);
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        console.log('📦 נתונים מהפרוקסי:', JSON.stringify(data, null, 2));
-                        
-                        // מחפש את השדות Donated ו-Goal
-                        if (data && typeof data === 'object' && !Array.isArray(data)) {
-                            if (data.Donated !== undefined && data.Donated !== null) {
-                                foundAmount = parseNumericValue(data.Donated);
-                                console.log(`✅ מצאנו סכום דרך פרוקסי: ${foundAmount?.toLocaleString()} ש"ח`);
-                            }
-                            if (data.Goal !== undefined && data.Goal !== null) {
-                                foundGoal = parseNumericValue(data.Goal);
-                                console.log(`✅ מצאנו יעד דרך פרוקסי: ${foundGoal?.toLocaleString()} ש"ח`);
-                            }
-                            
-                            // אם לא מצאנו בשדות הספציפיים, נחפש בכל השדות
-                            if (foundAmount === null) {
-                                for (const key in data) {
-                                    const value = parseNumericValue(data[key]);
-                                    if (value !== null && value > 100000) {
-                                        const keyLower = key.toLowerCase();
-                                        if (keyLower.includes('donat') || keyLower.includes('total') || keyLower.includes('amount') || keyLower.includes('collected')) {
-                                            foundAmount = value;
-                                            console.log(`✅ מצאנו סכום דרך פרוקסי: ${key} = ${value.toLocaleString()} ש"ח`);
-                                            break;
-                                        }
+                    return new Promise((resolve, reject) => {
+                        google.script.run
+                            .withSuccessHandler((result) => {
+                                console.log('📦 תגובה מהשרת:', JSON.stringify(result, null, 2));
+                                
+                                if (result && result.success) {
+                                    foundAmount = result.totalDonated || 0;
+                                    foundGoal = result.goal || 0;
+                                    
+                                    if (foundAmount > 0) {
+                                        NEDARIM_CONFIG.totalDonatedFromAPI = foundAmount;
+                                        NEDARIM_CONFIG.goalFromAPI = foundGoal;
+                                        NEDARIM_CONFIG.apiDataLoaded = true;
+                                        console.log(`✅ ✅ ✅ נתונים מהשרת המאובטח! יעד=${foundGoal.toLocaleString()}, נאסף=${foundAmount.toLocaleString()}`);
+                                        resolve({ Goal: foundGoal, Donated: foundAmount });
+                                    } else {
+                                        console.log('⚠️ השרת החזיר סכום 0');
+                                        resolve(null);
                                     }
+                                } else {
+                                    console.error('❌ שגיאה מהשרת:', result?.error || 'שגיאה לא ידועה');
+                                    resolve(null);
                                 }
-                            }
-                            
-                            if (foundAmount !== null && foundAmount > 0) {
-                                const totalFromDonors = donors.reduce((sum, d) => sum + (d.amount || 0), 0);
-                                NEDARIM_CONFIG.totalDonatedFromAPI = foundAmount;
-                                NEDARIM_CONFIG.goalFromAPI = foundGoal || 0;
-                                NEDARIM_CONFIG.apiDataLoaded = true;
-                                console.log(`✅ ✅ ✅ מצאנו את הסכום דרך פרוקסי! יעד=${NEDARIM_CONFIG.goalFromAPI.toLocaleString()}, נאסף=${NEDARIM_CONFIG.totalDonatedFromAPI.toLocaleString()}`);
-                                return { Goal: NEDARIM_CONFIG.goalFromAPI, Donated: NEDARIM_CONFIG.totalDonatedFromAPI };
-                            }
-                        }
-                    }
-                } catch (proxyError) {
-                    console.warn('⚠️ פרוקסי נכשל, מנסה ישירות:', proxyError.message);
-                    // נמשיך לניסיונות הרגילים אם הפרוקסי נכשל
+                            })
+                            .withFailureHandler((error) => {
+                                console.error('❌ שגיאה בקריאה לשרת:', error);
+                                resolve(null);
+                            })
+                            .getNedarimTotalDonations();
+                    });
+                } catch (serverError) {
+                    console.error('❌ שגיאה בקריאה לשרת:', serverError.message);
+                    // ממשיך לניסיונות גיבוי אם יש
                 }
             }
             
+            // 🔓 קוד גיבוי - רק למקרה שלא רץ ב-Apps Script
+            // ⚠️ מאחר שאין גישה לשרת המאובטח, לא ניתן לבצע קריאות API
+            console.warn('⚠️ לא רץ ב-Apps Script - אין גישה לנתוני נדרים פלוס');
+            console.log('💡 כדי לקבל נתונים מנדרים פלוס, יש להריץ את התוכנה דרך Google Apps Script');
+            return null;
+            
+            // ===== קוד ישן הוסר מטעמי אבטחה =====
+            // כל הקריאות לנדרים פלוס עוברות כעת דרך השרת המאובטח
+            // הקוד הישן שהיה כאן חשף סודות והוסר
+            
+            // --- קוד מושבת (לא יגיע לכאן) ---
+            if (false) {
             try {
-                // ניסיון 1: ShowGoal API (הקיים)
+                // ניסיון 1: ShowGoal API (הקיים) - מושבת
                 try {
-                    const url1 = `${NEDARIM_CONFIG.matchPlusApiUrl}?Action=ShowGoal&MatchingId=${NEDARIM_CONFIG.matchingId}`;
+                    const url1 = `__REMOVED_FOR_SECURITY__`;
                     console.log('═══════════════════════════════════════════════════════');
                     console.log('🔍 ניסיון 1: מושך סכום כולל מ-ShowGoal');
                     console.log('🔗 URL:', url1);
@@ -15589,9 +15586,9 @@
                     }
                 }
                 
-                // ניסיון 2: getCampaignData API (המוצע)
+                // ניסיון 2: getCampaignData API (המוצע) - מושבת מטעמי אבטחה
                 try {
-                    const url2 = `https://matara.pro/nedarimplus/v6/api/getCampaignData?mosad=${NEDARIM_CONFIG.mosadId}&password=${NEDARIM_CONFIG.apiPassword}`;
+                    const url2 = `__REMOVED_FOR_SECURITY__`;
                     console.log('═══════════════════════════════════════════════════════');
                     console.log('🔍 ניסיון 2: מושך סכום כולל מ-getCampaignData');
                     console.log('🔗 URL:', url2);
@@ -15952,6 +15949,7 @@
                 console.error('❌ שגיאה כללית במשיכת סכום כולל:', error);
                 return null;
             }
+            } // סגירת if (false) - קוד מושבת
         }
 
         // פונקציה לטעינת כל המתרימים מנדרים פלוס (משתמש ב-MatchPlus API)
@@ -16389,50 +16387,36 @@
             return transactions;
         }
 
-        // פונקציה למשיכת תרומות ממצינג (נדרים פלוס)
+        // ===== פונקציה מאובטחת למשיכת תרומות ממצינג (נדרים פלוס) =====
+        // 🔐 כל הקריאות עוברות דרך השרת - הסודות לא חשופים ללקוח!
         async function fetchNedarimDonations(lastId = null) {
-            try {
-                const formData = new FormData();
-                formData.append('Action', 'ExportMatchingOffLine');
-                formData.append('MosadNumber', NEDARIM_CONFIG.mosadId);
-                formData.append('ApiPassword', NEDARIM_CONFIG.apiPassword);
-
-                console.log('מבצע בקשה ל-API של מצינג...');
-
-                const response = await fetch(NEDARIM_CONFIG.apiUrl, {
-                    method: 'POST',
-                    body: formData
+            // ✅ שימוש בשרת המאובטח
+            if (isAppsScript()) {
+                return new Promise((resolve, reject) => {
+                    console.log('🔐 מושך תרומות ממצינג דרך השרת המאובטח...');
+                    
+                    google.script.run
+                        .withSuccessHandler((result) => {
+                            if (result && result.success) {
+                                console.log('✅ קיבלנו נתונים מהשרת');
+                                const transactions = result.data || [];
+                                resolve(transactions);
+                            } else {
+                                console.error('❌ שגיאה מהשרת:', result?.error);
+                                resolve([]);
+                            }
+                        })
+                        .withFailureHandler((error) => {
+                            console.error('❌ שגיאה בקריאה לשרת:', error);
+                            reject(error);
+                        })
+                        .getNedarimReport({ action: 'ExportMatchingOffLine' });
                 });
-
-                if (!response.ok) {
-                    throw new Error(`שגיאת שרת: ${response.status} ${response.statusText}`);
-                }
-
-                // ה-API מחזיר קובץ אקסל או טקסט מובנה, לא JSON
-                const responseText = await response.text();
-                
-                console.log('קיבלנו תגובה מה-API, אורך:', responseText.length);
-                console.log('תחילת התגובה:', responseText.substring(0, 500));
-                
-                // מנסה לפרסר את הנתונים
-                const transactions = parseMatchingOfflineData(responseText);
-                
-                if (transactions.length === 0) {
-                    console.warn('לא נמצאו עסקאות בנתונים');
-                    // ננסה לבדוק אם יש שגיאה בטקסט
-                    if (responseText.includes('error') || responseText.includes('Error')) {
-                        throw new Error('השרת החזיר שגיאה');
-                    }
-                }
-                
-                // מחזיר את כל הנתונים מ-ExportMatchingOffLine (לא מסנן לפי lastId)
-                // כי אנחנו רוצים את כל הנתונים העדכניים ממצינג
-                return transactions;
-                
-            } catch (error) {
-                console.error('שגיאה במשיכת נתונים ממצינג:', error);
-                throw error;
             }
+            
+            // 🔓 אם לא ב-Apps Script - אין גישה
+            console.warn('⚠️ לא רץ ב-Apps Script - אין גישה למשיכת תרומות ממצינג');
+            return [];
         }
 
         // פונקציה לעדכון מתרים בהתבסס על תרומה ממצינג (נדרים פלוס)
@@ -18468,7 +18452,7 @@
         // טעינת היסטוריה מהגליון
         async function loadHistory() {
             if (!googleSheetsWebAppUrl) {
-                showHistoryStatus('❌ נא להגדיר את כתובת ה-Web App קודם', 'error');
+                showHistoryStatus('❌ נא להגדיר את כתובת ה-Web App בלשונית "עדכונים"', 'error');
                 return;
             }
             
@@ -18479,13 +18463,21 @@
                 let params = new URLSearchParams();
                 params.append('action', 'getHistory');
                 
-                const startDate = document.getElementById('historyStartDate')?.value;
-                const endDate = document.getElementById('historyEndDate')?.value;
+                // סינון לפי חודש
+                const monthFilter = document.getElementById('historyMonthFilter')?.value;
+                if (monthFilter) {
+                    // המרה לתאריכי תחילה וסוף של החודש
+                    const [year, month] = monthFilter.split('-');
+                    const startDate = `${year}-${month}-01`;
+                    const lastDay = new Date(year, month, 0).getDate();
+                    const endDate = `${year}-${month}-${lastDay}`;
+                    params.append('startDate', startDate);
+                    params.append('endDate', endDate);
+                }
+                
                 const source = document.getElementById('historySourceFilter')?.value;
                 const actionType = document.getElementById('historyActionFilter')?.value;
                 
-                if (startDate) params.append('startDate', startDate);
-                if (endDate) params.append('endDate', endDate);
                 if (source) params.append('source', source);
                 if (actionType) params.append('actionType', actionType);
                 
@@ -18511,42 +18503,69 @@
             }
         }
         
+        // פתיחה/סגירה של תפריט ייצוא
+        function toggleHistoryExportMenu() {
+            const menu = document.getElementById('historyExportMenu');
+            if (menu) {
+                menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+        
+        // סגירת תפריט בלחיצה מחוץ
+        document.addEventListener('click', function(e) {
+            const menu = document.getElementById('historyExportMenu');
+            const btn = e.target.closest('.history-export-btn');
+            if (menu && !btn && !e.target.closest('#historyExportMenu')) {
+                menu.style.display = 'none';
+            }
+        });
+        
         // הצגת טבלת היסטוריה
         function renderHistoryTable() {
             const tbody = document.getElementById('historyTableBody');
             if (!tbody) return;
             
             if (historyData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 30px; color: var(--muted);">לא נמצאו רשומות</td></tr>';
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 50px 20px; color: #999; font-size: 15px;">
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                        <span style="font-size: 40px; opacity: 0.5;">📋</span>
+                        <span>לא נמצאו רשומות בטווח הנבחר</span>
+                    </div>
+                </td></tr>`;
                 return;
             }
             
-            const sourceLabels = {
-                'manual': '✏️ ידני',
-                'nedarim': '🔗 נדרים פלוס',
-                'import': '📥 ייבוא',
-                '': '?'
+            // תגיות צבעוניות לפי מקור
+            const getSourceBadge = (source) => {
+                const badges = {
+                    'manual': '<span style="background: #e3f2fd; color: #1565c0; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 500;">ידני</span>',
+                    'nedarim': '<span style="background: #e8f5e9; color: #2e7d32; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 500;">נדרים פלוס</span>',
+                    'import': '<span style="background: #fff3e0; color: #e65100; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 500;">ייבוא</span>'
+                };
+                return badges[source] || '<span style="background: #f5f5f5; color: #666; padding: 4px 10px; border-radius: 12px; font-size: 12px;">לא ידוע</span>';
             };
             
-            const actionLabels = {
-                'payment': '💰 תשלום',
-                'add': '➕ הוספה',
-                'update': '✏️ עדכון',
-                'delete': '🗑️ מחיקה',
-                '': '?'
+            // תגיות צבעוניות לפי סוג פעולה
+            const getActionBadge = (action) => {
+                const badges = {
+                    'payment': '<span style="background: #e8f5e9; color: #2e7d32; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 500;">תשלום</span>',
+                    'add': '<span style="background: #e3f2fd; color: #1565c0; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 500;">הוספה</span>',
+                    'update': '<span style="background: #fff3e0; color: #e65100; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 500;">עדכון</span>',
+                    'delete': '<span style="background: #ffebee; color: #c62828; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 500;">מחיקה</span>'
+                };
+                return badges[action] || `<span style="background: #f5f5f5; color: #666; padding: 4px 10px; border-radius: 12px; font-size: 12px;">${action || '?'}</span>`;
             };
             
-            tbody.innerHTML = historyData.map(entry => `
-                <tr style="border-bottom: 1px solid var(--border);">
-                    <td style="padding: 10px 8px;">${entry.date || ''}</td>
-                    <td style="padding: 10px 8px;">${entry.time || ''}</td>
-                    <td style="padding: 10px 8px;">${actionLabels[entry.actionType] || entry.actionType || ''}</td>
-                    <td style="padding: 10px 8px;">${entry.entityType || ''}</td>
-                    <td style="padding: 10px 8px; font-weight: 500;">${entry.entityName || ''}</td>
-                    <td style="padding: 10px 8px; font-size: 12px; color: var(--muted);">${entry.details || ''}</td>
-                    <td style="padding: 10px 8px; color: var(--success); font-weight: 500;">${entry.amount ? '₪' + Number(entry.amount).toLocaleString() : ''}</td>
-                    <td style="padding: 10px 8px;">${sourceLabels[entry.source] || entry.source || ''}</td>
-                    <td style="padding: 10px 8px; font-size: 12px;">${entry.computerName || ''} ${entry.computerId ? '(#' + entry.computerId + ')' : ''}</td>
+            tbody.innerHTML = historyData.map((entry, index) => `
+                <tr style="border-bottom: 1px solid #eee; ${index % 2 === 0 ? '' : 'background: #fafafa;'}">
+                    <td style="padding: 14px 12px; font-size: 14px; color: #333;">${entry.date || ''}</td>
+                    <td style="padding: 14px 12px; font-size: 13px; color: #666;">${entry.time || ''}</td>
+                    <td style="padding: 14px 12px;">${getActionBadge(entry.actionType)}</td>
+                    <td style="padding: 14px 12px; font-weight: 500; color: #333;">${entry.entityName || ''}</td>
+                    <td style="padding: 14px 12px; font-size: 13px; color: #888; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${entry.details || ''}</td>
+                    <td style="padding: 14px 12px; font-weight: 600; color: ${Number(entry.amount) >= 0 ? '#28a745' : '#dc3545'};">${entry.amount ? '₪' + Number(entry.amount).toLocaleString() : ''}</td>
+                    <td style="padding: 14px 12px;">${getSourceBadge(entry.source)}</td>
+                    <td style="padding: 14px 12px; font-size: 12px; color: #888;">${entry.computerName || ''}</td>
                 </tr>
             `).join('');
             
@@ -18556,12 +18575,17 @@
                 const totalAmount = historyData.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
                 const manualCount = historyData.filter(e => e.source === 'manual').length;
                 const nedarimCount = historyData.filter(e => e.source === 'nedarim').length;
+                const paymentCount = historyData.filter(e => e.actionType === 'payment').length;
                 
-                summary.style.display = 'block';
+                summary.style.display = 'flex';
+                summary.style.gap = '30px';
+                summary.style.flexWrap = 'wrap';
                 summary.innerHTML = `
-                    <strong>סיכום:</strong> ${historyData.length} רשומות | 
-                    סכום כולל: ₪${totalAmount.toLocaleString()} | 
-                    ידני: ${manualCount} | נדרים פלוס: ${nedarimCount}
+                    <div><strong style="color: #333;">${historyData.length}</strong> <span style="color: #888;">רשומות</span></div>
+                    <div><strong style="color: #28a745;">₪${totalAmount.toLocaleString()}</strong> <span style="color: #888;">סה"כ</span></div>
+                    <div><strong style="color: #1565c0;">${manualCount}</strong> <span style="color: #888;">ידני</span></div>
+                    <div><strong style="color: #2e7d32;">${nedarimCount}</strong> <span style="color: #888;">נדרים פלוס</span></div>
+                    <div><strong style="color: #e65100;">${paymentCount}</strong> <span style="color: #888;">תשלומים</span></div>
                 `;
             }
         }
@@ -18590,13 +18614,11 @@
         
         // ניקוי סינון
         function clearHistoryFilters() {
-            const startDate = document.getElementById('historyStartDate');
-            const endDate = document.getElementById('historyEndDate');
+            const monthFilter = document.getElementById('historyMonthFilter');
             const source = document.getElementById('historySourceFilter');
             const action = document.getElementById('historyActionFilter');
             
-            if (startDate) startDate.value = '';
-            if (endDate) endDate.value = '';
+            if (monthFilter) monthFilter.value = '';
             if (source) source.value = '';
             if (action) action.value = '';
         }
