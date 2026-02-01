@@ -18109,7 +18109,8 @@
         // בדיקת חיבור ל-Google Sheets
         async function testGoogleSheetsConnection() {
             const urlInput = document.getElementById('googleSheetsWebAppUrl');
-            const url = urlInput ? urlInput.value.trim() : googleSheetsWebAppUrl;
+            const savedUrl = localStorage.getItem('googleSheetsWebAppUrl') || '';
+            const url = urlInput ? urlInput.value.trim() : savedUrl;
             
             if (!url) {
                 showNotification('❌ נא להזין את כתובת ה-Web App', 'error');
