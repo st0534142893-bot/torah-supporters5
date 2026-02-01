@@ -15299,11 +15299,12 @@
             }
             
             // 🌐 ניסיון HTTP - כשרץ מ-Netlify עם Google Sheets URL מוגדר
-            if (googleSheetsWebAppUrl) {
+            const webAppUrl = localStorage.getItem('googleSheetsWebAppUrl') || '';
+            if (webAppUrl) {
                 try {
                     console.log('🌐 מושך מתרימים דרך HTTP עם חיפוש:', searchTerm || '(ריק)');
                     
-                    const url = googleSheetsWebAppUrl + '?action=searchNedarimRecruiters&search=' + encodeURIComponent(searchTerm || '');
+                    const url = webAppUrl + '?action=searchNedarimRecruiters&search=' + encodeURIComponent(searchTerm || '');
                     const response = await fetch(url, {
                         method: 'GET',
                         redirect: 'follow'
@@ -15487,13 +15488,14 @@
             }
             
             // 🌐 ניסיון HTTP - כשרץ מ-Netlify עם Google Sheets URL מוגדר
-            if (googleSheetsWebAppUrl) {
+            const webAppUrl = localStorage.getItem('googleSheetsWebAppUrl') || '';
+            if (webAppUrl) {
                 try {
                     console.log('═══════════════════════════════════════════════════════');
                     console.log('🌐 מנסה לקבל נתונים דרך HTTP מ-Apps Script...');
-                    console.log('🔗 URL:', googleSheetsWebAppUrl + '?action=getNedarimTotal');
+                    console.log('🔗 URL:', webAppUrl + '?action=getNedarimTotal');
                     
-                    const response = await fetch(googleSheetsWebAppUrl + '?action=getNedarimTotal', {
+                    const response = await fetch(webAppUrl + '?action=getNedarimTotal', {
                         method: 'GET',
                         redirect: 'follow'
                     });
