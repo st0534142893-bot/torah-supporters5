@@ -6050,8 +6050,7 @@
                             <div style="background: #e3f2fd; border: 1px solid #2196f3; border-radius: 8px; padding: 12px; margin-top: 15px;">
                                 <strong style="color: #1565c0;">💡 טיפ:</strong>
                                 <p style="color: #1565c0; margin: 5px 0 0 0; line-height: 1.6;">
-                                    הגליון האלקטרוני שלך: 
-                                    <a href="https://docs.google.com/spreadsheets/d/1YI6XQZObSP1vfhIVh9wXYtIufM20PFjIGGM9rB-_rc8/edit" target="_blank" style="color: #1565c0; text-decoration: underline;">לחץ כאן לפתיחה</a>
+                                    לאחר הגדרת ה-URL, הגליון יהיה זמין דרך הסנכרון.
                                 </p>
                             </div>
                         </div>
@@ -15414,8 +15413,6 @@
         // פונקציה למשיכת הסכום הכולל והיעד מ-API
         // בודקת מספר אפשרויות: ShowGoal API וגם getCampaignData API
         // תיעוד רשמי: https://matara.pro/nedarimplus/ApiDocumentation.html
-        // ⚠️ חשוב: יש לבדוק את התיעוד הרשמי כדי לוודא שהפניות והשדות תואמים
-        // דף אונליין: https://www.matara.pro/nedarimplus/online/?mosad=1000642
         // ===== פונקציה מאובטחת לקבלת סכום כולל מנדרים פלוס =====
         // 🔐 כל הקריאות עוברות דרך השרת - הסודות לא חשופים ללקוח!
         async function fetchTotalFromMatchPlus() {
@@ -15813,7 +15810,7 @@
                         if (data4 && data4.Matching) {
                             const matchingParts = data4.Matching.split(':');
                             if (matchingParts.length >= 2) {
-                                matchingIdFromMosad = matchingParts[1]; // 715 במקרה הזה
+                                matchingIdFromMosad = matchingParts[1];
                                 console.log(`🔍 מצאנו Matching ID בנתוני המוסד: ${matchingIdFromMosad}`);
                                 console.log(`💡 זה שונה מה-Matching ID שהוגדר בקוד: ${NEDARIM_CONFIG.matchingId}`);
                                 console.log(`💡 ננסה למשוך את הסכום מה-ShowGoal API עם MatchingId=${matchingIdFromMosad}`);
@@ -16983,9 +16980,6 @@
             if (!isAutoCall) {
             console.log('═══════════════════════════════════════════════════════');
             console.log('🔍 [בדיקה ידנית] מתחיל בדיקת סכום כולל מ-API');
-            console.log('═══════════════════════════════════════════════════════');
-            console.log('🔗 דף אונליין: https://www.matara.pro/nedarimplus/online/?mosad=1000642');
-            console.log('🔗 מוסד ID: 1000642');
             console.log('═══════════════════════════════════════════════════════');
             } else {
                 console.log('🔍 [אוטומטי] בודק סכום כולל מ-API...');
