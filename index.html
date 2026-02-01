@@ -15298,8 +15298,32 @@
                 });
             }
             
-            // 🔓 קוד גיבוי למקרה שלא רץ ב-Apps Script
-            console.warn('⚠️ לא רץ ב-Apps Script - אין גישה ל-API המאובטח');
+            // 🌐 ניסיון HTTP - כשרץ מ-Netlify עם Google Sheets URL מוגדר
+            if (googleSheetsWebAppUrl) {
+                try {
+                    console.log('🌐 מושך מתרימים דרך HTTP עם חיפוש:', searchTerm || '(ריק)');
+                    
+                    const url = googleSheetsWebAppUrl + '?action=searchNedarimRecruiters&search=' + encodeURIComponent(searchTerm || '');
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        redirect: 'follow'
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result && result.success) {
+                            const recruiters = result.recruiters || [];
+                            console.log(`✅ מצאנו ${recruiters.length} מתרימים דרך HTTP`);
+                            return recruiters;
+                        }
+                    }
+                } catch (httpError) {
+                    console.error('❌ שגיאה בקריאת HTTP:', httpError.message);
+                }
+            }
+            
+            // 🔓 קוד גיבוי למקרה שאין חיבור
+            console.warn('⚠️ לא ניתן לגשת ל-API - ודא שהגדרת את כתובת ה-Google Sheets Web App');
             return [];
         }
 
@@ -15458,14 +15482,47 @@
                     });
                 } catch (serverError) {
                     console.error('❌ שגיאה בקריאה לשרת:', serverError.message);
-                    // ממשיך לניסיונות גיבוי אם יש
+                    // ממשיך לניסיון HTTP
                 }
             }
             
-            // 🔓 קוד גיבוי - רק למקרה שלא רץ ב-Apps Script
-            // ⚠️ מאחר שאין גישה לשרת המאובטח, לא ניתן לבצע קריאות API
-            console.warn('⚠️ לא רץ ב-Apps Script - אין גישה לנתוני נדרים פלוס');
-            console.log('💡 כדי לקבל נתונים מנדרים פלוס, יש להריץ את התוכנה דרך Google Apps Script');
+            // 🌐 ניסיון HTTP - כשרץ מ-Netlify עם Google Sheets URL מוגדר
+            if (googleSheetsWebAppUrl) {
+                try {
+                    console.log('═══════════════════════════════════════════════════════');
+                    console.log('🌐 מנסה לקבל נתונים דרך HTTP מ-Apps Script...');
+                    console.log('🔗 URL:', googleSheetsWebAppUrl + '?action=getNedarimTotal');
+                    
+                    const response = await fetch(googleSheetsWebAppUrl + '?action=getNedarimTotal', {
+                        method: 'GET',
+                        redirect: 'follow'
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        console.log('📦 תגובה מהשרת (HTTP):', JSON.stringify(result, null, 2));
+                        
+                        if (result && result.success) {
+                            foundAmount = result.totalDonated || 0;
+                            foundGoal = result.goal || 0;
+                            
+                            if (foundAmount > 0) {
+                                NEDARIM_CONFIG.totalDonatedFromAPI = foundAmount;
+                                NEDARIM_CONFIG.goalFromAPI = foundGoal;
+                                NEDARIM_CONFIG.apiDataLoaded = true;
+                                console.log(`✅ ✅ ✅ נתונים מ-HTTP! יעד=${foundGoal.toLocaleString()}, נאסף=${foundAmount.toLocaleString()}`);
+                                return { Goal: foundGoal, Donated: foundAmount };
+                            }
+                        }
+                    }
+                } catch (httpError) {
+                    console.error('❌ שגיאה בקריאת HTTP:', httpError.message);
+                }
+            }
+            
+            // 🔓 קוד גיבוי - אם אין חיבור
+            console.warn('⚠️ לא ניתן לקבל נתוני נדרים פלוס');
+            console.log('💡 ודא שהגדרת את כתובת ה-Google Sheets Web App בהגדרות הסנכרון');
             return null;
             
             // ===== קוד ישן הוסר מטעמי אבטחה =====
