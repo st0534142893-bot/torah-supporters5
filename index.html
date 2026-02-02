@@ -15492,116 +15492,115 @@
             }
         }
 
-        // ===== פונקציה למשיכת מתרימים מ-MatchPlus API עם חיפוש =====
+        // ===== פונקציה למשיכת מתרימים מ-MatchPlus API =====
         // 🚀 קריאות ישירות ל-API של נדרים פלוס - ללא הגבלת קוטה!
         async function fetchMatrimFromMatchPlusWithSearch(searchTerm = '') {
             // ✅ קריאה ישירה ל-API של נדרים פלוס (ללא Apps Script)
+            // ניסיון 1: ShowMatrim עם MatchingId (הדרך הנכונה לקבל את כל המתרימים)
             try {
-                const url = `${NEDARIM_CONFIG.matchPlusApiUrl}?Action=SearchMatrim&Name=${encodeURIComponent(searchTerm)}&MosadId=${NEDARIM_CONFIG.mosadId}`;
-                console.log('🚀 מושך מתרימים ישירות מ-MatchPlus עם חיפוש:', searchTerm || '(ריק)');
+                const url = `${NEDARIM_CONFIG.matchPlusApiUrl}?Action=ShowMatrim&MatchingId=${NEDARIM_CONFIG.matchingId}`;
+                console.log('🚀 מושך כל המתרימים מ-ShowMatrim API');
+                console.log('🔗 URL:', url);
                 
                 const response = await fetch(url);
                 if (!response.ok) {
                     throw new Error(`שגיאת שרת: ${response.status} ${response.statusText}`);
                 }
                 
-                const data = await response.json();
+                const text = await response.text();
+                console.log('📥 תגובה גולמית (100 תווים ראשונים):', text.substring(0, 100));
                 
-                if (!Array.isArray(data)) {
-                    console.warn('תגובה לא צפויה מ-MatchPlus:', data);
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (parseError) {
+                    console.warn('לא JSON, מנסה לפרסר אחרת:', parseError);
                     return [];
                 }
                 
-                console.log(`✅ מצאנו ${data.length} מתרימים בחיפוש "${searchTerm || '(ריק)'}"`);
-                return data;
+                // ה-API יכול להחזיר מערך ישירות או אובייקט עם שדה Matrim
+                let matrimList = [];
+                if (Array.isArray(data)) {
+                    matrimList = data;
+                } else if (data && Array.isArray(data.Matrim)) {
+                    matrimList = data.Matrim;
+                } else if (data && Array.isArray(data.matrim)) {
+                    matrimList = data.matrim;
+                } else if (data && Array.isArray(data.Result)) {
+                    matrimList = data.Result;
+                } else if (data && typeof data === 'object') {
+                    // אולי זה אובייקט עם מפתחות שהם שמות מתרימים
+                    console.log('🔍 מבנה התגובה:', Object.keys(data).slice(0, 10));
+                }
+                
+                console.log(`✅ מצאנו ${matrimList.length} מתרימים`);
+                return matrimList;
             } catch (error) {
-                console.error('שגיאה במשיכת מתרימים מ-MatchPlus:', error);
-                // לא זורק שגיאה, מחזיר מערך ריק
-                return [];
+                console.error('❌ שגיאה ב-ShowMatrim:', error);
             }
+            
+            // ניסיון 2: GetMatrimList
+            try {
+                const url2 = `${NEDARIM_CONFIG.matchPlusApiUrl}?Action=GetMatrimList&MatchingId=${NEDARIM_CONFIG.matchingId}`;
+                console.log('🔄 ניסיון 2: GetMatrimList');
+                
+                const response2 = await fetch(url2);
+                if (response2.ok) {
+                    const data2 = await response2.json();
+                    if (Array.isArray(data2) && data2.length > 0) {
+                        console.log(`✅ ניסיון 2 הצליח: ${data2.length} מתרימים`);
+                        return data2;
+                    }
+                }
+            } catch (error2) {
+                console.warn('ניסיון 2 נכשל:', error2);
+            }
+            
+            // ניסיון 3: SearchMatrim עם MosadId (השיטה הישנה)
+            try {
+                const url3 = `${NEDARIM_CONFIG.matchPlusApiUrl}?Action=SearchMatrim&Name=${encodeURIComponent(searchTerm)}&MosadId=${NEDARIM_CONFIG.mosadId}`;
+                console.log('🔄 ניסיון 3: SearchMatrim עם MosadId');
+                
+                const response3 = await fetch(url3);
+                if (response3.ok) {
+                    const data3 = await response3.json();
+                    if (Array.isArray(data3) && data3.length > 0) {
+                        console.log(`✅ ניסיון 3 הצליח: ${data3.length} מתרימים`);
+                        return data3;
+                    }
+                }
+            } catch (error3) {
+                console.warn('ניסיון 3 נכשל:', error3);
+            }
+            
+            console.warn('⚠️ כל הניסיונות נכשלו, מחזיר מערך ריק');
+            return [];
         }
 
-        // פונקציה למשיכת כל המתרימים מ-MatchPlus API (עושה חיפושים מרובים)
+        // פונקציה למשיכת כל המתרימים מ-MatchPlus API
         async function fetchMatrimFromMatchPlus() {
             try {
-                console.log('מושך את כל המתרימים מ-MatchPlus (עם חיפושים מרובים)...');
+                console.log('═══════════════════════════════════════════════════════');
+                console.log('🚀 מושך את כל המתרימים מ-MatchPlus API...');
                 
-                // אוסף את כל המתרימים במערך
-                const allMatrim = new Map(); // משתמש ב-Map כדי למנוע כפילויות לפי שם
+                // מנסה את הפונקציה החדשה שמביאה את כל המתרימים בבת אחת
+                const allMatrim = await fetchMatrimFromMatchPlusWithSearch('');
                 
-                // 1. חיפוש ריק (מביא את הראשונים)
-                console.log('חיפוש 1: חיפוש ריק...');
-                const emptySearch = await fetchMatrimFromMatchPlusWithSearch('');
-                emptySearch.forEach(matrim => {
-                    const name = (matrim.Name || matrim.name || '').trim();
-                    if (name) {
-                        allMatrim.set(name, matrim);
-                    }
-                });
-                console.log(`✅ מצאנו ${emptySearch.length} מתרימים בחיפוש ריק, סה"כ ${allMatrim.size} ייחודיים`);
-                
-                // 2. חיפוש לפי אותיות עבריות (א-ת)
-                const hebrewLetters = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט', 'י', 'כ', 'ל', 'מ', 'נ', 'ס', 'ע', 'פ', 'צ', 'ק', 'ר', 'ש', 'ת'];
-                
-                for (let i = 0; i < hebrewLetters.length; i++) {
-                    const letter = hebrewLetters[i];
-                    console.log(`חיפוש ${i + 2}: חיפוש לפי האות "${letter}"...`);
+                if (allMatrim.length > 0) {
+                    console.log(`✅ סה"כ נמצאו ${allMatrim.length} מתרימים מ-API`);
                     
-                    try {
-                        const letterSearch = await fetchMatrimFromMatchPlusWithSearch(letter);
-                        letterSearch.forEach(matrim => {
-                            const name = (matrim.Name || matrim.name || '').trim();
-                            if (name) {
-                                allMatrim.set(name, matrim);
-                            }
-                        });
-                        console.log(`✅ מצאנו ${letterSearch.length} מתרימים בחיפוש "${letter}", סה"כ ${allMatrim.size} ייחודיים`);
-                        
-                        // המתנה קטנה בין קריאות כדי לא להעמיס על השרת (הגדלנו ל-500ms כדי להימנע מהגבלת 500 פניות)
-                        await new Promise(resolve => setTimeout(resolve, 500));
-                    } catch (error) {
-                        console.warn(`שגיאה בחיפוש לפי "${letter}":`, error);
-                        // אם זו הגבלת פניות, נעצור את כל החיפושים
-                        if (error.message && error.message.includes('500 פניות')) {
-                            console.error('⚠️ הגבלת 500 פניות לשעה - עוצר את החיפושים');
-                            throw error;
-                        }
-                        // ממשיך עם האות הבאה
+                    // הדפסת דוגמה למתרים ראשון כדי לראות את המבנה
+                    if (allMatrim[0]) {
+                        console.log('📋 דוגמה למתרים ראשון:', JSON.stringify(allMatrim[0], null, 2));
                     }
+                    
+                    return allMatrim;
                 }
                 
-                // 3. חיפוש לפי מספרים (0-9) - למקרה שיש מתרימים שמתחילים במספר
-                for (let num = 0; num <= 9; num++) {
-                    console.log(`חיפוש נוסף: חיפוש לפי המספר "${num}"...`);
-                    try {
-                        const numSearch = await fetchMatrimFromMatchPlusWithSearch(num.toString());
-                        numSearch.forEach(matrim => {
-                            const name = (matrim.Name || matrim.name || '').trim();
-                            if (name) {
-                                allMatrim.set(name, matrim);
-                            }
-                        });
-                        console.log(`✅ מצאנו ${numSearch.length} מתרימים בחיפוש "${num}", סה"כ ${allMatrim.size} ייחודיים`);
-                        
-                        // המתנה קטנה בין קריאות כדי לא להעמיס על השרת (הגדלנו ל-500ms כדי להימנע מהגבלת 500 פניות)
-                        await new Promise(resolve => setTimeout(resolve, 500));
-                    } catch (error) {
-                        console.warn(`שגיאה בחיפוש לפי "${num}":`, error);
-                        // אם זו הגבלת פניות, נעצור את כל החיפושים
-                        if (error.message && error.message.includes('500 פניות')) {
-                            console.error('⚠️ הגבלת 500 פניות לשעה - עוצר את החיפושים');
-                            throw error;
-                        }
-                    }
-                }
-                
-                // ממיר את ה-Map למערך
-                const result = Array.from(allMatrim.values());
-                console.log(`✅ סה"כ נמצאו ${result.length} מתרימים ייחודיים מכל החיפושים`);
-                
-                return result;
+                console.warn('⚠️ לא נמצאו מתרימים ב-API');
+                return [];
             } catch (error) {
-                console.error('שגיאה במשיכת כל המתרימים מ-MatchPlus:', error);
+                console.error('❌ שגיאה במשיכת כל המתרימים מ-MatchPlus:', error);
                 throw error;
             }
         }
