@@ -11675,7 +11675,7 @@
                 updateLiveView();
                 updateHomeDonorBreakdown();
                 updateHomeStats();
-                showNotification('שם הקבוצה עודכן');
+                showNotification('✅ שם הקבוצה עודכן: ' + newName.trim(), true);
             }
         }
         
@@ -12006,7 +12006,7 @@
             updateLiveView();
             updateLeadersList();
             updateLiveTargets();
-            showNotification('שם התצוגה של המתרים עודכן');
+            showNotification('✅ שם התצוגה עודכן: ' + trimmed, true); // force=true כדי להציג תמיד
         }
 
         // פונקציה ישנה - משאירה לתאימות

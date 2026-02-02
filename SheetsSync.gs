@@ -46,10 +46,10 @@ const SHEET_NAMES = {
 };
 
 // עמודות למתרימים
-const DONOR_COLUMNS = ['id', 'name', 'displayName', 'groupId', 'amount', 'personalGoal', 'history', 'nedarimMatrimId', 'createdAt', 'updatedAt'];
+const DONOR_COLUMNS = ['id', 'name', 'displayName', 'originalName', 'groupId', 'amount', 'personalGoal', 'history', 'nedarimMatrimId', 'createdAt', 'updatedAt'];
 
 // עמודות לקבוצות
-const GROUP_COLUMNS = ['id', 'name', 'goal', 'orderNumber', 'createdAt', 'updatedAt'];
+const GROUP_COLUMNS = ['id', 'name', 'goal', 'orderNumber', 'showInLiveView', 'createdAt', 'updatedAt'];
 
 // עמודות להיסטוריה
 const HISTORY_COLUMNS = ['id', 'timestamp', 'date', 'time', 'actionType', 'entityType', 'entityId', 'entityName', 'details', 'amount', 'source', 'computerName', 'computerId', 'userId'];
