@@ -10789,6 +10789,9 @@
             state.isInCooldown = false;
 
             if (key === 'donors') {
+                // איפוס הדגל שהגלילה רצה
+                donorsScrollIsRunning = false;
+                
                 const container = document.getElementById('liveDonorsScroll');
                 if (container) {
                     // השארת המיקום הנוכחי כדי לא ליצור קפיצה
@@ -10816,11 +10819,20 @@
             }
         }
 
+        // דגל למניעת קפיצות בגלילת תורמים
+        let donorsScrollIsRunning = false;
+        
         function restartDonorsAutoScroll() {
             const container = document.getElementById('liveDonorsScroll');
             const state = autoScrollStates.donors;
             if (!container || !state) {
+                donorsScrollIsRunning = false;
                 stopAutoScroll('donors');
+                return;
+            }
+
+            // אם הגלילה כבר רצה - לא להפריע!
+            if (state.handle && donorsScrollIsRunning) {
                 return;
             }
 
@@ -10831,6 +10843,7 @@
 
             const halfHeight = container.scrollHeight / 2;
             if (!halfHeight || !isFinite(halfHeight)) {
+                donorsScrollIsRunning = false;
                 stopAutoScroll('donors');
                 return;
             }
@@ -10838,6 +10851,9 @@
             const startOffset = Math.min(state.offset || 0, halfHeight);
             let offset = startOffset;
             state.distance = halfHeight;
+            
+            // מסמן שהגלילה רצה
+            donorsScrollIsRunning = true;
 
             let last = performance.now();
 
@@ -12992,31 +13008,33 @@
 
             if (needsFullRender) {
                 // שמירת מיקום הגלילה הנוכחי
-                const wasScrolling = state && state.handle;
+                const wasScrolling = donorsScrollIsRunning;
                 const savedOffset = state ? state.offset : 0;
                 
                 const html = htmlParts.join('');
                 scrollContainer.innerHTML = html + html; // כפול לגלילה אינסופית
                 lastLiveViewStructure = structureSignature;
                 
-                // שחזור מיקום הגלילה
+                // שחזור מיקום הגלילה בלי להפריע
                 if (state) {
                     const halfHeight = scrollContainer.scrollHeight / 2;
                     state.offset = Math.min(savedOffset, halfHeight);
+                    state.distance = halfHeight;
                     scrollContainer.style.transform = `translate3d(0, ${-state.offset}px, 0)`;
                 }
                 
-                // הפעלת גלילה רק אם היא הייתה פעילה לפני
-                if (wasScrolling) {
+                // אם הגלילה כבר רצה - לא להתחיל מחדש, היא כבר ממשיכה
+                // אם לא רצה - להפעיל רק אם עדיין לא רצה
+                if (!wasScrolling && !donorsScrollIsRunning && liveViewSettings.enableAutoScroll) {
                     requestAnimationFrame(() => {
-                restartDonorsAutoScroll();
+                        restartDonorsAutoScroll();
                     });
                 }
             } else {
                 // אם הגלילה לא רצה, נפעיל אותה
-                if (state && !state.handle && liveViewSettings.enableAutoScroll) {
+                if (!donorsScrollIsRunning && liveViewSettings.enableAutoScroll) {
                     requestAnimationFrame(() => {
-                    restartDonorsAutoScroll();
+                        restartDonorsAutoScroll();
                     });
                 }
             }
@@ -14120,12 +14138,27 @@
         });
         // initLogoParticleAnimation(); // הושבת - הפונקציה הוסרה
         
-        // עדכון אוטומטי כל 5 שניות
+        // עדכון אוטומטי - רק כשלא בתצוגת לייב או כל 60 שניות
+        let lastAutoUpdateTime = 0;
         setInterval(() => {
-            updateHomeStats();
-            updateLiveView();
-            updateLeadersList();
-            updateLiveTargets();
+            const now = Date.now();
+            
+            // בתצוגת לייב - לא לעדכן את הרשימות כל 5 שניות, זה גורם לקפיצות
+            if (isLiveViewActive()) {
+                // רק עדכון סטטיסטיקות בסיסיות, בלי לגעת בגלילה
+                updateHomeStats();
+                // עדכון רשימות רק כל 60 שניות בתצוגת לייב
+                if (now - lastAutoUpdateTime > 60000) {
+                    lastAutoUpdateTime = now;
+                    // לא קוראים ל-updateLeadersList - זה מטופל בנפרד
+                }
+            } else {
+                // לא בתצוגת לייב - עדכון רגיל
+                updateHomeStats();
+                updateLiveView();
+                updateLeadersList();
+                updateLiveTargets();
+            }
         }, 5000);
 
         function clearAllDonors() {
@@ -16591,10 +16624,12 @@
                 const totalData = await fetchTotalFromMatchPlus();
                 if (totalData && totalData.Donated > 0) {
                     console.log(`✅ עדכנו סכום כולל מ-API: ${totalData.Donated.toLocaleString()} ש"ח, יעד: ${totalData.Goal.toLocaleString()} ש"ח`);
-                    // מעדכן את התצוגות
-                        updateHomeStats();
+                    // מעדכן את התצוגות - בלי להפריע לגלילה בתצוגת לייב
+                    updateHomeStats();
+                    if (!isLiveViewActive()) {
                         updateLeadersList();
                         updateLiveTargets();
+                    }
                 } else {
                     console.log('ℹ️ ה-API מחזיר 0 או לא עובד - נשתמש בסכום מהתרימים אחרי הסנכרון');
                 }
@@ -16810,7 +16845,7 @@
                 // שומר את השינויים
                 saveData();
                 
-                // מרענן תצוגה
+                // מרענן תצוגה - בלי להפריע לגלילה בתצוגת לייב
                 if (typeof renderDonorsTable === 'function') {
                     renderDonorsTable();
                 }
@@ -16823,8 +16858,10 @@
                 if (typeof updateDonorsSummary === 'function') {
                     updateDonorsSummary();
                 }
-                if (typeof updateLiveView === 'function') {
-                    updateLiveView(true); // עדכון מיידי של תצוגת לייב
+                // בתצוגת לייב - לא קוראים ל-updateLiveView כי זה מפריע לגלילה
+                // הגלילה מטפלת בעצמה בעדכון התוכן
+                if (!isLiveViewActive() && typeof updateLiveView === 'function') {
+                    updateLiveView(true);
                 }
 
                 // בודק את הסכום הכולל אחרי העדכון
@@ -16836,10 +16873,12 @@
                 console.log(`   סכום כולל מהתרימים (הסכום האמיתי): ${finalTotalFromDonors.toLocaleString()} ש"ח`);
                 console.log(`   מספר מתרימים: ${donors.length}`);
                 
-                // מעדכן את התצוגות עם הסכום הנכון
+                // מעדכן את התצוגות עם הסכום הנכון - בלי להפריע לגלילה
                 updateHomeStats();
-                updateLeadersList();
-                updateLiveTargets();
+                if (!isLiveViewActive()) {
+                    updateLeadersList();
+                    updateLiveTargets();
+                }
 
                 // הודעת הצלחה
                 let message = `סנכרון הושלם! ${matrimList.length} מתרימים | ${updatedDonors} מתרימים עודכנו`;
@@ -16903,20 +16942,32 @@
             const currentHash = calculateDataHash();
             if (lastDataHash && currentHash !== lastDataHash) {
                 console.log('🔄 זוהה שינוי בנתונים מקומיים - מעדכן תצוגות...');
-                // מעדכן את כל התצוגות
-                updateDonorsList();
-                updateGroupsDisplay();
-                updateHomeStats();
-                updateLiveView();
-                updateLeadersList();
-                updateLiveTargets();
-                renderScoutsTeams();
-                updateScoutsStats();
-                // מעדכן את הסכום הכולל מ-API
-                fetchTotalFromMatchPlus().then(() => {
+                
+                // בתצוגת לייב - עדכונים מינימליים שלא מפריעים לגלילה
+                if (isLiveViewActive()) {
                     updateHomeStats();
+                    // לא קוראים ל-updateLeadersList ו-updateLiveView ישירות
+                    // הגלילה מטפלת בעצמה בעדכון התוכן
+                } else {
+                    // לא בתצוגת לייב - עדכון רגיל
+                    updateDonorsList();
+                    updateGroupsDisplay();
+                    updateHomeStats();
+                    updateLiveView();
                     updateLeadersList();
                     updateLiveTargets();
+                    renderScoutsTeams();
+                    updateScoutsStats();
+                }
+                
+                // מעדכן את הסכום הכולל מ-API (ברקע)
+                fetchTotalFromMatchPlus().then(() => {
+                    updateHomeStats();
+                    // בתצוגת לייב לא מעדכנים את הרשימות ישירות
+                    if (!isLiveViewActive()) {
+                        updateLeadersList();
+                        updateLiveTargets();
+                    }
                 });
             }
             lastDataHash = currentHash;
@@ -16946,23 +16997,26 @@
                 checkForLocalDataChanges();
             }, NEDARIM_CONFIG.dataCheckInterval);
 
-            // מפעיל עדכון של הסכום הכולל מ-API כל 30 שניות
+            // מפעיל עדכון של הסכום הכולל מ-API כל 60 שניות (לא 30 - מונע הפרעות)
             totalCheckTimer = setInterval(async () => {
                 console.log('📊 [אוטומטי] מעדכן סכום כולל מ-API...');
                 try {
-                const totalData = await fetchTotalFromMatchPlus();
+                    const totalData = await fetchTotalFromMatchPlus();
                     if (totalData && totalData.Donated > 0) {
                         console.log('✅ [אוטומטי] הסכום עודכן:', totalData);
-                    updateHomeStats();
-                    updateLeadersList();
-                    updateLiveTargets();
+                        updateHomeStats();
+                        // בתצוגת לייב - לא מעדכנים רשימות (מפריע לגלילה)
+                        if (!isLiveViewActive()) {
+                            updateLeadersList();
+                            updateLiveTargets();
+                        }
                     } else {
                         console.log('ℹ️ [אוטומטי] ה-API מחזיר 0 - נשתמש בסכום מהתרימים');
-                }
+                    }
                 } catch (error) {
                     console.error('❌ [אוטומטי] שגיאה בעדכון סכום כולל:', error);
                 }
-            }, 30 * 1000);
+            }, 60 * 1000);
 
             // מאתחל את ה-hash הראשוני
             lastDataHash = calculateDataHash();
