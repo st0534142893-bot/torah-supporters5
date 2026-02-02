@@ -460,6 +460,9 @@ function ensureSheetsExist() {
     donorsSheet = ss.insertSheet(SHEET_NAMES.DONORS);
     donorsSheet.getRange(1, 1, 1, DONOR_COLUMNS.length).setValues([DONOR_COLUMNS]);
     formatHeaderRow(donorsSheet);
+  } else {
+    // עדכון כותרות אם יש עמודות חסרות
+    updateSheetHeaders(donorsSheet, DONOR_COLUMNS);
   }
   
   var groupsSheet = ss.getSheetByName(SHEET_NAMES.GROUPS);
@@ -467,6 +470,9 @@ function ensureSheetsExist() {
     groupsSheet = ss.insertSheet(SHEET_NAMES.GROUPS);
     groupsSheet.getRange(1, 1, 1, GROUP_COLUMNS.length).setValues([GROUP_COLUMNS]);
     formatHeaderRow(groupsSheet);
+  } else {
+    // עדכון כותרות אם יש עמודות חסרות
+    updateSheetHeaders(groupsSheet, GROUP_COLUMNS);
   }
   
   var settingsSheet = ss.getSheetByName(SHEET_NAMES.SETTINGS);
@@ -529,6 +535,36 @@ function ensureSheetsExist() {
     groomGrants: groomSheet,
     finance: financeSheet
   };
+}
+
+// עדכון כותרות אם יש עמודות חסרות
+function updateSheetHeaders(sheet, expectedColumns) {
+  try {
+    var currentHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    
+    // בודק אם הכותרות הנוכחיות שונות מהצפויות
+    var needsUpdate = false;
+    if (currentHeaders.length !== expectedColumns.length) {
+      needsUpdate = true;
+    } else {
+      for (var i = 0; i < expectedColumns.length; i++) {
+        if (currentHeaders[i] !== expectedColumns[i]) {
+          needsUpdate = true;
+          break;
+        }
+      }
+    }
+    
+    if (needsUpdate) {
+      Logger.log('מעדכן כותרות בגליון: ' + sheet.getName());
+      // מוחק את שורת הכותרות הישנה ויוצר חדשה
+      sheet.getRange(1, 1, 1, Math.max(currentHeaders.length, expectedColumns.length)).clearContent();
+      sheet.getRange(1, 1, 1, expectedColumns.length).setValues([expectedColumns]);
+      formatHeaderRow(sheet);
+    }
+  } catch (e) {
+    Logger.log('שגיאה בעדכון כותרות: ' + e.toString());
+  }
 }
 
 function formatHeaderRow(sheet) {
