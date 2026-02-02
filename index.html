@@ -17959,9 +17959,12 @@
             }
             
             try {
-                const response = await fetch(url + '?action=getAll', {
+                const cacheBuster = '&_=' + Date.now();
+                const response = await fetch(url + '?action=getAll' + cacheBuster, {
                     method: 'GET',
-                    redirect: 'follow'
+                    redirect: 'follow',
+                    cache: 'no-store',
+                    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
                 });
                 
                 const result = await response.json();
