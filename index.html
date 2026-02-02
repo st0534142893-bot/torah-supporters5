@@ -10821,18 +10821,18 @@
 
         // דגל למניעת קפיצות בגלילת תורמים
         let donorsScrollIsRunning = false;
+        let donorsScrollLastTime = 0;
         
         function restartDonorsAutoScroll() {
             const container = document.getElementById('liveDonorsScroll');
             const state = autoScrollStates.donors;
             if (!container || !state) {
                 donorsScrollIsRunning = false;
-                stopAutoScroll('donors');
                 return;
             }
 
             // אם הגלילה כבר רצה - לא להפריע!
-            if (state.handle && donorsScrollIsRunning) {
+            if (donorsScrollIsRunning && state.handle) {
                 return;
             }
 
@@ -10842,9 +10842,8 @@
             }
 
             const halfHeight = container.scrollHeight / 2;
-            if (!halfHeight || !isFinite(halfHeight)) {
+            if (!halfHeight || !isFinite(halfHeight) || halfHeight < 100) {
                 donorsScrollIsRunning = false;
-                stopAutoScroll('donors');
                 return;
             }
 
@@ -10854,21 +10853,27 @@
             
             // מסמן שהגלילה רצה
             donorsScrollIsRunning = true;
+            donorsScrollLastTime = performance.now();
 
             let last = performance.now();
 
             function step(timestamp) {
+                // בדיקה שהגלילה עדיין צריכה לרוץ
+                if (!donorsScrollIsRunning) {
+                    state.handle = null;
+                    return;
+                }
+                
                 const delta = (timestamp - last) / 1000;
                 last = timestamp;
-                // מיפוי המהירות: 10 = 5 פיקסלים/שנייה (איטי מאוד), 50 = 35 פיקסלים/שנייה (ברירת מחדל), 100 = 70 פיקסלים/שנייה (מהיר מאוד)
+                donorsScrollLastTime = timestamp;
+                
+                // מיפוי המהירות
                 const speedValue = liveViewSettings.donorsScrollSpeed || 50;
-                // נוסחה לינארית: speed = 5 + (value - 10) * (70 - 5) / (100 - 10)
                 const speed = 5 + (speedValue - 10) * 65 / 90;
                 offset += speed * delta;
                 
-                // הגלילה ממשיכה בלולאה אינסופית - לא עוצרת ולא מציגה מסך ריק
-                // הקריאה לנתונים מתבצעת מאחורי הקלעים כל 5 דקות
-                
+                // גלילה אינסופית
                 if (offset >= halfHeight) {
                     offset -= halfHeight;
                 }
@@ -10881,41 +10886,19 @@
             state.handle = requestAnimationFrame(step);
         }
         // דגל למניעת קפיצות בזמן עדכון
-        let leadersScrollRestartPending = false;
-        let leadersScrollRestartTimeout = null;
-        let leadersScrollIsRunning = false; // דגל חדש - האם הגלילה כבר רצה
+        let leadersScrollIsRunning = false;
+        let leadersScrollLastTime = 0;
         
         function restartLeadersAutoScroll({ immediate = false } = {}) {
-            // אם הגלילה כבר רצה - לא לאפס! פשוט להמשיך
+            // אם הגלילה כבר רצה - לא לאפס!
             if (leadersScrollIsRunning) {
-                console.log('🔄 גלילת מובילים כבר רצה - לא מאפסים');
                 return;
             }
             
-            // מניעת קפיצות: אם כבר יש עדכון ממתין, לא מתחילים עוד אחד
-            if (leadersScrollRestartPending && !immediate) {
-                return;
-            }
-            
-            // דחיית העדכון ב-500ms למניעת קפיצות מרובות
-            if (!immediate) {
-                if (leadersScrollRestartTimeout) {
-                    clearTimeout(leadersScrollRestartTimeout);
-                }
-                leadersScrollRestartPending = true;
-                leadersScrollRestartTimeout = setTimeout(() => {
-                    leadersScrollRestartPending = false;
-                    if (!leadersScrollIsRunning) {
-                        doRestartLeadersAutoScroll({ immediate: false });
-                    }
-                }, 500);
-                return;
-            }
-            
-            doRestartLeadersAutoScroll({ immediate });
+            doRestartLeadersAutoScroll();
         }
         
-        function doRestartLeadersAutoScroll({ immediate = false } = {}) {
+        function doRestartLeadersAutoScroll() {
             const wrapper = document.getElementById('leadersScrollWrapper');
             const primary = document.getElementById('leadersScrollPrimary');
             const clone = document.getElementById('leadersScrollClone');
@@ -10923,19 +10906,11 @@
 
             if (!wrapper || !primary || !clone || !state) {
                 leadersScrollIsRunning = false;
-                stopAutoScroll('leaders');
                 return;
             }
 
-            if (state.cooldownHandle) {
-                clearTimeout(state.cooldownHandle);
-                state.cooldownHandle = null;
-            }
-            state.isInCooldown = false;
-
             // אם כבר רץ - לא להתחיל מחדש!
-            if (state.handle && leadersScrollIsRunning) {
-                console.log('🔄 גלילה כבר פעילה - ממשיכים');
+            if (leadersScrollIsRunning && state.handle) {
                 return;
             }
 
@@ -10950,55 +10925,51 @@
                 clone.innerHTML = '';
                 clone.style.display = 'none';
                 leadersScrollIsRunning = false;
-                stopAutoScroll('leaders');
                 return;
             }
             
-            // העתקת התוכן לקלון - כפול לגלילה חלקה יותר
+            // העתקת התוכן לקלון
             clone.innerHTML = primaryContent.outerHTML;
             clone.style.display = 'block';
 
             const contentHeight = primary.scrollHeight;
-            if (!contentHeight || !isFinite(contentHeight) || contentHeight === 0) {
-                wrapper.scrollTop = 0;
+            if (!contentHeight || !isFinite(contentHeight) || contentHeight < 100) {
                 leadersScrollIsRunning = false;
-                stopAutoScroll('leaders');
                 return;
             }
 
-            const cloneContent = clone.querySelector('.live-leaders-content');
-
-            const showContent = () => {
-                wrapper.style.opacity = '1';
-                wrapper.style.filter = 'brightness(1) saturate(1)';
-                if (primaryContent) primaryContent.classList.remove('hidden');
-                if (cloneContent) cloneContent.classList.remove('hidden');
-            };
+            wrapper.style.opacity = '1';
+            wrapper.style.filter = 'brightness(1) saturate(1)';
             
-            // שומר את המיקום הנוכחי אם הגלילה כבר רצה
+            // שומר את המיקום הנוכחי
             let offset = (state.offset && state.offset > 0) ? state.offset : 0;
             state.distance = contentHeight;
-            
-            showContent();
             wrapper.scrollTop = offset;
             
             // מסמן שהגלילה רצה
             leadersScrollIsRunning = true;
+            leadersScrollLastTime = performance.now();
 
             let last = performance.now();
 
             function step(timestamp) {
+                // בדיקה שהגלילה עדיין צריכה לרוץ
+                if (!leadersScrollIsRunning) {
+                    state.handle = null;
+                    return;
+                }
+                
                 const delta = (timestamp - last) / 1000;
                 last = timestamp;
+                leadersScrollLastTime = timestamp;
                 
                 // מהירות קבועה למובילים - 30 פיקסלים לשנייה
                 const speed = 30;
                 offset += speed * delta;
                 
-                // גלילה אינסופית חלקה: כשמגיעים לסוף התוכן המקורי, מאפסים בצורה חלקה
-                // הקלון מציג את אותו תוכן, אז המעבר בלתי נראה
+                // גלילה אינסופית חלקה
                 if (offset >= contentHeight) {
-                    offset = offset - contentHeight; // מעבר חלק, לא קפיצה ל-0
+                    offset = offset - contentHeight;
                 }
                 
                 state.offset = offset;
@@ -11008,6 +10979,37 @@
 
             state.handle = requestAnimationFrame(step);
         }
+        
+        // ====== WATCHDOG - מוודא שהגלילות תמיד רצות ======
+        setInterval(() => {
+            if (!isLiveViewActive() || !liveViewSettings.enableAutoScroll) return;
+            
+            const now = performance.now();
+            
+            // בדיקת גלילת תורמים
+            if (donorsScrollIsRunning) {
+                // אם עברו יותר מ-2 שניות מהעדכון האחרון, משהו תקוע
+                if (now - donorsScrollLastTime > 2000) {
+                    console.log('⚠️ גלילת תורמים נתקעה - מפעיל מחדש');
+                    donorsScrollIsRunning = false;
+                    restartDonorsAutoScroll();
+                }
+            } else {
+                // אם הגלילה לא רצה אבל צריכה - מפעיל
+                restartDonorsAutoScroll();
+            }
+            
+            // בדיקת גלילת מובילים
+            if (leadersScrollIsRunning) {
+                if (now - leadersScrollLastTime > 2000) {
+                    console.log('⚠️ גלילת מובילים נתקעה - מפעיל מחדש');
+                    leadersScrollIsRunning = false;
+                    restartLeadersAutoScroll({ immediate: true });
+                }
+            } else {
+                restartLeadersAutoScroll({ immediate: true });
+            }
+        }, 1000);
 
         const donorSearchInput = document.getElementById('donorSearchInput');
         const donorSearchClearButton = document.getElementById('donorSearchClear');
@@ -12760,7 +12762,7 @@
             });
             
             if (donorsWithNames.length === 0) {
-                stopAutoScroll('donors');
+                // לא עוצרים גלילה - הWATCHDOG ידאג
                 scrollContainer.innerHTML = `
                     <div class="live-donor-card">
                         <div class="live-donor-info">
@@ -13269,13 +13271,13 @@
         function updateLiveTargets() {
             const container = document.getElementById('targetsList');
             if (!container) {
-                stopAutoScroll('leaders');
+                // לא עוצרים גלילה - הWATCHDOG ידאג
                 return;
             }
 
             if (!groups.length) {
                 container.innerHTML = '<div style="text-align: center; color: var(--muted); padding: 12px;">אין קבוצות להצגה</div>';
-                stopAutoScroll('leaders');
+                // לא עוצרים גלילה - הWATCHDOG ידאג
                 return;
             }
 
