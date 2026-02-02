@@ -7,7 +7,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>ת״ת אוהל תורה</title>
-    <link rel="icon" type="image/png" href="http://i.postimg.cc/ZRMCLxgW/wgw-t-t-dhws.png">
+    <link rel="icon" type="image/png" href="https://i.postimg.cc/ZRMCLxgW/wgw-t-t-dhws.png">
     <style>
         * {
             margin: 0;
@@ -197,7 +197,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-image: url('http://i.postimg.cc/ZRMCLxgW/wgw-t-t-dhws.png');
+            background-image: url('https://i.postimg.cc/ZRMCLxgW/wgw-t-t-dhws.png');
             background-repeat: no-repeat;
             background-size: clamp(780px, 74vw, 1500px) auto;
             background-position: center center;
@@ -2598,7 +2598,7 @@
             overflow: hidden;
             position: relative;
             background: none;
-            background-image: url('http://i.postimg.cc/ZRMCLxgW/wgw-t-t-dhws.png');
+            background-image: url('https://i.postimg.cc/ZRMCLxgW/wgw-t-t-dhws.png');
             background-repeat: no-repeat;
             background-position: center center;
             background-size: cover;
@@ -4992,7 +4992,7 @@
         <!-- תפריט ניווט בצד -->
         <nav class="sidebar-nav">
             <div class="logo-container">
-                <img src="http://i.postimg.cc/ZRMCLxgW/wgw-t-t-dhws.png" alt="לוגו תומכי תורה" class="logo-img" id="logoImg">
+                <img src="https://i.postimg.cc/ZRMCLxgW/wgw-t-t-dhws.png" alt="לוגו תומכי תורה" class="logo-img" id="logoImg">
             </div>
             <div class="nav-menu">
                 <button class="nav-item active" data-section="home">דף הבית</button>
@@ -10399,8 +10399,12 @@
                     saveAccessControl();
                     
                     // מעדכן את ה-hash אחרי שמירה (לזיהוי שינויים)
-                    if (typeof calculateDataHash === 'function') {
-                        lastDataHash = calculateDataHash();
+                    try {
+                        if (typeof calculateDataHash === 'function') {
+                            window._lastDataHash = calculateDataHash();
+                        }
+                    } catch (hashError) {
+                        // התעלם מהשגיאה
                     }
                     
                     // שולח הודעה דרך BroadcastChannel לעדכון כל המסכים
@@ -13605,7 +13609,7 @@
             }
             
             // טעינת תמונת הלוגו (נסיון ראשון)
-            const logoUrl = 'http://i.postimg.cc/ZRMCLxgW/wgw-t-t-dhws.png';
+            const logoUrl = 'https://i.postimg.cc/ZRMCLxgW/wgw-t-t-dhws.png';
             const img = new Image();
             
             img.onerror = function() {
@@ -14102,7 +14106,7 @@
             hideLiveViewBackButton();
             initLandingCards();
         });
-        initLogoParticleAnimation();
+        // initLogoParticleAnimation(); // הושבת - הפונקציה הוסרה
         
         // עדכון אוטומטי כל 5 שניות
         setInterval(() => {
@@ -18031,17 +18035,20 @@
             const urlInput = document.getElementById('googleSheetsWebAppUrl');
             const autoSyncCheckbox = document.getElementById('autoGoogleSheetsSyncCheckbox');
             
+            let urlToSave = '';
+            let syncEnabled = false;
+            
             if (urlInput) {
-                googleSheetsWebAppUrl = urlInput.value.trim();
+                urlToSave = urlInput.value.trim();
             }
             if (autoSyncCheckbox) {
-                googleSheetsSyncEnabled = autoSyncCheckbox.checked;
+                syncEnabled = autoSyncCheckbox.checked;
             }
             
             try {
-                localStorage.setItem('googleSheetsWebAppUrl', googleSheetsWebAppUrl);
-                localStorage.setItem('googleSheetsSyncEnabled', googleSheetsSyncEnabled ? 'true' : 'false');
-                console.log('💾 הגדרות Google Sheets נשמרו');
+                localStorage.setItem('googleSheetsWebAppUrl', urlToSave);
+                localStorage.setItem('googleSheetsSyncEnabled', syncEnabled ? 'true' : 'false');
+                console.log('💾 הגדרות Google Sheets נשמרו:', urlToSave ? 'יש URL' : 'אין URL');
             } catch (e) {
                 console.warn('שגיאה בשמירת הגדרות Google Sheets:', e);
             }
@@ -18131,8 +18138,9 @@
                 if (result.success) {
                     showNotification('✅ החיבור ל-Google Sheets תקין!', 'success');
                     showGoogleSheetsStatus('✅ החיבור תקין! ' + (result.timestamp ? 'עודכן: ' + new Date(result.timestamp).toLocaleString('he-IL') : ''), 'success');
-                    googleSheetsWebAppUrl = url;
-                    saveGoogleSheetsSettings();
+                    // שמירה ל-localStorage
+                    localStorage.setItem('googleSheetsWebAppUrl', url);
+                    console.log('💾 URL נשמר:', url);
                 } else {
                     throw new Error(result.error || 'תגובה לא תקינה');
                 }
@@ -18146,7 +18154,8 @@
         // טעינת נתונים מ-Google Sheets
         async function loadFromGoogleSheets() {
             const urlInput = document.getElementById('googleSheetsWebAppUrl');
-            const url = urlInput ? urlInput.value.trim() : googleSheetsWebAppUrl;
+            const savedUrl = localStorage.getItem('googleSheetsWebAppUrl') || '';
+            const url = urlInput ? urlInput.value.trim() : savedUrl;
             
             if (!url) {
                 showNotification('❌ נא להגדיר את כתובת ה-Web App קודם', 'error');
