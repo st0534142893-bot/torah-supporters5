@@ -6495,9 +6495,9 @@
             // הגדרות אלו יטענו מהשרת (לא חשופות כאן)
             mosadId: '', // יטען מהשרת
             matchingId: '', // יטען מהשרת
-            // הגדרות זמנים (לא סודיות)
-            autoSyncInterval: 15 * 1000, // 15 שניות במילישניות
-            dataCheckInterval: 10 * 1000, // 10 שניות
+            // הגדרות זמנים (לא סודיות) - מוגדלו למניעת קפיצות
+            autoSyncInterval: 60 * 1000, // 60 שניות (דקה) במילישניות - מונע קפיצות
+            dataCheckInterval: 30 * 1000, // 30 שניות - מונע קפיצות
             // מצב נתונים
             lastTransactionId: 0,
             totalDonatedFromAPI: null,
@@ -10858,7 +10858,33 @@
             container.style.willChange = 'transform';
             state.handle = requestAnimationFrame(step);
         }
+        // דגל למניעת קפיצות בזמן עדכון
+        let leadersScrollRestartPending = false;
+        let leadersScrollRestartTimeout = null;
+        
         function restartLeadersAutoScroll({ immediate = false } = {}) {
+            // מניעת קפיצות: אם כבר יש עדכון ממתין, לא מתחילים עוד אחד
+            if (leadersScrollRestartPending && !immediate) {
+                return;
+            }
+            
+            // דחיית העדכון ב-500ms למניעת קפיצות מרובות
+            if (!immediate) {
+                if (leadersScrollRestartTimeout) {
+                    clearTimeout(leadersScrollRestartTimeout);
+                }
+                leadersScrollRestartPending = true;
+                leadersScrollRestartTimeout = setTimeout(() => {
+                    leadersScrollRestartPending = false;
+                    doRestartLeadersAutoScroll({ immediate: false });
+                }, 500);
+                return;
+            }
+            
+            doRestartLeadersAutoScroll({ immediate });
+        }
+        
+        function doRestartLeadersAutoScroll({ immediate = false } = {}) {
             const wrapper = document.getElementById('leadersScrollWrapper');
             const primary = document.getElementById('leadersScrollPrimary');
             const clone = document.getElementById('leadersScrollClone');
@@ -17005,19 +17031,31 @@
         }
 
         // אתחול בטעינת הדף
+        let initialSyncDone = false;
+        
         window.addEventListener('load', () => {
             loadNedarimConfig();
-            startAutoSync();
             
-            // עדכון ראשוני של הסכום הכולל מ-API
+            // מחכה קצת לפני שמתחיל סנכרונים - מונע קפיצות בפתיחה
+            setTimeout(() => {
+                startAutoSync();
+            }, 5000);
+            
+            // עדכון ראשוני של הסכום הכולל מ-API - אחרי שהדף נטען לגמרי
             setTimeout(async () => {
+                if (initialSyncDone) return;
+                initialSyncDone = true;
+                
                 console.log('🚀 [אתחול] מתחיל עדכון סכום כולל מ-API...');
                 try {
-                const totalData = await fetchTotalFromMatchPlus();
+                    // מדכא התראות בזמן אתחול
+                    suppressNotifications = true;
+                    
+                    const totalData = await fetchTotalFromMatchPlus();
                     if (totalData && totalData.Donated > 0) {
                         console.log('✅ [אתחול] הסכום הכולל עודכן בהצלחה:', totalData);
                         if (typeof updateHomeStats === 'function') {
-                    updateHomeStats();
+                            updateHomeStats();
                             console.log('✅ [אתחול] תצוגת הבית עודכנה');
                         }
                     } else {
@@ -17026,19 +17064,22 @@
                             updateHomeStats();
                         }
                     }
+                    
+                    // סנכרון ראשוני עם נדרים פלוס
+                    console.log('🔄 [אתחול] מבצע סנכרון ראשוני עם נדרים פלוס...');
+                    await syncWithNedarimPlus(true); // silent mode
+                    
+                    // מפסיק לדכא התראות אחרי האתחול
+                    suppressNotifications = false;
+                    
                 } catch (error) {
                     console.error('❌ [אתחול] שגיאה בעדכון סכום כולל:', error);
+                    suppressNotifications = false;
                     if (typeof updateHomeStats === 'function') {
                         updateHomeStats();
                     }
                 }
-            }, 1000);
-            
-            // סנכרון ראשוני אחרי 3 שניות
-            setTimeout(() => {
-                console.log('🔄 [אתחול] מבצע סנכרון ראשוני עם נדרים פלוס...');
-                syncWithNedarimPlus();
-            }, 3000);
+            }, 2000);
         });
 
         // עצירת סנכרון כשעוזבים את הדף
