@@ -11702,9 +11702,15 @@
             if (group) {
                 const newOrder = parseInt(orderNumber) || 999;
                 group.orderNumber = newOrder;
+                group.updatedAt = new Date().toISOString();
                 saveData();
                 updateGroupsDisplay();
                 updateLiveView();
+                
+                // שמירה לגליון
+                const url = googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || DEFAULT_GOOGLE_SHEETS_URL || '';
+                if (url) saveToGoogleSheets().catch(err => console.warn('⚠️ שגיאה בשמירה לגליון:', err));
+                
                 showNotification('מספר הקבוצה עודכן');
             }
         }
@@ -11714,24 +11720,37 @@
             const group = groups.find(g => g.id == groupId);
             if (group) {
                 group.showInLiveView = show;
+                group.updatedAt = new Date().toISOString();
                 saveData();
                 updateGroupsDisplay();
                 updateLiveView();
                 updateLeadersList();
+                
+                // שמירה לגליון
+                const url = googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || DEFAULT_GOOGLE_SHEETS_URL || '';
+                if (url) saveToGoogleSheets().catch(err => console.warn('⚠️ שגיאה בשמירה לגליון:', err));
+                
                 showNotification(show ? 'הקבוצה תוצג בתצוגת לייב' : 'הקבוצה הוסרה מתצוגת לייב');
             }
         }
-            // עדכון יעד קבוצה
+        
+        // עדכון יעד קבוצה
         function updateGroupGoal(groupId, goal) {
-                const group = groups.find(g => g.id === groupId);
-                if (group) {
-                    group.goal = parseFloat(goal) || 0;
-                    saveData();
-                    // עדכון כל המדורים - מדור ניהול הוא המקור האמתי
-                    updateGroupsDisplay();
+            const group = groups.find(g => g.id === groupId);
+            if (group) {
+                group.goal = parseFloat(goal) || 0;
+                group.updatedAt = new Date().toISOString();
+                saveData();
+                // עדכון כל המדורים - מדור ניהול הוא המקור האמתי
+                updateGroupsDisplay();
                 updateLiveTargets();
-                    updateLiveView();
-                    updateHomeStats();
+                updateLiveView();
+                updateHomeStats();
+                
+                // שמירה לגליון
+                const url = googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || DEFAULT_GOOGLE_SHEETS_URL || '';
+                if (url) saveToGoogleSheets().catch(err => console.warn('⚠️ שגיאה בשמירה לגליון:', err));
+                
                 showNotification('יעד הקבוצה עודכן');
             }
         }
@@ -12713,6 +12732,17 @@
             updateLeadersList();
             updateLiveTargets();
             notifyDataChanged();
+            
+            // שמירה מיידית לגליון - חשוב! כדי שהשינויים יהיו זמינים ממחשבים אחרים
+            const url = googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || DEFAULT_GOOGLE_SHEETS_URL || '';
+            if (url) {
+                saveToGoogleSheets().then(() => {
+                    console.log('✅ פרטי מתרים עודכנו בגליון');
+                }).catch(err => {
+                    console.warn('⚠️ שגיאה בשמירת פרטי מתרים לגליון:', err);
+                });
+            }
+            
             showNotification('פרטי המתרים עודכנו' + (amountDelta > 0 ? ' והתרומה נשלחה לנדרים פלוס' : ''));
         }
 
