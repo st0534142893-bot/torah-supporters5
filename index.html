@@ -2588,6 +2588,15 @@
             padding: 0;
             box-sizing: border-box;
         }
+        
+        /* איפוס גלובלי של מסגרות בתצוגת לייב */
+        .live-content *,
+        .live-leaders-sidebar *,
+        .live-donors-area * {
+            border: none !important;
+            outline: none !important;
+            box-shadow: none !important;
+        }
         /* כפתור חזרה וכפתור מסך מלא */
         .back-home-btn,
         .fullscreen-btn {
@@ -3331,17 +3340,20 @@
             margin-top: 2px;
         }
 
-        /* אזור מובילים בצד */
+        /* אזור מובילים בצד - רוחב קבוע באחוזים */
         .live-leaders-sidebar {
-            flex: 0 0 25%;
-            max-width: 360px;
-            min-width: 220px;
-            background: transparent;
-            backdrop-filter: none;
-            border-right: none;
+            flex: 0 0 25% !important;
+            width: 25% !important;
+            max-width: 25% !important;
+            min-width: 200px;
+            background: transparent !important;
+            backdrop-filter: none !important;
+            border: none !important;
+            border-right: none !important;
             padding: 16px 18px;
             overflow: visible;
-            box-shadow: none;
+            box-shadow: none !important;
+            outline: none !important;
             display: flex;
             flex-direction: column;
         }
@@ -4035,7 +4047,8 @@
             }
 
             .live-leaders-sidebar {
-                width: 380px;
+                width: 25% !important;
+                max-width: 25% !important;
                 padding: 45px 32px;
             }
 
@@ -4130,7 +4143,8 @@
             }
 
             .live-leaders-sidebar {
-                width: 420px;
+                width: 25% !important;
+                max-width: 25% !important;
                 padding: 50px 38px;
             }
 
@@ -4191,7 +4205,8 @@
             }
 
             .live-leaders-sidebar {
-                width: 480px;
+                width: 25% !important;
+                max-width: 25% !important;
             }
 
             .leaders-title {
@@ -4233,7 +4248,8 @@
             }
 
             .live-leaders-sidebar {
-                width: 540px;
+                width: 25% !important;
+                max-width: 25% !important;
                 padding: 60px 48px;
             }
 
@@ -4300,7 +4316,8 @@
             }
 
             .live-leaders-sidebar {
-                width: 600px;
+                width: 25% !important;
+                max-width: 25% !important;
                 padding: 70px 56px;
             }
 
@@ -4351,7 +4368,8 @@
             }
 
             .live-leaders-sidebar {
-                width: 660px;
+                width: 25% !important;
+                max-width: 25% !important;
                 padding: 80px 64px;
             }
 
@@ -4379,7 +4397,8 @@
             }
 
             .live-leaders-sidebar {
-                width: 300px;
+                width: 25% !important;
+                max-width: 25% !important;
             }
         }
         /* תמיכה במסכי טלוויזיה גדולים - Android TV */
@@ -6481,6 +6500,9 @@
         }
         
             // משתנים גלובליים
+        // ⚠️ כתובת ה-API של Google Sheets - עובד על כל המחשבים!
+        const DEFAULT_GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbz2tU9NnoLx4oNgSKvdGT_w93pWy3sOjtV32BTUR7mK2qWqCXFgT33rYg7QMTVh0ZHX/exec';
+        
         const MATCHING_GOAL_DEFAULT = 750000; // יעד כללי
         const INITIAL_DEFAULT_DONOR_GOAL = 2100; // יעד ברירת מחדל לכל מתרים
         const DEFAULT_GROUP_GOAL_DEFAULT = 112000; // יעד לכל קבוצה
@@ -15429,7 +15451,8 @@
             }
             
             // 🌐 ניסיון HTTP - כשרץ מ-Netlify עם Google Sheets URL מוגדר
-            const webAppUrl = localStorage.getItem('googleSheetsWebAppUrl') || '';
+            // משתמש ב-URL מ-localStorage או מברירת המחדל
+            const webAppUrl = localStorage.getItem('googleSheetsWebAppUrl') || DEFAULT_GOOGLE_SHEETS_URL || '';
             if (webAppUrl) {
                 try {
                     console.log('🌐 מושך מתרימים דרך HTTP עם חיפוש:', searchTerm || '(ריק)');
@@ -15618,7 +15641,8 @@
             }
             
             // 🌐 ניסיון HTTP - כשרץ מ-Netlify עם Google Sheets URL מוגדר
-            const webAppUrl = localStorage.getItem('googleSheetsWebAppUrl') || '';
+            // משתמש ב-URL מ-localStorage או מברירת המחדל
+            const webAppUrl = localStorage.getItem('googleSheetsWebAppUrl') || DEFAULT_GOOGLE_SHEETS_URL || '';
             if (webAppUrl) {
                 try {
                     console.log('═══════════════════════════════════════════════════════');
