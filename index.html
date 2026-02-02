@@ -17813,6 +17813,10 @@
         let googleSheetsSyncEnabled = false;
         let saveToGoogleSheetsTimeout = null;
         
+        // סנכרון אוטומטי לגליון - כל 10 שניות (לעדכון מיידי במסכי תצוגת לייב)
+        const LIVE_VIEW_SYNC_INTERVAL_MS = 10000;
+        let liveViewSyncIntervalId = null;
+        
         // שמירת הגדרות Google Sheets
         function saveGoogleSheetsSettings() {
             const urlInput = document.getElementById('googleSheetsWebAppUrl');
@@ -17935,19 +17939,24 @@
         }
         
         // טעינת נתונים מ-Google Sheets
-        async function loadFromGoogleSheets() {
+        // silent: true = ללא הודעות (לסנכרון אוטומטי בתצוגת לייב)
+        async function loadFromGoogleSheets(silent = false) {
             const urlInput = document.getElementById('googleSheetsWebAppUrl');
             const savedUrl = localStorage.getItem('googleSheetsWebAppUrl') || '';
-            const url = urlInput ? urlInput.value.trim() : savedUrl;
+            const url = urlInput ? urlInput.value.trim() : savedUrl || DEFAULT_GOOGLE_SHEETS_URL || '';
             
             if (!url) {
-                showNotification('❌ נא להגדיר את כתובת ה-Web App קודם', 'error');
-                showGoogleSheetsStatus('❌ נא להגדיר את כתובת ה-Web App', 'error');
-                return;
+                if (!silent) {
+                    showNotification('❌ נא להגדיר את כתובת ה-Web App קודם', 'error');
+                    showGoogleSheetsStatus('❌ נא להגדיר את כתובת ה-Web App', 'error');
+                }
+                return { success: false };
             }
             
-            console.log('📥 [Google Sheets] מתחיל טעינה...');
-            showGoogleSheetsStatus('📥 טוען נתונים מהגליון...', 'info');
+            if (!silent) {
+                console.log('📥 [Google Sheets] מתחיל טעינה...');
+                showGoogleSheetsStatus('📥 טוען נתונים מהגליון...', 'info');
+            }
             
             try {
                 const response = await fetch(url + '?action=getAll', {
@@ -17956,7 +17965,6 @@
                 });
                 
                 const result = await response.json();
-                console.log('📥 [Google Sheets] תגובה מהשרת:', result.success ? 'הצלחה' : 'שגיאה');
                 
                 if (!result.success && result.error) {
                     throw new Error(result.error);
@@ -17969,19 +17977,16 @@
                 if (result.groups && Array.isArray(result.groups) && result.groups.length > 0) {
                     groups = result.groups;
                     loadedGroups = groups.length;
-                    console.log('📥 [Google Sheets] קבוצות נטענו:', groups.map(g => ({ id: g.id, name: g.name })));
+                    if (!silent) console.log('📥 [Google Sheets] קבוצות נטענו:', groups.map(g => ({ id: g.id, name: g.name })));
                 }
                 
                 // טעינת מתרימים
                 if (result.donors && Array.isArray(result.donors) && result.donors.length > 0) {
                     donors = result.donors;
                     loadedDonors = donors.length;
-                    
-                    // הצגת דוגמה למתרים עם שם תצוגה מותאם
-                    const donorsWithDisplayName = donors.filter(d => d.displayName && d.displayName !== d.name);
-                    console.log('📥 [Google Sheets] מתרימים עם שם תצוגה מותאם:', donorsWithDisplayName.length);
-                    if (donorsWithDisplayName.length > 0) {
-                        console.log('📥 [Google Sheets] דוגמה:', donorsWithDisplayName[0]);
+                    if (!silent) {
+                        const donorsWithDisplayName = donors.filter(d => d.displayName && d.displayName !== d.name);
+                        console.log('📥 [Google Sheets] מתרימים עם שם תצוגה מותאם:', donorsWithDisplayName.length);
                     }
                 }
                 
@@ -18003,17 +18008,45 @@
                 updateLiveTargets();
                 
                 const totalAmount = donors.reduce((sum, d) => sum + (d.amount || 0), 0);
-                const message = `✅ נטענו ${loadedDonors} מתרימים ו-${loadedGroups} קבוצות | סכום כולל: ${totalAmount.toLocaleString()} ש"ח`;
                 
-                showNotification(message, 'success');
-                showGoogleSheetsStatus(message, 'success');
+                if (!silent) {
+                    const message = `✅ נטענו ${loadedDonors} מתרימים ו-${loadedGroups} קבוצות | סכום כולל: ${totalAmount.toLocaleString()} ש"ח`;
+                    showNotification(message, 'success');
+                    showGoogleSheetsStatus(message, 'success');
+                    console.log('📥 [Google Sheets] טעינה הושלמה:', { donors: loadedDonors, groups: loadedGroups, total: totalAmount });
+                } else {
+                    console.log('🔄 [סנכרון] עדכון שקט מהגליון:', loadedDonors, 'מתרימים');
+                }
                 
-                console.log('📥 [Google Sheets] טעינה הושלמה:', { donors: loadedDonors, groups: loadedGroups, total: totalAmount });
+                return { success: true, donors: loadedDonors, groups: loadedGroups };
                 
             } catch (error) {
-                console.error('❌ [Google Sheets] שגיאה בטעינה:', error);
-                showNotification('❌ שגיאה בטעינה: ' + error.message, 'error');
-                showGoogleSheetsStatus('❌ שגיאה בטעינה: ' + error.message, 'error');
+                if (!silent) {
+                    console.error('❌ [Google Sheets] שגיאה בטעינה:', error);
+                    showNotification('❌ שגיאה בטעינה: ' + error.message, 'error');
+                    showGoogleSheetsStatus('❌ שגיאה בטעינה: ' + error.message, 'error');
+                }
+                return { success: false };
+            }
+        }
+        
+        // הפעלת סנכרון תקופתי לגליון - עבור עדכון מיידי במסכי תצוגת לייב
+        function startLiveViewSyncPolling() {
+            if (liveViewSyncIntervalId) return;
+            const url = googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || DEFAULT_GOOGLE_SHEETS_URL || '';
+            if (!url) return;
+            
+            liveViewSyncIntervalId = setInterval(async () => {
+                await loadFromGoogleSheets(true);
+            }, LIVE_VIEW_SYNC_INTERVAL_MS);
+            console.log('🔄 [סנכרון] סנכרון תקופתי לגליון הופעל (כל ' + (LIVE_VIEW_SYNC_INTERVAL_MS/1000) + ' שניות)');
+        }
+        
+        function stopLiveViewSyncPolling() {
+            if (liveViewSyncIntervalId) {
+                clearInterval(liveViewSyncIntervalId);
+                liveViewSyncIntervalId = null;
+                console.log('🛑 [סנכרון] סנכרון תקופתי הופסק');
             }
         }
         
@@ -18554,8 +18587,9 @@
             // מחכה קצת כדי לוודא שהכל נטען
             await new Promise(resolve => setTimeout(resolve, 500));
             
-            // בדיקה אם יש Google Sheets מוגדר עם סנכרון אוטומטי
-            if (googleSheetsWebAppUrl && googleSheetsSyncEnabled) {
+            // בדיקה אם יש Google Sheets מוגדר
+            const hasSheetsUrl = googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || DEFAULT_GOOGLE_SHEETS_URL;
+            if (hasSheetsUrl && googleSheetsSyncEnabled) {
                 console.log('🔄 [אתחול] נמצא Google Sheets URL, טוען נתונים מהגליון...');
                 const sheetsStatusEl = document.getElementById('googleSheetsSyncStatus');
                 if (sheetsStatusEl) {
@@ -18571,6 +18605,11 @@
                 } catch (error) {
                     console.error('❌ [אתחול] שגיאה בטעינה מ-Google Sheets:', error);
                 }
+            }
+            
+            // הפעלת סנכרון תקופתי - כל המסכים (כולל תצוגת לייב) יקבלו עדכונים אוטומטית כל 10 שניות
+            if (hasSheetsUrl) {
+                startLiveViewSyncPolling();
             }
             // אחרת, בדיקה אם יש Gist ID
             else if (gistId && gistId.trim()) {
