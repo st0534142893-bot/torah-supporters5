@@ -16491,8 +16491,22 @@
                 let updatedToNedarim = 0;
                 let skippedUpdates = 0;
                 let failedUpdates = 0;
+                let invalidMatrimIdCount = 0;
                 
                 for (const donor of donorsToUpdate) {
+                    // בדיקה ש-matrimId הוא מספר אמיתי ולא תאריך
+                    const matrimIdStr = String(donor.nedarimMatrimId || '').trim();
+                    const isDate = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(matrimIdStr) || matrimIdStr.includes('T') || matrimIdStr.includes('Z');
+                    const isNumeric = /^\d+$/.test(matrimIdStr);
+                    
+                    if (isDate || !isNumeric) {
+                        invalidMatrimIdCount++;
+                        console.warn(`⚠️ מתרים ${donor.name} (ID: ${donor.id}) יש לו מספר מתרים לא תקין: ${matrimIdStr}`);
+                        console.warn(`   יש לקשר את המתרים למספר מתרים אמיתי מנדרים פלוס דרך כפתור "סנכרון תרומות"`);
+                        failedUpdates++;
+                        continue; // מדלג על מתרים זה
+                    }
+                    
                     const localAmount = donor.amount || 0;
                     const nedarimAmount = nedarimAmountsMap.get(String(donor.nedarimMatrimId)) || 0;
                     const delta = localAmount - nedarimAmount;
@@ -16521,6 +16535,14 @@
                         
                         // ממתין קצת בין עדכונים כדי לא להעמיס על השרת
                         await new Promise(resolve => setTimeout(resolve, 500));
+                    }
+                }
+                
+                // הודעה על מתרים עם מספר מתרים לא תקין
+                if (invalidMatrimIdCount > 0) {
+                    console.warn(`⚠️ ${invalidMatrimIdCount} מתרימים לא עודכנו כי אין להם מספר מתרים תקין מנדרים פלוס`);
+                    if (!silent) {
+                        showNotification(`⚠️ ${invalidMatrimIdCount} מתרימים לא עודכנו - אין להם מספר מתרים תקין. יש להריץ "סנכרון תרומות" כדי לקשר אותם.`, 'warning');
                     }
                 }
                 
@@ -18706,6 +18728,25 @@
                     return { success: true, skipped: true, message: 'אין מספר מתרים' };
                 }
                 
+                // בדיקה ש-matrimId הוא מספר אמיתי ולא תאריך או מזהה לא תקין
+                const matrimIdStr = String(donor.nedarimMatrimId).trim();
+                const isDate = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(matrimIdStr) || matrimIdStr.includes('T') || matrimIdStr.includes('Z');
+                const isNumeric = /^\d+$/.test(matrimIdStr);
+                
+                if (isDate || !isNumeric) {
+                    console.warn(`⚠️ מספר מתרים לא תקין (תאריך או לא מספרי): ${matrimIdStr} - מדלג על עדכון`);
+                    console.warn(`📋 פרטי המתרים:`, {
+                        donorName: getDonorDisplayName(donor),
+                        nedarimMatrimId: donor.nedarimMatrimId,
+                        donorId: donor.id
+                    });
+                    return { 
+                        success: false, 
+                        skipped: true, 
+                        error: `מספר מתרים לא תקין: ${matrimIdStr}. יש לקשר את המתרים למספר מתרים אמיתי מנדרים פלוס.` 
+                    };
+                }
+                
                 if (delta === 0) {
                     console.log('ℹ️ אין שינוי בסכום - מדלג על עדכון');
                     return { success: true, skipped: true, message: 'אין שינוי בסכום' };
@@ -18729,38 +18770,94 @@
                     comments = 'הפחתה: ' + Math.abs(delta).toLocaleString() + ' ש"ח' + (comments ? ' | ' + comments : '');
                 }
                 
+                // וודא ש-matrimId הוא מספר אמיתי
+                const matrimIdForLog = String(donor.nedarimMatrimId).trim();
                 console.log('🔄 מעדכן נדרים פלוס דרך Google Sheets:', {
-                    matrimId: donor.nedarimMatrimId,
+                    matrimId: matrimIdForLog,
                     donorName: donorDisplayName,
                     delta: delta,
                     clientName: clientName,
-                    note: '⚠️ הזיהוי הוא לפי MatrimId בלבד, לא לפי שם המתרים'
+                    note: '⚠️ הזיהוי הוא לפי MatrimId בלבד (מספר מתרים), לא לפי שם המתרים'
                 });
+                
+                // וודא ש-matrimId הוא מספר (לא תאריך)
+                const matrimId = String(donor.nedarimMatrimId).trim();
                 
                 const requestData = {
                     action: 'updateNedarimAmount',
-                    matrimId: donor.nedarimMatrimId,
+                    matrimId: matrimId, // מספר מתרים אמיתי
                     amount: delta, // שולח את השינוי, לא את הסכום הכולל
                     clientName: clientName,
                     comments: comments
                 };
                 
-                const response = await fetch(url, {
-                    method: 'POST',
-                    redirect: 'follow',
-                    headers: {
-                        'Content-Type': 'text/plain;charset=utf-8'
-                    },
-                    body: JSON.stringify(requestData)
+                console.log('📤 שולח בקשה ל-Google Apps Script:', {
+                    url: url.substring(0, 80) + '...',
+                    matrimId: matrimId,
+                    amount: delta,
+                    action: 'updateNedarimAmount'
                 });
                 
+                // ניסיון 1: Direct fetch
+                let response;
+                try {
+                    response = await fetch(url, {
+                        method: 'POST',
+                        redirect: 'follow',
+                        headers: {
+                            'Content-Type': 'text/plain;charset=utf-8'
+                        },
+                        body: JSON.stringify(requestData)
+                    });
+                } catch (fetchError) {
+                    console.error('❌ שגיאה ב-fetch:', fetchError);
+                    throw new Error(`שגיאה בחיבור לשרת: ${fetchError.message}`);
+                }
+                
+                // בדיקה שהתגובה תקינה
+                const contentType = response.headers.get('content-type') || '';
+                const isJson = contentType.includes('application/json') || contentType.includes('text/json');
+                
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('❌ שגיאת שרת:', errorText);
+                    let errorText;
+                    try {
+                        errorText = await response.text();
+                    } catch (e) {
+                        errorText = `שגיאת שרת ${response.status} - לא ניתן לקרוא את התגובה`;
+                    }
+                    
+                    console.error('❌ שגיאת שרת:', {
+                        status: response.status,
+                        statusText: response.statusText,
+                        url: response.url,
+                        errorPreview: errorText.substring(0, 300)
+                    });
+                    
+                    // אם זה 404, זה אומר שה-URL לא נכון או שהסקריפט לא קיים
+                    if (response.status === 404) {
+                        throw new Error(`שגיאת 404 - ה-URL של Google Apps Script לא תקין או שהסקריפט לא קיים. בדוק את ה-URL: ${url.substring(0, 80)}...`);
+                    }
+                    
                     throw new Error(`שגיאת שרת: ${response.status} - ${errorText.substring(0, 200)}`);
                 }
                 
-                const result = await response.json();
+                let result;
+                try {
+                    if (isJson) {
+                        result = await response.json();
+                    } else {
+                        const text = await response.text();
+                        // מנסה לפרסר כ-JSON גם אם ה-content-type לא נכון
+                        try {
+                            result = JSON.parse(text);
+                        } catch (e) {
+                            throw new Error(`תגובה לא תקינה מהשרת (לא JSON): ${text.substring(0, 200)}`);
+                        }
+                    }
+                } catch (parseError) {
+                    console.error('❌ שגיאה בפרסור תגובה:', parseError);
+                    throw new Error(`שגיאה בפרסור תגובה מהשרת: ${parseError.message}`);
+                }
                 console.log('📦 תוצאה מהשרת:', JSON.stringify(result, null, 2));
                 
                 // בודקים שהעדכון באמת הצליח - לא רק שהבקשה הגיעה
