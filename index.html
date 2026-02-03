@@ -17318,6 +17318,17 @@
                 // לא מאפסים את הסכומים - רק מעדכנים את המתרימים שנמצאים ברשימה
                 // מתרימים שלא נמצאים ברשימה ישמרו את הסכום שלהם (לא יאפסו)
 
+                // פונקציית עזר: בדיקה אם שני שמות תואמים (גמיש - כולל חלקי)
+                const donorNameMatchesMatrim = (donorName, matrimName) => {
+                    if (!donorName || !matrimName) return false;
+                    const a = (donorName || '').trim().replace(/\s+/g, ' ');
+                    const b = (matrimName || '').trim().replace(/\s+/g, ' ');
+                    if (a === b) return true;
+                    if (a.length >= 5 && b.includes(a)) return true;
+                    if (b.length >= 5 && a.includes(b)) return true;
+                    return false;
+                };
+
                 let updatedDonors = 0;
                 let newDonors = 0;
 
@@ -17429,11 +17440,41 @@
                         return; // מדלג - לא יוצר מתרים חדש
                     }
                     
+                    const donorName = (donor.name || donor.displayName || '').trim();
+                    const namesMatch = donorNameMatchesMatrim(donorName, matrimName);
+                    
+                    // אם המתרים נמצא לפי מספר מתרים אבל השם בנדרים לא תואם - אולי המספר מתרים שגוי (שייך לאדם אחר)
+                    let effectiveMatrimId = matrimIdStr;
+                    let effectiveMatrimAmount = matrimAmount;
+                    let effectiveMatrimGoal = matrimGoal;
+                    let effectiveMatrimName = matrimName;
+                    
+                    if (!namesMatch) {
+                        const correctMatrim = matrimList.find(m => {
+                            const mName = (m.Name || m.name || '').trim();
+                            return donorNameMatchesMatrim(donorName, mName);
+                        });
+                        if (correctMatrim) {
+                            effectiveMatrimId = String(correctMatrim.Id || correctMatrim.MatrimId || correctMatrim.id || '').trim();
+                            effectiveMatrimAmount = parseInt(correctMatrim.Cumule) || 0;
+                            effectiveMatrimGoal = parseInt(correctMatrim.Goal) || 0;
+                            effectiveMatrimName = (correctMatrim.Name || correctMatrim.name || '').trim();
+                            if (effectiveMatrimId && effectiveMatrimId !== matrimIdStr) {
+                                donor.nedarimMatrimId = effectiveMatrimId;
+                                console.log(`🔧 תוקן קישור שגוי: מתרים "${donor.name}" היה מקושר למספר ${matrimIdStr} (${matrimName}) → עודכן ל-${effectiveMatrimId} (${effectiveMatrimName}), סכום: ${effectiveMatrimAmount} ש"ח`);
+                            }
+                        } else {
+                            // לא מצאנו מתרים תואם לפי שם - לא דורסים סכום כדי לא לאפס בטעות (בגלל קישור למספר מתרים של אדם אחר)
+                            console.warn(`⚠️ מתרים "${donor.name}" מקושר למספר ${matrimIdStr} אבל בנדרים זה "${matrimName}" (לא תואם). לא מעדכנים סכום כדי לא לדרוס. להריץ "טען מספרי מתרים לפי שם" או לתקן ידנית.`);
+                            return;
+                        }
+                    }
+                    
                     // מתרים נמצא - מעדכן את הסכום והיעד
-                    console.log(`✅ נמצא מתרים: ${donor.name} (מספר מתרים: ${matrimIdStr})`);
+                    console.log(`✅ נמצא מתרים: ${donor.name} (מספר מתרים: ${effectiveMatrimId})`);
                     
                     // מעדכן את מספר המתרים אם הוא לא תקין (תאריך במקום מספר)
-                    if (matrimId !== null && matrimId !== undefined) {
+                    if (effectiveMatrimId) {
                         const currentMatrimId = donor.nedarimMatrimId ? String(donor.nedarimMatrimId).trim() : null;
                         const isCurrentIdInvalid = currentMatrimId && (
                             /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(currentMatrimId) || 
@@ -17443,10 +17484,9 @@
                         );
                         
                         if (isCurrentIdInvalid) {
-                            // מתקן תאריך למספר מתרים תקין
                             const oldId = donor.nedarimMatrimId;
-                            donor.nedarimMatrimId = matrimIdStr;
-                            console.log(`✅ תוקן מספר מתרים למתרים ${donor.name}: ${oldId} → ${matrimIdStr}`);
+                            donor.nedarimMatrimId = effectiveMatrimId;
+                            console.log(`✅ תוקן מספר מתרים למתרים ${donor.name}: ${oldId} → ${effectiveMatrimId}`);
                         }
                     }
                     
@@ -17455,23 +17495,22 @@
                         donor.originalName = donor.name;
                     }
                     // מעדכן את השם המקורי אם הוא השתנה בנדרים פלוס
-                    if (donor.originalName && donor.originalName !== matrimName.trim()) {
-                        donor.originalName = matrimName.trim();
-                        // אם אין שם תצוגה מותאם אישית, מעדכן גם את השם
+                    if (donor.originalName && donor.originalName !== effectiveMatrimName.trim()) {
+                        donor.originalName = effectiveMatrimName.trim();
                         if (!donor.displayName) {
-                            donor.name = matrimName.trim();
+                            donor.name = effectiveMatrimName.trim();
                         }
                     }
                     
                     const oldAmount = donor.amount || 0;
                     
                     // מעדכן את הסכום תמיד (גם אם הוא לא השתנה) כדי לוודא שהוא מעודכן
-                    donor.amount = matrimAmount;
-                    if (matrimGoal > 0) {
-                        donor.personalGoal = matrimGoal;
+                    donor.amount = effectiveMatrimAmount;
+                    if (effectiveMatrimGoal > 0) {
+                        donor.personalGoal = effectiveMatrimGoal;
                     }
                     
-                    const delta = matrimAmount - oldAmount;
+                    const delta = effectiveMatrimAmount - oldAmount;
                     if (delta !== 0) {
                         updatedDonors++;
                         
@@ -17485,7 +17524,7 @@
                             delta: delta,
                             amountAfter: donor.amount,
                             source: 'nedarim_plus',
-                            note: `עדכון מנדרים פלוס - סכום: ${matrimAmount} ש"ח`
+                            note: `עדכון מנדרים פלוס - סכום: ${effectiveMatrimAmount} ש"ח`
                         });
                     } else if (matrimGoal !== (donor.personalGoal || 0)) {
                         updatedDonors++;
