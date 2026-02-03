@@ -12215,6 +12215,9 @@
                             </div>
                         </div>
                         <div class="donor-actions">
+                            <button class="btn btn-primary btn-small" onclick="toggleDonorEditor(${donor.id})" title="ערוך פרטי מתרים (כולל מספר מתרים)">
+                                ✏️ ערוך
+                            </button>
                             <button class="btn btn-secondary btn-small" onclick="addDonorPayment(${donor.id})">הוסף תשלום</button>
                             <button class="btn btn-secondary btn-small" onclick="toggleDonorHistory(${donor.id})">היסטוריה</button>
                             <button class="btn btn-danger btn-small" onclick="deleteDonor(${donor.id})">מחק</button>
@@ -12226,10 +12229,11 @@
                                     <input type="text" id="editName_${donor.id}" value="${escapeHtml(displayName)}" placeholder="שם מלא">
                                     ${originalName && originalName !== displayName ? `<small style="color: var(--muted); display: block; margin-top: 5px;">שם מקורי בנדרים פלוס: ${escapeHtml(originalName)}</small>` : ''}
                                 </div>
-                                <div class="donor-edit-field">
-                                    <label for="editMatrimId_${donor.id}">מספר מתרים (נדרים פלוס)</label>
-                                    <input type="text" id="editMatrimId_${donor.id}" value="${donor.nedarimMatrimId || ''}" placeholder="הזן מספר מתרים מנדרים פלוס" pattern="[0-9]*" style="font-family: monospace;">
-                                    <small style="color: var(--muted); display: block; margin-top: 5px;">מספר המתרים מנדרים פלוס - ניתן לערוך ידנית</small>
+                                <div class="donor-edit-field" style="border: 2px solid #007bff; padding: 10px; border-radius: 5px; background: #f0f8ff;">
+                                    <label for="editMatrimId_${donor.id}" style="font-weight: bold; color: #007bff; font-size: 14px;">🔗 מספר מתרים (נדרים פלוס)</label>
+                                    <input type="text" id="editMatrimId_${donor.id}" value="${donor.nedarimMatrimId || ''}" placeholder="הזן מספר מתרים מנדרים פלוס (רק ספרות)" pattern="[0-9]*" style="font-family: monospace; font-size: 16px; padding: 8px; width: 100%; border: 2px solid #007bff; border-radius: 4px;">
+                                    <small style="color: #007bff; display: block; margin-top: 5px; font-weight: 600;">💡 ניתן לערוך ידנית - הזן את מספר המתרים מנדרים פלוס (רק ספרות, למשל: 105, 118)</small>
+                                    ${donor.nedarimMatrimId ? `<small style="color: #28a745; display: block; margin-top: 5px;">✅ מספר מתרים נוכחי: ${donor.nedarimMatrimId}</small>` : '<small style="color: #dc3545; display: block; margin-top: 5px;">⚠️ אין מספר מתרים - הזן מספר מתרים מנדרים פלוס</small>'}
                                 </div>
                                 <div class="donor-edit-field">
                                     <label for="editAmount_${donor.id}">סה"כ נאסף</label>
