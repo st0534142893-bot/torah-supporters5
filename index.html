@@ -12219,7 +12219,7 @@
                 // משתמש ב-displayName אם יש, אחרת ב-name
                 const displayName = donor.displayName || donor.name;
                 const originalName = donor.originalName || donor.name;
-                const isSelected = selectedDonorIds.has(donor.id);
+                const isSelected = selectedDonorIds.has(String(donor.id));
                 return `
                     <div class="donor-item${isEditing ? ' editing' : ''}${isSelected ? ' selected' : ''}" data-donor-id="${donor.id}">
                         <div class="donor-checkbox-wrapper" style="margin-left: 10px; margin-right: 10px;">
@@ -12227,7 +12227,7 @@
                                    class="donor-checkbox" 
                                    data-donor-id="${donor.id}"
                                    ${isSelected ? 'checked' : ''}
-                                   onchange="toggleDonorSelection(${donor.id}, this.checked)">
+                                   onchange="toggleDonorSelection('${String(donor.id).replace(/'/g, "\\'")}', this.checked)">
                         </div>
                         <div class="donor-info">
                             <div class="donor-name">
@@ -12316,14 +12316,15 @@
 
         // פונקציות לבחירת מתרימים מרובים
         function toggleDonorSelection(donorId, isSelected) {
+            const idNorm = String(donorId);
             if (isSelected) {
-                selectedDonorIds.add(donorId);
+                selectedDonorIds.add(idNorm);
             } else {
-                selectedDonorIds.delete(donorId);
+                selectedDonorIds.delete(idNorm);
             }
             updateBulkActionsVisibility();
-            // מעדכן את המראה הויזואלי
-            const donorItem = document.querySelector(`.donor-item[data-donor-id="${donorId}"]`);
+            // מעדכן את המראה הויזואלי (תמיד להשוות כמחרוזת כי data-donor-id יכול להיות מספר או מחרוזת)
+            const donorItem = document.querySelector(`.donor-item[data-donor-id="${idNorm}"]`) || document.querySelector(`.donor-item[data-donor-id="${donorId}"]`);
             if (donorItem) {
                 if (isSelected) {
                     donorItem.classList.add('selected');
@@ -12341,9 +12342,9 @@
             
             const checkboxes = container.querySelectorAll('.donor-checkbox');
             checkboxes.forEach(checkbox => {
-                const donorId = parseFloat(checkbox.dataset.donorId);
-                if (!isNaN(donorId)) {
-                    selectedDonorIds.add(donorId);
+                const rawId = checkbox.dataset.donorId;
+                if (rawId !== undefined && rawId !== '') {
+                    selectedDonorIds.add(String(rawId));
                     checkbox.checked = true;
                     const donorItem = checkbox.closest('.donor-item');
                     if (donorItem) {
@@ -12401,13 +12402,16 @@
                 return;
             }
 
-            // יוצר דיאלוג לבחירת קבוצה
-            const groupOptions = groups.map(g => 
-                `<option value="${String(g.id)}">${escapeHtml(g.name)}</option>`
-            ).join('');
+            // יוצר דיאלוג לבחירת קבוצה – לא כולל "נדרים פלוס" כדי שיהיה ברור שעוברים לקבוצה האמיתית (מתרימים בקבוצת נדרים פלוס יועברו החוצה)
+            const isNedarimGroup = (g) => (g.name || '').trim().toLowerCase() === 'נדרים פלוס' || (g.name || '').toLowerCase().includes('nedarim');
+            const targetGroups = groups.filter(g => !isNedarimGroup(g));
+            const groupOptions = targetGroups.length > 0
+                ? targetGroups.map(g => `<option value="${String(g.id)}">${escapeHtml(g.name)}</option>`).join('')
+                : groups.map(g => `<option value="${String(g.id)}">${escapeHtml(g.name)}</option>`).join('');
 
             const groupSelectHtml = `
                 <div style="margin: 20px 0;">
+                    <p style="margin: 0 0 10px 0; font-size: 13px; color: #555;">המתרימים יועברו לקבוצה שנבחרת ויוסרו מרשימת נדרים פלוס.</p>
                     <label for="moveToGroupSelect" style="display: block; margin-bottom: 10px; font-weight: 600;">בחר קבוצה:</label>
                     <select id="moveToGroupSelect" style="width: 100%; padding: 12px; border: 2px solid var(--border); border-radius: 8px; font-size: 16px; direction: rtl;">
                         <option value="">-- בחר קבוצה --</option>
@@ -12473,15 +12477,11 @@
             let movedCount = 0;
 
             selectedDonorIds.forEach(donorId => {
-                const donor = donors.find(d => {
-                    // השוואה גמישה
-                    if (typeof d.id === 'number' && typeof donorId === 'number') {
-                        return d.id === donorId;
-                    }
-                    return String(d.id) === String(donorId);
-                });
+                const idNorm = String(donorId);
+                const donor = donors.find(d => String(d.id) === idNorm);
                 if (donor) {
                     donor.groupId = targetGroupId;
+                    donor.updatedAt = new Date().toISOString();
                     movedCount++;
                     console.log(`✅ מתרים ${donor.name || donor.displayName || 'ללא שם'} הועבר לקבוצה ${targetGroup.name}`);
                 }
