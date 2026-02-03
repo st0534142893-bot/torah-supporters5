@@ -6030,8 +6030,26 @@
                             </div>
                         </div>
 
+                        <div class="nedarim-fix-real-amount-box" style="margin-top: 15px; padding: 15px; background: #e3f2fd; border: 2px solid #1976d2; border-radius: 10px;">
+                            <h4 style="margin-bottom: 10px; color: #0d47a1;">📌 התאמה לסכום האמיתי (תיקון 2,040,947 וכו')</h4>
+                            <p style="margin-bottom: 10px; font-size: 13px; color: #333;">כדי שבתוכנה <strong>וגם</strong> בנדרים פלוס יופיע רק הסכום האמיתי:</p>
+                            <ol style="margin: 0 0 12px 1.2em; padding: 0; font-size: 13px; color: #333; line-height: 1.7;">
+                                <li>הזן למטה את <strong>הסכום האמיתי</strong> (הנכון) – מה שבאמת נאסף.</li>
+                                <li>לחץ "התאם סכומים בתוכנה" – הסכום של כל מתרים יתעדכן יחסית כך שהסיכום יהיה הסכום האמיתי.</li>
+                                <li>לחץ <strong>"סנכרון תרומות לנדרים פלוס"</strong> (הכפתור הירוק למעלה) – יישלחו הפחתות לנדרים והסכום שם יתעדכן להתאמה.</li>
+                            </ol>
+                            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 8px;">
+                                <span id="nedarimFixCurrentSumLabel" style="font-weight: 600;">סה"כ נוכחי בתוכנה: —</span>
+                                <input type="number" id="nedarimFixRealAmountInput" min="0" step="1" placeholder="הסכום האמיתי (₪)" style="width: 160px; padding: 8px 12px; border: 2px solid #1976d2; border-radius: 6px; font-size: 14px;">
+                                <button type="button" class="btn btn-primary" onclick="applyRealAmountFix()" style="background: #1976d2;">
+                                    התאם סכומים בתוכנה
+                                </button>
+                            </div>
+                            <p id="nedarimFixResult" style="margin: 0; font-size: 12px; min-height: 18px; color: #0d47a1;"></p>
+                        </div>
+
                         <div class="nedarim-correction-box" style="margin-top: 15px; padding: 15px; background: #fff8e1; border: 2px solid #ff9800; border-radius: 10px;">
-                            <h4 style="margin-bottom: 10px; color: #e65100;">⚠️ תיקון סכום: הפחתה מנדרים פלוס</h4>
+                            <h4 style="margin-bottom: 10px; color: #e65100;">⚠️ תיקון סכום: הפחתה מנדרים פלוס (הפחתה ידנית)</h4>
                             <p style="margin-bottom: 12px; font-size: 13px; color: #555;">אם נוסף סכום בטעות לנדרים (למשל בגלל באג סנכרון), אפשר להפחית כאן. ההפחתה תישלח לנדרים פלוס בלבד – לא תשנה את הסכום בתוכנה.</p>
                             <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;">
                                 <div>
@@ -11978,25 +11996,7 @@
             if (donor.amount > 0) {
                 recordDonorHistory(donor, donor.amount, donor.amount, 'manual-add', 'הוספת מתרים');
                 addAmountToDailyBreakdown(donor, donor.amount, new Date());
-                
-                // שולח לנדרים פלוס אם יש סכום
-                try {
-                    const group = groups.find(g => g.id === donor.groupId);
-                    const groupName = group ? group.name : '';
-                    const matrimId = donor.nedarimMatrimId || null;
-                    await uploadOfflineDonation(
-                        name,
-                        'תרומה מהמערכת',
-                        donor.amount,
-                        'תרומה שנוספה דרך מערכת הניהול',
-                        groupName,
-                        matrimId
-                    );
-                    console.log(`✅ תרומה של ${donor.amount} ₪ נשלחה לנדרים פלוס עבור ${matrimId ? 'מספר מתרים: ' + matrimId : name}${groupName ? ' (קבוצה: ' + groupName + ')' : ''}`);
-                } catch (error) {
-                    console.warn('⚠️ התרומה נשמרה במערכת אך לא נשלחה לנדרים פלוס:', error.message);
-                    // לא נציג שגיאה למשתמש כי התרומה כבר נשמרה במערכת
-                }
+                // לא שולחים אוטומטית לנדרים פלוס – מונע כפילות. להעלאה: "העלאת תרומה לנדרים פלוס" או סנכרון ידני.
             }
             donors.push(normalizeDonor(donor));
             saveData();
@@ -12011,7 +12011,7 @@
             updateLiveView();
             updateLeadersList();
             updateLiveTargets();
-            showNotification(`מתרים ${name} נוסף בהצלחה${donor.amount > 0 ? ' והתרומה נשלחה לנדרים פלוס' : ''}`);
+            showNotification(`מתרים ${name} נוסף בהצלחה`);
         }
         // הוספת מתרים לקבוצה
         async function addDonorToGroup(groupId) {
@@ -12039,25 +12039,7 @@
             if (donor.amount > 0) {
                 recordDonorHistory(donor, donor.amount, donor.amount, 'group-add', 'הוספת מתרים לקבוצה');
                 addAmountToDailyBreakdown(donor, donor.amount, new Date());
-                
-                // שולח לנדרים פלוס אם יש סכום
-                try {
-                    const group = groups.find(g => g.id === donor.groupId);
-                    const groupName = group ? group.name : '';
-                    const matrimId = donor.nedarimMatrimId || null;
-                    await uploadOfflineDonation(
-                        name,
-                        'תרומה מהמערכת',
-                        donor.amount,
-                        'תרומה שנוספה דרך מערכת הניהול',
-                        groupName,
-                        matrimId
-                    );
-                    console.log(`✅ תרומה של ${donor.amount} ₪ נשלחה לנדרים פלוס עבור ${matrimId ? 'מספר מתרים: ' + matrimId : name}${groupName ? ' (קבוצה: ' + groupName + ')' : ''}`);
-                } catch (error) {
-                    console.warn('⚠️ התרומה נשמרה במערכת אך לא נשלחה לנדרים פלוס:', error.message);
-                    // לא נציג שגיאה למשתמש כי התרומה כבר נשמרה במערכת
-                }
+                // לא שולחים אוטומטית לנדרים פלוס – מונע כפילות. להעלאה: "העלאת תרומה לנדרים פלוס" או סנכרון ידני.
             }
             donors.push(normalizeDonor(donor));
             saveData();
@@ -12071,7 +12053,7 @@
             updateLiveView();
             updateLeadersList();
             updateLiveTargets();
-            showNotification(`מתרים ${name} נוסף בהצלחה${donor.amount > 0 ? ' והתרומה נשלחה לנדרים פלוס' : ''}`);
+            showNotification(`מתרים ${name} נוסף לקבוצה בהצלחה`);
         }
 
         // פונקציה עזר לקבלת שם התצוגה של מתרים
@@ -14452,6 +14434,7 @@
                 updateAutoSyncIntervalDisplay();
             }
             fillNedarimCorrectionDonorSelect();
+            if (typeof updateNedarimFixCurrentSumLabel === 'function') updateNedarimFixCurrentSumLabel();
             // סנכרון ראשוני של הנתונים הקיימים
             syncAllDataToDatabase();
         }).catch(error => {
@@ -16902,13 +16885,24 @@
                 
                 console.log('📤 שלב 1: מעדכן סכומים מהתוכנה לנדרים פלוס...');
                 
-                // מושך את הנתונים הנוכחיים מנדרים פלוס כדי לחשב דלתות
+                // מושך את הנתונים הנוכחיים מנדרים פלוס כדי לחשב דלתות – חובה! בלי זה אסור לשלוח
                 let matrimListForComparison = [];
                 try {
                     matrimListForComparison = await fetchMatrimFromMatchPlus();
                     console.log(`📊 קיבלנו ${matrimListForComparison.length} מתרימים להשוואה`);
                 } catch (error) {
-                    console.warn('⚠️ לא הצלחתי למשוך נתונים להשוואה - אעדכן לפי הסכומים המקומיים:', error.message);
+                    console.warn('⚠️ לא הצלחתי למשוך נתונים מנדרים פלוס:', error.message);
+                }
+                
+                // אם אין רשימת מתרימים מנדרים – לא שולחים כלום (מונע שליחת סכום מלא במקום דלתה)
+                if (!matrimListForComparison || matrimListForComparison.length === 0) {
+                    console.error('❌ לא ניתן לחשב דלתות – לא התקבלה רשימת מתרימים מנדרים פלוס. לא נשלח עדכון לנדרים.');
+                    if (!silent) {
+                        showNedarimStatus('לא ניתן לסנכרן: לא התקבלה רשימת מתרימים מנדרים פלוס. נסה שוב או הפעל "טען מתרימים מנדרים פלוס".', 'error');
+                        showNotification('⚠️ סנכרון לנדרים פלוס נעצר – לא התקבלה רשימת מתרימים. אל תשלח עדכונים בלי רשימה.', 'warning');
+                    }
+                    if (btn) { btn.disabled = false; btn.textContent = '🔄 סנכרון תרומות לנדרים פלוס'; }
+                    return;
                 }
                 
                 // יוצר מפה של סכומים מנדרים פלוס (לפי מספר מתרים) - הקישור העיקרי
@@ -17708,9 +17702,9 @@
                         }
                     }
                     
-                    // סנכרון ראשוני מלא (דחיפה + משיכה) – תרומות אמיתיות מנדרים (סליקה באשראי) יופיעו
-                    console.log('🔄 [אתחול] מסנכרן עם נדרים פלוס (סנכרון מלא)...');
-                    await syncWithNedarimPlus(true); // silent – סנכרון מלא
+                    // סנכרון ראשוני: רק משיכה (ללא דחיפה!) – מונע שליחת סכומים שגויים לנדרים בטעינת דף
+                    console.log('🔄 [אתחול] מושך נתונים מנדרים פלוס (ללא דחיפה לנדרים)...');
+                    await syncWithNedarimPlus(true, true); // silent, pullOnly – לא דוחף לנדרים
                     
                     suppressNotifications = false;
                     
@@ -19691,6 +19685,72 @@
                 showNotification('⚠️ שגיאה בעדכון נדרים פלוס: ' + error.message, 'error');
                 return { success: false, error: error.message };
             }
+        }
+        
+        // מעדכן את התצוגה "סה"כ נוכחי בתוכנה" בתיקון הסכום האמיתי
+        function updateNedarimFixCurrentSumLabel() {
+            const el = document.getElementById('nedarimFixCurrentSumLabel');
+            if (!el) return;
+            const sum = (donors || []).reduce((s, d) => s + (d.amount || 0), 0);
+            el.textContent = 'סה"כ נוכחי בתוכנה: ' + sum.toLocaleString('he-IL') + ' ₪';
+        }
+        
+        // התאמת כל הסכומים בתוכנה לסכום האמיתי (יחסית בין המתרימים), ואז סנכרון לנדרים ישלח הפחתות
+        function applyRealAmountFix() {
+            const inputEl = document.getElementById('nedarimFixRealAmountInput');
+            const resultEl = document.getElementById('nedarimFixResult');
+            const labelEl = document.getElementById('nedarimFixCurrentSumLabel');
+            const currentSum = (donors || []).reduce((s, d) => s + (d.amount || 0), 0);
+            if (labelEl) labelEl.textContent = 'סה"כ נוכחי בתוכנה: ' + currentSum.toLocaleString('he-IL') + ' ₪';
+            
+            const realTotal = inputEl ? Math.round(parseFloat(inputEl.value) || 0) : 0;
+            if (realTotal <= 0) {
+                if (resultEl) {
+                    resultEl.textContent = 'נא להזין את הסכום האמיתי (הנכון) במספר שלם חיובי.';
+                    resultEl.style.color = '#c62828';
+                }
+                return;
+            }
+            if (!donors || donors.length === 0) {
+                if (resultEl) { resultEl.textContent = 'אין מתרימים במערכת.'; resultEl.style.color = '#c62828'; }
+                return;
+            }
+            if (currentSum <= 0) {
+                if (resultEl) { resultEl.textContent = 'סה"כ נוכחי הוא 0 – לא ניתן לחלק יחסית. עדכן סכומים ידנית.'; resultEl.style.color = '#c62828'; }
+                return;
+            }
+            const factor = realTotal / currentSum;
+            let adjusted = 0;
+            donors.forEach(d => {
+                const prev = d.amount || 0;
+                if (prev > 0) {
+                    d.amount = Math.max(0, Math.round(prev * factor));
+                    adjusted++;
+                }
+            });
+            // תיקון עיגול: אם הסכום החדש לא בדיוק realTotal, מתקן על מתרים ראשון עם סכום
+            const newSum = donors.reduce((s, d) => s + (d.amount || 0), 0);
+            const diff = realTotal - newSum;
+            if (diff !== 0) {
+                const firstWithAmount = donors.find(d => (d.amount || 0) > 0);
+                if (firstWithAmount) {
+                    firstWithAmount.amount = Math.max(0, (firstWithAmount.amount || 0) + diff);
+                }
+            }
+            ensureDonorsNormalized();
+            saveData();
+            updateDonorsList();
+            updateGroupsDisplay();
+            updateHomeStats();
+            updateLiveView();
+            updateLeadersList();
+            updateLiveTargets();
+            updateNedarimFixCurrentSumLabel();
+            if (resultEl) {
+                resultEl.textContent = '✅ הסכומים בתוכנה עודכנו ל־' + realTotal.toLocaleString('he-IL') + ' ₪. כעת לחץ על "סנכרון תרומות לנדרים פלוס" (הירוק למעלה) כדי לעדכן גם את נדרים פלוס.';
+                resultEl.style.color = '#0d47a1';
+            }
+            showNotification('הסכומים בתוכנה עודכנו. הרץ "סנכרון תרומות לנדרים פלוס" כדי לעדכן את נדרים.');
         }
         
         // ממלא את רשימת המתרימים בתיבת תיקון ההפחתה (מתרים עם מספר מתרים תקין)
