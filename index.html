@@ -16528,27 +16528,149 @@
                 // ממתין קצת כדי שהגליון יעדכן
                 await new Promise(resolve => setTimeout(resolve, 2000));
                 
-                // טוען את המתרים מחדש מנדרים פלוס
+                // טוען את המתרים מחדש מנדרים פלוס לפי השם
                 showNedarimStatus('טוען מתרים מחדש מנדרים פלוס...', 'loading');
-                console.log('📥 טוען מתרים מחדש מנדרים פלוס...');
+                console.log('📥 טוען מתרים מחדש מנדרים פלוס לפי השם...');
                 
-                // משתמש בפונקציה הקיימת לטעינת מתרים מנדרים פלוס
-                await loadMatrimFromNedarim(true); // silent mode
+                // מושך את רשימת המתרים מנדרים פלוס
+                let matrimList = [];
+                try {
+                    matrimList = await fetchMatrimFromMatchPlus();
+                    console.log(`✅ קיבלנו ${matrimList.length} מתרימים מנדרים פלוס`);
+                } catch (error) {
+                    console.error('❌ שגיאה במשיכת מתרים מנדרים פלוס:', error);
+                    throw error;
+                }
                 
-                // בודק כמה מתרים נטענו מחדש
-                const reloadedDonors = donors.filter(donor => {
-                    const name = donor.name.trim();
-                    return donorNamesToReload.includes(name);
+                // מחפש קבוצה "נדרים פלוס"
+                let nedarimGroup = groups.find(g => {
+                    const gName = (g.name || '').trim().toLowerCase();
+                    return gName === 'נדרים פלוס' || 
+                           gName.includes('נדרים') || 
+                           gName.includes('nedarim');
+                });
+                if (!nedarimGroup) {
+                    nedarimGroup = {
+                        id: Date.now(),
+                        name: 'נדרים פלוס',
+                        goal: defaultGroupGoal || 100000
+                    };
+                    groups.push(nedarimGroup);
+                    console.log('✅ נוצרה קבוצה "נדרים פלוס"');
+                }
+                
+                // יוצר מתרים חדשים לפי השם
+                let reloadedCount = 0;
+                matrimList.forEach(matrim => {
+                    const matrimName = (matrim.Name || matrim.name || '').trim();
+                    const matrimGoal = parseInt(matrim.Goal) || 0;
+                    const matrimAmount = parseInt(matrim.Cumule) || 0;
+                    const matrimId = matrim.Id || matrim.MatrimId || matrim.id || matrim.MatrimNumber || null;
+                    
+                    if (!matrimName) return;
+                    
+                    // בודק אם המתרים נמצא ברשימת השמות שנמחקו (התאמה גמישה)
+                    const isInReloadList = donorNamesToReload.some(reloadName => {
+                        const normalizedReloadName = reloadName.replace(/\s+/g, ' ').trim();
+                        const normalizedMatrimName = matrimName.replace(/\s+/g, ' ').trim();
+                        
+                        // התאמה מדויקת
+                        if (normalizedReloadName === normalizedMatrimName) {
+                            return true;
+                        }
+                        
+                        // התאמה חלקית
+                        if (normalizedReloadName.includes(normalizedMatrimName) || 
+                            normalizedMatrimName.includes(normalizedReloadName)) {
+                            const shorterName = normalizedReloadName.length < normalizedMatrimName.length 
+                                ? normalizedReloadName 
+                                : normalizedMatrimName;
+                            const longerName = normalizedReloadName.length >= normalizedMatrimName.length 
+                                ? normalizedReloadName 
+                                : normalizedMatrimName;
+                            
+                            if (shorterName.length >= 10 && longerName.includes(shorterName)) {
+                                return true;
+                            }
+                        }
+                        
+                        return false;
+                    });
+                    
+                    if (!isInReloadList) {
+                        return; // לא אחד מהמתרים שנמחקו
+                    }
+                    
+                    // בודק אם המתרים כבר קיים (לפי שם - התאמה גמישה)
+                    const existingDonor = donors.find(d => {
+                        const dName = (d.name || '').trim();
+                        const normalizedDonorName = dName.replace(/\s+/g, ' ').trim();
+                        const normalizedMatrimName = matrimName.replace(/\s+/g, ' ').trim();
+                        
+                        // התאמה מדויקת
+                        if (normalizedDonorName === normalizedMatrimName) {
+                            return true;
+                        }
+                        
+                        // התאמה חלקית
+                        if (normalizedDonorName.includes(normalizedMatrimName) || 
+                            normalizedMatrimName.includes(normalizedDonorName)) {
+                            const shorterName = normalizedDonorName.length < normalizedMatrimName.length 
+                                ? normalizedDonorName 
+                                : normalizedMatrimName;
+                            const longerName = normalizedDonorName.length >= normalizedMatrimName.length 
+                                ? normalizedDonorName 
+                                : normalizedMatrimName;
+                            
+                            if (shorterName.length >= 10 && longerName.includes(shorterName)) {
+                                return true;
+                            }
+                        }
+                        
+                        return false;
+                    });
+                    
+                    if (existingDonor) {
+                        // מתרים כבר קיים - מעדכן את מספר המתרים
+                        if (matrimId && /^\d+$/.test(String(matrimId).trim())) {
+                            existingDonor.nedarimMatrimId = String(matrimId).trim();
+                            existingDonor.amount = matrimAmount;
+                            if (matrimGoal > 0) {
+                                existingDonor.personalGoal = matrimGoal;
+                            }
+                            console.log(`✅ עודכן מתרים "${matrimName}" עם מספר מתרים: ${matrimId}`);
+                            reloadedCount++;
+                        }
+                    } else {
+                        // מתרים חדש - יוצר אותו
+                        if (matrimId && /^\d+$/.test(String(matrimId).trim())) {
+                            const newDonor = {
+                                id: Date.now() + Math.random(),
+                                name: matrimName,
+                                originalName: matrimName,
+                                displayName: null,
+                                nedarimMatrimId: String(matrimId).trim(),
+                                groupId: nedarimGroup.id,
+                                amount: matrimAmount,
+                                personalGoal: matrimGoal || null,
+                                history: [],
+                                createdAt: new Date().toISOString(),
+                                updatedAt: new Date().toISOString(),
+                                fromNedarimPlus: true,
+                                fromMatching: true,
+                                source: 'nedarim_plus'
+                            };
+                            
+                            donors.push(newDonor);
+                            console.log(`✅ נוצר מתרים חדש "${matrimName}" עם מספר מתרים: ${matrimId}`);
+                            reloadedCount++;
+                        } else {
+                            console.warn(`⚠️ מתרים "${matrimName}" מנדרים פלוס אין לו מספר מתרים תקין - לא יוצר`);
+                        }
+                    }
                 });
                 
-                const reloadedWithValidMatrimId = reloadedDonors.filter(donor => {
-                    const matrimId = donor.nedarimMatrimId;
-                    if (!matrimId) return false;
-                    const matrimIdStr = String(matrimId).trim();
-                    return /^\d+$/.test(matrimIdStr) && !matrimIdStr.includes('T') && !matrimIdStr.includes('Z');
-                });
-                
-                console.log(`✅ נטענו מחדש ${reloadedWithValidMatrimId.length} מתרים עם מספר מתרים תקין`);
+                console.log(`✅ נטענו מחדש ${reloadedCount} מתרים עם מספר מתרים תקין`);
                 
                 // שומר את המתרים החדשים
                 saveData();
@@ -16561,7 +16683,7 @@
                 updateLeadersList();
                 updateLiveTargets();
                 
-                const message = `✅ הושלם! נמחקו ${deletedCount} מתרים ונטענו מחדש ${reloadedWithValidMatrimId.length} מתרים עם מספר מתרים תקין`;
+                const message = `✅ הושלם! נמחקו ${deletedCount} מתרים ונטענו מחדש ${reloadedCount} מתרים עם מספר מתרים תקין`;
                 showNedarimStatus(message, 'success');
                 showNotification(message, 'success');
                 
