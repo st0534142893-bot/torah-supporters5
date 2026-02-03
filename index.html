@@ -6389,8 +6389,31 @@
         
         // Wrapper ל-localStorage.setItem
         function storageSetItem(key, value) {
+            const valueStr = typeof value === 'string' ? value : JSON.stringify(value);
+            
+            // תמיד נשמור מקומית קודם - זה מבטיח עדכון מיידי
+            try {
+                localStorage.setItem(key, valueStr);
+            } catch (e) {
+                console.error('שגיאה ב-localStorage:', e);
+            }
+            
+            // אם יש Google Sheets Web App URL, נשמור שם גם (אסינכרונית, לא חוסמת)
+            const googleSheetsUrl = googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || '';
+            if (googleSheetsUrl && googleSheetsUrl.trim() !== '') {
+                const url = `${googleSheetsUrl}?key=${encodeURIComponent(key)}&value=${encodeURIComponent(valueStr)}`;
+                
+                // שמירה אסינכרונית ל-Google Sheets (לא חוסמת את הקוד)
+                fetch(url, {
+                    method: 'POST',
+                    mode: 'no-cors' // Google Sheets Web App לא תומך ב-CORS, אז נשתמש ב-no-cors
+                }).catch(err => {
+                    console.warn('שגיאה בשמירה ל-Google Sheets, נשמר מקומית:', err);
+                });
+            }
+            
+            // אם זה Apps Script, נשמור גם דרך השרת
             if (isAppsScript()) {
-                // ב-Apps Script - שמירה דרך השרת
                 try {
                     google.script.run
                         .withSuccessHandler(() => {
@@ -6398,29 +6421,10 @@
                         })
                         .withFailureHandler((error) => {
                             console.error('שגיאה בשמירה ב-Apps Script:', error);
-                            // נסה לשמור ב-localStorage כגיבוי
-                            try {
-                                localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
-                            } catch (e) {
-                                console.error('שגיאה גם ב-localStorage:', e);
-                            }
                         })
                         .saveToStorage(key, value);
                 } catch (e) {
                     console.error('שגיאה בקריאה ל-google.script.run:', e);
-                    // נסה לשמור ב-localStorage כגיבוי
-                    try {
-                        localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
-                    } catch (e2) {
-                        console.error('שגיאה גם ב-localStorage:', e2);
-                    }
-                }
-            } else {
-                // בדפדפן רגיל - localStorage
-                try {
-                    localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
-                } catch (e) {
-                    console.error('שגיאה ב-localStorage:', e);
                 }
             }
         }
@@ -6557,6 +6561,8 @@
         let editingShouldFocus = false;
         let lastLiveViewStructure = '';
         let lastLiveViewData = new Map();
+        // מפה של מתרימים ששונו לאחרונה - מונע עדכון מהגליון עד שהשמירה תסתיים
+        const recentlyUpdatedDonors = new Map(); // Map<donorId, timestamp>
         let accessControl = {
             enabled: false,
             password: '',
@@ -12661,20 +12667,8 @@
                 changed = true;
             }
             const previousBreakdown = getDonorDailyBreakdown(donor).slice();
-            
-            // עדכון הסכום עם לוגים לניפוי באגים
-            console.log(`🔧 [עדכון מתרים] מתרים ID: ${donorId}, שם: ${donor.name || donor.displayName}`);
-            console.log(`🔧 [עדכון מתרים] סכום ישן: ${oldAmount}, סכום חדש: ${finalAmount}, דלתא: ${amountDelta}`);
-            
             donor.amount = finalAmount;
             alignBreakdownToAmount(donor, donor.amount);
-            
-            // וידוא שהסכום נשמר
-            if (donor.amount !== finalAmount) {
-                console.error(`❌ [עדכון מתרים] שגיאה: הסכום לא נשמר! donor.amount=${donor.amount}, finalAmount=${finalAmount}`);
-                donor.amount = finalAmount; // כופה עדכון
-            }
-            
             const afterBreakdown = donor.dailyBreakdown;
             const breakdownChanged = afterBreakdown.some((val, index) => val !== previousBreakdown[index]);
             if (breakdownChanged) changed = true;
@@ -12682,45 +12676,63 @@
                 const note = amountDelta > 0 ? 'תוספת ידנית' : 'הפחתה ידנית';
                 recordDonorHistory(donor, amountDelta, donor.amount, 'manual-edit', note);
                 changed = true;
+            }
+            
+            // שמירה מיידית ב-localStorage לפני כל דבר אחר - זה מבטיח שהעדכון נשמר מיד
+            if (changed) {
+                ensureDonorsNormalized();
+                // מסמן את המתרים כשונה לאחרונה - מונע עדכון מהגליון
+                recentlyUpdatedDonors.set(donorId, Date.now());
                 
-                // שולח לנדרים פלוס אם יש שינוי בסכום (תוספת או הפחתה)
-                // משתמש במספר מתרים אם יש, אחרת בשם המקורי
-                if (amountDelta !== 0 && donor.fromNedarimPlus) {
-                    try {
-                        const originalName = donor.originalName || donor.name;
-                        const group = groups.find(g => g.id === donor.groupId);
-                        const groupName = group ? group.name : '';
-                        const matrimId = donor.nedarimMatrimId || null;
-                        await uploadOfflineDonation(
-                            originalName,
-                            'תרומה מהמערכת',
-                            amountDelta, // יכול להיות שלילי להפחתות
-                            `עדכון ידני: ${note}`,
-                            groupName,
-                            matrimId
-                        );
-                        const actionText = amountDelta > 0 ? 'נוספה' : 'הופחתה';
-                        console.log(`✅ תרומה של ${Math.abs(amountDelta)} ₪ ${actionText} בנדרים פלוס עבור ${matrimId ? 'מספר מתרים: ' + matrimId : originalName}${groupName ? ' (קבוצה: ' + groupName + ')' : ''}`);
-                        
-                        // מעדכן את הסכום הכולל מ-API אחרי העלאה מוצלחת
-                        setTimeout(async () => {
-                            try {
-                                console.log('🔄 מעדכן סכום כולל מ-API אחרי עדכון מתרים...');
-                                const totalData = await fetchTotalFromMatchPlus();
-                                if (totalData && totalData.Donated > 0) {
-                                    console.log(`✅ סכום כולל עודכן: ${totalData.Donated.toLocaleString()} ש"ח`);
-                                    updateHomeStats();
-                                    updateLeadersList();
-                                    updateLiveTargets();
-                                }
-                            } catch (err) {
-                                console.warn('⚠️ שגיאה בעדכון סכום כולל אחרי עדכון מתרים:', err);
+                // שמירה מיידית של המתרים המעודכן ב-localStorage
+                try {
+                    const donorsStr = JSON.stringify(donors);
+                    localStorage.setItem('donors', donorsStr);
+                    console.log('✅ שמירה מיידית ב-localStorage:', donorId, 'סכום:', finalAmount);
+                } catch (e) {
+                    console.error('❌ שגיאה בשמירה ב-localStorage:', e);
+                }
+                // גם דרך storageSetItem (לשמירה ב-Google Sheets)
+                storageSetItem('donors', donors);
+            }
+            
+            // שולח לנדרים פלוס אם יש שינוי בסכום (תוספת או הפחתה)
+            // משתמש במספר מתרים אם יש, אחרת בשם המקורי
+            if (amountDelta !== 0 && donor.fromNedarimPlus) {
+                try {
+                    const originalName = donor.originalName || donor.name;
+                    const group = groups.find(g => g.id === donor.groupId);
+                    const groupName = group ? group.name : '';
+                    const matrimId = donor.nedarimMatrimId || null;
+                    await uploadOfflineDonation(
+                        originalName,
+                        'תרומה מהמערכת',
+                        amountDelta, // יכול להיות שלילי להפחתות
+                        `עדכון ידני: ${amountDelta > 0 ? 'תוספת ידנית' : 'הפחתה ידנית'}`,
+                        groupName,
+                        matrimId
+                    );
+                    const actionText = amountDelta > 0 ? 'נוספה' : 'הופחתה';
+                    console.log(`✅ תרומה של ${Math.abs(amountDelta)} ₪ ${actionText} בנדרים פלוס עבור ${matrimId ? 'מספר מתרים: ' + matrimId : originalName}${groupName ? ' (קבוצה: ' + groupName + ')' : ''}`);
+                    
+                    // מעדכן את הסכום הכולל מ-API אחרי העלאה מוצלחת
+                    setTimeout(async () => {
+                        try {
+                            console.log('🔄 מעדכן סכום כולל מ-API אחרי עדכון מתרים...');
+                            const totalData = await fetchTotalFromMatchPlus();
+                            if (totalData && totalData.Donated > 0) {
+                                console.log(`✅ סכום כולל עודכן: ${totalData.Donated.toLocaleString()} ש"ח`);
+                                updateHomeStats();
+                                updateLeadersList();
+                                updateLiveTargets();
                             }
-                        }, 2000);
-                    } catch (error) {
-                        console.warn('⚠️ העדכון נשמר במערכת אך לא נשלח לנדרים פלוס:', error.message);
-                        // לא נציג שגיאה למשתמש כי העדכון כבר נשמר במערכת
-                    }
+                        } catch (err) {
+                            console.warn('⚠️ שגיאה בעדכון סכום כולל אחרי עדכון מתרים:', err);
+                        }
+                    }, 2000);
+                } catch (error) {
+                    console.warn('⚠️ העדכון נשמר במערכת אך לא נשלח לנדרים פלוס:', error.message);
+                    // לא נציג שגיאה למשתמש כי העדכון כבר נשמר במערכת
                 }
             }
 
@@ -12732,36 +12744,31 @@
                 return;
             }
 
-            ensureDonorsNormalized();
-            
-            // וידוא סופי שהסכום נשמר אחרי normalize
-            const donorAfterNormalize = donors.find(d => d.id === donorId);
-            if (donorAfterNormalize && donorAfterNormalize.amount !== finalAmount) {
-                console.warn(`⚠️ [עדכון מתרים] הסכום השתנה אחרי normalize! מתקן... donor.amount=${donorAfterNormalize.amount}, finalAmount=${finalAmount}`);
-                donorAfterNormalize.amount = finalAmount;
-                alignBreakdownToAmount(donorAfterNormalize, finalAmount);
-            }
-            
-            saveData();
+            // עדכון מיידי של התצוגה - זה מבטיח שהמשתמש רואה את השינוי מיד
             if (deltaInput) deltaInput.value = '';
             editingDonorId = null;
             editingShouldFocus = false;
+            
+            // עדכון התצוגה מיד - לפני השמירה המלאה
             updateDonorsList();
             updateGroupsDisplay();
             updateHomeStats();
             updateLiveView();
             updateLeadersList();
             updateLiveTargets();
+            
+            // שמירה מלאה של כל הנתונים (כבר שמרנו את donors קודם, אבל עכשיו שומרים הכל)
+            saveData();
             notifyDataChanged();
             
-            // שמירה מיידית לגליון - חשוב! כדי שהשינויים יהיו זמינים ממחשבים אחרים
-            const url = googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || DEFAULT_GOOGLE_SHEETS_URL || '';
-            if (url) {
-                saveToGoogleSheets().then(() => {
-                    console.log('✅ פרטי מתרים עודכנו בגליון');
-                }).catch(err => {
-                    console.warn('⚠️ שגיאה בשמירת פרטי מתרים לגליון:', err);
-                });
+            // וידוא שהעדכון נשמר - בדיקה נוספת
+            const donorAfterSave = donors.find(d => d.id === donorId);
+            if (donorAfterSave && donorAfterSave.amount !== finalAmount) {
+                console.warn('⚠️ הסכום לא נשמר נכון, מתקן...');
+                donorAfterSave.amount = finalAmount;
+                alignBreakdownToAmount(donorAfterSave, finalAmount);
+                storageSetItem('donors', donors);
+                updateDonorsList();
             }
             
             showNotification('פרטי המתרים עודכנו' + (amountDelta > 0 ? ' והתרומה נשלחה לנדרים פלוס' : ''));
@@ -14817,6 +14824,9 @@
                 showNotification('לא בוצע שינוי בסכום');
                 return;
             }
+            
+            // מסמן את המתרים כשונה לאחרונה - מונע עדכון מהגליון
+            recentlyUpdatedDonors.set(donorId, Date.now());
 
             const noteInput = prompt('הזן הערה לעדכון (לא חובה):');
             const note = noteInput && noteInput.trim() ? noteInput.trim() : '';
@@ -14838,6 +14848,31 @@
             recordDonorHistory(donor, actualDelta, donor.amount, historySource, note, paymentDate);
             ensureDonorsNormalized();
             saveData();
+            
+            // שמירה מיידית לגליון - חשוב! כדי שהשינויים יהיו זמינים ממחשבים אחרים
+            const url = googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || DEFAULT_GOOGLE_SHEETS_URL || '';
+            if (url) {
+                saveToGoogleSheets().then(() => {
+                    console.log('✅ פרטי מתרים עודכנו בגליון');
+                    // אחרי שמירה מוצלחת, מסיר את ההגנה (אבל רק אחרי כמה שניות כדי שהסנכרון יטען את הערך החדש)
+                    setTimeout(() => {
+                        recentlyUpdatedDonors.delete(donorId);
+                        console.log(`🔓 [סנכרון] הסרת הגנה על מתרים ${donorId} אחרי שמירה מוצלחת`);
+                    }, 5000); // 5 שניות אחרי השמירה
+                }).catch(err => {
+                    console.warn('⚠️ שגיאה בשמירת פרטי מתרים לגליון:', err);
+                    // אם השמירה נכשלה, מסיר את ההגנה אחרי זמן קצר יותר
+                    setTimeout(() => {
+                        recentlyUpdatedDonors.delete(donorId);
+                    }, 10000);
+                });
+            } else {
+                // אם אין URL, מסיר את ההגנה אחרי זמן קצר
+                setTimeout(() => {
+                    recentlyUpdatedDonors.delete(donorId);
+                }, 15000);
+            }
+            
             updateDonorsList();
             updateGroupsDisplay();
             updateHomeStats();
@@ -14945,6 +14980,10 @@
                 showNotification('לא בוצע שינוי בסכום');
                 return;
             }
+            
+            // מסמן את המתרים כשונה לאחרונה - מונע עדכון מהגליון
+            recentlyUpdatedDonors.set(donorId, Date.now());
+            
             donor.amount = newAmount;
             if (actualDelta !== 0) {
                 addAmountToDailyBreakdown(donor, actualDelta, new Date());
@@ -14952,6 +14991,31 @@
             recordDonorHistory(donor, actualDelta, donor.amount, 'quick-adjust', actualDelta > 0 ? 'עדכון מהיר (+)' : 'עדכון מהיר (-)');
             ensureDonorsNormalized();
             saveData();
+            
+            // שמירה מיידית לגליון - חשוב! כדי שהשינויים יהיו זמינים ממחשבים אחרים
+            const url = googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || DEFAULT_GOOGLE_SHEETS_URL || '';
+            if (url) {
+                saveToGoogleSheets().then(() => {
+                    console.log('✅ פרטי מתרים עודכנו בגליון');
+                    // אחרי שמירה מוצלחת, מסיר את ההגנה (אבל רק אחרי כמה שניות כדי שהסנכרון יטען את הערך החדש)
+                    setTimeout(() => {
+                        recentlyUpdatedDonors.delete(donorId);
+                        console.log(`🔓 [סנכרון] הסרת הגנה על מתרים ${donorId} אחרי שמירה מוצלחת`);
+                    }, 5000); // 5 שניות אחרי השמירה
+                }).catch(err => {
+                    console.warn('⚠️ שגיאה בשמירת פרטי מתרים לגליון:', err);
+                    // אם השמירה נכשלה, מסיר את ההגנה אחרי זמן קצר יותר
+                    setTimeout(() => {
+                        recentlyUpdatedDonors.delete(donorId);
+                    }, 10000);
+                });
+            } else {
+                // אם אין URL, מסיר את ההגנה אחרי זמן קצר
+                setTimeout(() => {
+                    recentlyUpdatedDonors.delete(donorId);
+                }, 15000);
+            }
+            
             updateDonorsList();
             updateGroupsDisplay();
             updateHomeStats();
@@ -15421,21 +15485,21 @@
                     isReduction: validAmount < 0
                 });
 
-                // ✅ שליחה דרך השרת המאובטח
+                // ✅ שליחה דרך Netlify Function מאובטחת (או Apps Script אם זמין)
                 if (isAppsScript()) {
                     return new Promise((resolve, reject) => {
                         google.script.run
                             .withSuccessHandler((result) => {
                                 if (result && result.success) {
-                                    console.log('✅ העלאה הצליחה דרך השרת:', result);
+                                    console.log('✅ העלאה הצליחה דרך Apps Script:', result);
                                     resolve({ success: true, message: 'התרומה הועלתה בהצלחה' });
                                 } else {
-                                    console.error('❌ שגיאה מהשרת:', result?.error);
+                                    console.error('❌ שגיאה מ-Apps Script:', result?.error);
                                     reject(new Error(result?.error || 'שגיאה בהעלאת תרומה'));
                                 }
                             })
                             .withFailureHandler((error) => {
-                                console.error('❌ שגיאה בקריאה לשרת:', error);
+                                console.error('❌ שגיאה בקריאה ל-Apps Script:', error);
                                 reject(error);
                             })
                             .updateNedarimAmount({
@@ -15447,65 +15511,98 @@
                     });
                 }
                 
-                // 🔓 גיבוי - אם לא ב-Apps Script
-                console.warn('⚠️ לא רץ ב-Apps Script - אין גישה להעלאת תרומות');
-                throw new Error('פעולה זו זמינה רק כשהתוכנה רצה ב-Google Apps Script');
-                
-                // קוד ישן - לא יגיע לכאן
-                const response = { ok: false };
+                // ✅ שליחה דרך Netlify Function מאובטחת
+                try {
+                    const proxyUrl = '/.netlify/functions/nedarim-proxy';
+                    const requestBody = {
+                        matrimId: finalMatrimId,
+                        clientName: (clientName || 'תורם אנונימי').trim(),
+                        amount: validAmount,
+                        comments: (comments || '').trim(),
+                        mosadId: NEDARIM_CONFIG.mosadId || ''
+                    };
 
-                const responseText = await response.text();
-                console.log('📦 תגובה מנדרים פלוס (העלאה):', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    responseLength: responseText.length,
-                    responsePreview: responseText.substring(0, 200)
-                });
+                    const response = await fetch(proxyUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestBody)
+                    });
 
-                // אם קוד התגובה הוא 200 (OK), זה נחשב להצלחה גם אם אין JSON
-                if (response.ok && response.status === 200) {
-                    // מנסה לפרסר את התגובה כ-JSON
-                    let data;
-                    try {
-                        data = JSON.parse(responseText);
-                        
-                        // אם יש JSON, בודק את הסטטוס
-                        if (data.Status === 'OK' || data.success === true) {
-                            console.log('✅ העלאה הצליחה (JSON עם Status OK):', data);
-                            return { success: true, message: data.Message || data.message || 'התרומה הועלתה בהצלחה' };
-                        }
-                        
-                        // אם יש שגיאה ב-JSON
-                        if (data.Status && data.Status !== 'OK') {
-                            throw new Error(data.Message || data.message || 'שגיאה לא ידועה');
-                        }
-                        
-                        // אם אין Status אבל יש JSON, זה עדיין נחשב להצלחה (קוד 200)
-                        console.log('✅ העלאה הצליחה (JSON ללא Status מוגדר):', data);
-                        return { success: true, message: 'התרומה הועלתה בהצלחה' };
-                        
-                    } catch (parseError) {
-                        // אם זה לא JSON, בודק אם יש הודעת הצלחה בטקסט
-                        const responseLower = responseText.toLowerCase();
-                        if (responseLower.includes('ok') || 
-                            responseLower.includes('הצלח') || 
-                            responseLower.includes('success') ||
-                            responseLower.includes('אוקיי') ||
-                            responseText.trim() === '' ||
-                            responseText.trim().length < 100) { // תגובה קצרה = כנראה הצלחה
-                            
-                            console.log('✅ העלאה הצליחה (תגובה טקסטואלית):', responseText.substring(0, 100));
-                            return { success: true, message: 'התרומה הועלתה בהצלחה' };
-                        }
-                        
-                        // אם יש תגובה ארוכה שלא JSON ולא מכילה הצלחה, זה כנראה שגיאה
-                        console.warn('⚠️ תגובה לא צפויה מהשרת:', responseText.substring(0, 200));
-                        // אבל עדיין מחזירים הצלחה כי קוד 200 = הצלחה
-                        return { success: true, message: 'התרומה הועלתה בהצלחה (תגובה לא סטנדרטית מהשרת)' };
+                    if (!response.ok) {
+                        throw new Error(`Proxy error: ${response.status}`);
                     }
-                } else {
-                    // אם קוד התגובה לא 200, זה שגיאה
-                    throw new Error(`שגיאת שרת: ${response.status} ${response.statusText}`);
+
+                    const responseData = await response.json();
+                    
+                    console.log('📦 תגובה משרת Proxy:', {
+                        status: response.status,
+                        success: responseData.success,
+                        message: responseData.message || responseData.error
+                    });
+
+                    if (responseData.success) {
+                        console.log('✅ העלאה הצליחה דרך Proxy:', responseData);
+                        return { success: true, message: responseData.message || 'התרומה הועלתה בהצלחה' };
+                    } else {
+                        throw new Error(responseData.error || 'שגיאה לא ידועה מה-proxy');
+                    }
+                } catch (proxyError) {
+                    console.warn('⚠️ שגיאה ב-proxy, מנסה לשלוח ישירות:', proxyError);
+                    // Fallback - שליחה ישירה (רק אם יש סיסמה מוגדרת)
+                    if (NEDARIM_CONFIG.apiPassword && NEDARIM_CONFIG.apiUrl) {
+                        const formData = new FormData();
+                        formData.append('Action', 'MatchingOffLine');
+                        formData.append('MosadNumber', NEDARIM_CONFIG.mosadId || '');
+                        formData.append('ApiPassword', NEDARIM_CONFIG.apiPassword);
+                        formData.append('MatrimId', finalMatrimId);
+                        formData.append('ClientName', (clientName || 'תורם אנונימי').trim());
+                        formData.append('Amount', validAmount.toString());
+                        formData.append('Comments', (comments || '').trim());
+                        formData.append('AjaxId', Date.now().toString());
+
+                        const directResponse = await fetch(NEDARIM_CONFIG.apiUrl, {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        const responseText = await directResponse.text();
+                        console.log('📦 תגובה מנדרים פלוס (ישיר):', {
+                            status: directResponse.status,
+                            responseLength: responseText.length,
+                            responsePreview: responseText.substring(0, 200)
+                        });
+
+                        if (directResponse.ok && directResponse.status === 200) {
+                            let data;
+                            try {
+                                data = JSON.parse(responseText);
+                                if (data.Status === 'OK' || data.success === true) {
+                                    console.log('✅ העלאה הצליחה (ישיר):', data);
+                                    return { success: true, message: data.Message || data.message || 'התרומה הועלתה בהצלחה' };
+                                }
+                                if (data.Status && data.Status !== 'OK') {
+                                    throw new Error(data.Message || data.message || 'שגיאה לא ידועה');
+                                }
+                                return { success: true, message: 'התרומה הועלתה בהצלחה' };
+                            } catch (parseError) {
+                                const responseLower = responseText.toLowerCase();
+                                if (responseLower.includes('ok') || 
+                                    responseLower.includes('הצלח') || 
+                                    responseLower.includes('success') ||
+                                    responseText.trim() === '' ||
+                                    responseText.trim().length < 100) {
+                                    return { success: true, message: 'התרומה הועלתה בהצלחה' };
+                                }
+                                throw new Error('תגובה לא צפויה מהשרת');
+                            }
+                        } else {
+                            throw new Error(`שגיאת שרת: ${directResponse.status} ${directResponse.statusText}`);
+                        }
+                    } else {
+                        throw proxyError;
+                    }
                 }
             } catch (error) {
                 console.error('שגיאה בהעלאת תרומה לנדרים פלוס:', error);
@@ -18060,33 +18157,42 @@
                         }
                     });
                     
-                    // מעדכן מתרימים קיימים לפי ID, מוסיף חדשים, אבל לא דורס מתרימים בעריכה
+                    // מעדכן מתרימים קיימים לפי ID, מוסיף חדשים, אבל לא דורס מתרימים בעריכה או ששונו לאחרונה
                     const updatedDonors = [];
                     const existingIds = new Set();
+                    const now = Date.now();
+                    const PROTECTION_WINDOW_MS = 15000; // 15 שניות - זמן הגנה מפני עדכון מהגליון אחרי שינוי מקומי
                     
                     // עדכון מתרימים קיימים
                     donors.forEach(existingDonor => {
                         const id = existingDonor.id;
                         existingIds.add(id);
                         
-                        // אם המתרים נמצא בעריכה, שומר את השינויים המקומיים
-                        if (editingDonorId === id && editingDonorLocalChanges) {
+                        // בודק אם המתרים שונה לאחרונה (פחות מ-15 שניות)
+                        const lastUpdateTime = recentlyUpdatedDonors.get(id);
+                        const isRecentlyUpdated = lastUpdateTime && (now - lastUpdateTime < PROTECTION_WINDOW_MS);
+                        
+                        // אם המתרים נמצא בעריכה או שונה לאחרונה, שומר את השינויים המקומיים
+                        if ((editingDonorId === id && editingDonorLocalChanges) || isRecentlyUpdated) {
                             const sheetDonor = donorsFromSheet.get(id);
                             if (sheetDonor) {
                                 // מעדכן מהגליון אבל שומר את השינויים המקומיים
                                 updatedDonors.push({
                                     ...sheetDonor,
-                                    amount: editingDonorLocalChanges.amount,
-                                    displayName: editingDonorLocalChanges.displayName,
-                                    groupId: editingDonorLocalChanges.groupId,
-                                    personalGoal: editingDonorLocalChanges.personalGoal
+                                    amount: existingDonor.amount, // שומר את הסכום המקומי
+                                    displayName: existingDonor.displayName || sheetDonor.displayName,
+                                    groupId: existingDonor.groupId || sheetDonor.groupId,
+                                    personalGoal: existingDonor.personalGoal || sheetDonor.personalGoal
                                 });
+                                if (isRecentlyUpdated) {
+                                    console.log(`🔒 [סנכרון] נשמרו שינויים מקומיים של מתרים ששונה לאחרונה (${Math.round((now - lastUpdateTime) / 1000)} שניות):`, id);
+                                }
                             } else {
                                 // אם לא נמצא בגליון, שומר את המתרים המקומי
                                 updatedDonors.push(existingDonor);
                             }
                         } else {
-                            // מתרים לא בעריכה - מעדכן מהגליון
+                            // מתרים לא בעריכה ולא שונה לאחרונה - מעדכן מהגליון
                             const sheetDonor = donorsFromSheet.get(id);
                             if (sheetDonor) {
                                 updatedDonors.push(sheetDonor);
