@@ -16957,7 +16957,9 @@
 
             try {
                 ensureDonorsNormalized();
-                let updatedToNedarim = 0; // pullOnly=true לא מעדכנים לנדרים
+                let updatedToNedarim = 0;   // pullOnly=true לא מעדכנים לנדרים
+                let skippedUpdates = 0;
+                let failedUpdates = 0;
 
                 console.log('═══════════════════════════════════════════════════════');
                 console.log(pullOnly ? '🔄 מתחיל משיכה מנדרים פלוס (ללא דחיפה לנדרים)...' : '🔄 מתחיל סנכרון דו-כיווני עם נדרים פלוס...');
@@ -17072,10 +17074,7 @@
                     })));
                 }
                 
-                // מעדכן כל מתרים שיש לו שינוי
-                let updatedToNedarim = 0;
-                let skippedUpdates = 0;
-                let failedUpdates = 0;
+                // מעדכן כל מתרים שיש לו שינוי (משתמשים במשתנים שהוגדרו בתחילת הפונקציה)
                 let invalidMatrimIdCount = 0;
                 
                 for (const donor of donorsToUpdate) {
