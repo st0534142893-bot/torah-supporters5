@@ -17959,16 +17959,52 @@
             }
             
             try {
-                let fetchUrl;
+                let result = null;
+                let lastError = null;
                 const isNetlify = typeof window !== 'undefined' && window.location?.hostname?.includes('netlify.app');
-                if (isNetlify) {
-                    fetchUrl = '/.netlify/functions/sheets-proxy?url=' + encodeURIComponent(url) + '&action=getAll&_=' + Date.now();
-                } else {
-                    fetchUrl = url + (url.includes('?') ? '&' : '?') + 'action=getAll&_=' + Date.now();
-                }
-                const response = await fetch(fetchUrl, { method: 'GET', redirect: 'follow' });
                 
-                const result = await response.json();
+                // ניסיון 1: דרך Netlify Function (אם על Netlify)
+                if (isNetlify) {
+                    try {
+                        const proxyUrl = '/.netlify/functions/sheets-proxy?url=' + encodeURIComponent(url) + '&action=getAll&_=' + Date.now();
+                        console.log('🔄 [סנכרון] מנסה דרך Netlify proxy:', proxyUrl.substring(0, 80) + '...');
+                        const proxyResponse = await fetch(proxyUrl, { method: 'GET', redirect: 'follow' });
+                        if (proxyResponse.ok) {
+                            result = await proxyResponse.json();
+                            console.log('✅ [סנכרון] Proxy הצליח');
+                        } else {
+                            throw new Error(`Proxy returned ${proxyResponse.status}`);
+                        }
+                    } catch (proxyError) {
+                        console.warn('⚠️ [סנכרון] Proxy נכשל, מנסה direct:', proxyError.message);
+                        lastError = proxyError;
+                    }
+                }
+                
+                // ניסיון 2: Direct fetch (fallback או אם לא על Netlify)
+                if (!result) {
+                    try {
+                        const directUrl = url + (url.includes('?') ? '&' : '?') + 'action=getAll&_=' + Date.now();
+                        console.log('🔄 [סנכרון] מנסה direct fetch:', directUrl.substring(0, 80) + '...');
+                        const directResponse = await fetch(directUrl, { 
+                            method: 'GET', 
+                            redirect: 'follow'
+                        });
+                        if (directResponse.ok) {
+                            result = await directResponse.json();
+                            console.log('✅ [סנכרון] Direct fetch הצליח');
+                        } else {
+                            throw new Error(`Direct fetch returned ${directResponse.status}`);
+                        }
+                    } catch (directError) {
+                        console.error('❌ [סנכרון] גם Direct fetch נכשל:', directError.message);
+                        throw new Error('כל הניסיונות נכשלו: ' + directError.message);
+                    }
+                }
+                
+                if (!result) {
+                    throw new Error('כל הניסיונות נכשלו');
+                }
                 
                 if (!result.success && result.error) {
                     throw new Error(result.error);
