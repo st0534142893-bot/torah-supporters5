@@ -12224,8 +12224,12 @@
                                 <div class="donor-edit-field">
                                     <label for="editName_${donor.id}">שם המתרים (כפי שיוצג בתוכנה)</label>
                                     <input type="text" id="editName_${donor.id}" value="${escapeHtml(displayName)}" placeholder="שם מלא">
-                                    ${donor.nedarimMatrimId ? `<small style="color: var(--muted); display: block; margin-top: 5px; font-weight: 600;">מספר מתרים: ${donor.nedarimMatrimId} (לא ניתן לערוך - זהו הזיהוי הייחודי)</small>` : ''}
                                     ${originalName && originalName !== displayName ? `<small style="color: var(--muted); display: block; margin-top: 5px;">שם מקורי בנדרים פלוס: ${escapeHtml(originalName)}</small>` : ''}
+                                </div>
+                                <div class="donor-edit-field">
+                                    <label for="editMatrimId_${donor.id}">מספר מתרים (נדרים פלוס)</label>
+                                    <input type="text" id="editMatrimId_${donor.id}" value="${donor.nedarimMatrimId || ''}" placeholder="הזן מספר מתרים מנדרים פלוס" pattern="[0-9]*" style="font-family: monospace;">
+                                    <small style="color: var(--muted); display: block; margin-top: 5px;">מספר המתרים מנדרים פלוס - ניתן לערוך ידנית</small>
                                 </div>
                                 <div class="donor-edit-field">
                                     <label for="editAmount_${donor.id}">סה"כ נאסף</label>
@@ -12677,6 +12681,7 @@
             const goalInput = document.getElementById(`editGoal_${donorId}`);
             const groupSelect = document.getElementById(`editGroup_${donorId}`);
             const deltaInput = document.getElementById(`editDelta_${donorId}`);
+            const matrimIdInput = document.getElementById(`editMatrimId_${donorId}`);
 
             const newDisplayName = nameInput ? nameInput.value.trim() : (donor.displayName || donor.name);
             if (!newDisplayName) {
@@ -12688,6 +12693,25 @@
             // שומר את השם המקורי אם זה הפעם הראשונה
             if (!donor.originalName && donor.fromNedarimPlus) {
                 donor.originalName = donor.name;
+            }
+
+            // קורא את מספר המתרים מהשדה החדש
+            const newMatrimId = matrimIdInput ? matrimIdInput.value.trim() : (donor.nedarimMatrimId || '');
+            // בודק אם זה מספר תקין (רק ספרות, לא תאריך)
+            let validMatrimId = null;
+            if (newMatrimId) {
+                const isDate = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(newMatrimId) || 
+                             newMatrimId.includes('T') || 
+                             newMatrimId.includes('Z');
+                const isNumeric = /^\d+$/.test(newMatrimId);
+                
+                if (!isDate && isNumeric) {
+                    validMatrimId = newMatrimId;
+                } else if (isDate || !isNumeric) {
+                    showNotification('⚠️ מספר מתרים לא תקין - יש להזין רק ספרות (לא תאריך)', 'warning');
+                    if (matrimIdInput) matrimIdInput.focus();
+                    return;
+                }
             }
 
             const parsedAmount = amountInput ? Math.max(0, Math.round(parseFloat(amountInput.value) || 0)) : (donor.amount || 0);
@@ -12713,6 +12737,18 @@
                 donor.displayName = newDisplayName;
                 changed = true;
             }
+            
+            // מעדכן את מספר המתרים אם השתנה
+            const oldMatrimId = donor.nedarimMatrimId || '';
+            if (oldMatrimId !== validMatrimId) {
+                const oldMatrimIdStr = String(oldMatrimId).trim();
+                const newMatrimIdStr = validMatrimId || '';
+                donor.nedarimMatrimId = validMatrimId || null;
+                donor.updatedAt = new Date().toISOString();
+                console.log(`✅ עודכן מספר מתרים למתרים "${donor.name}": ${oldMatrimIdStr || 'ללא'} → ${newMatrimIdStr || 'ללא'}`);
+                changed = true;
+            }
+            
             if (donor.personalGoal !== parsedGoal) {
                 donor.personalGoal = parsedGoal;
                 changed = true;
