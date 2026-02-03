@@ -18733,7 +18733,8 @@
                     matrimId: donor.nedarimMatrimId,
                     donorName: donorDisplayName,
                     delta: delta,
-                    clientName: clientName
+                    clientName: clientName,
+                    note: '⚠️ הזיהוי הוא לפי MatrimId בלבד, לא לפי שם המתרים'
                 });
                 
                 const requestData = {
@@ -18760,9 +18761,28 @@
                 }
                 
                 const result = await response.json();
-                console.log('📦 תוצאה מהשרת:', result);
+                console.log('📦 תוצאה מהשרת:', JSON.stringify(result, null, 2));
                 
-                // מחזיר את התוצאה - ההודעות יוצגו בפונקציה הקוראת
+                // בודקים שהעדכון באמת הצליח - לא רק שהבקשה הגיעה
+                if (result && result.success && !result.skipped) {
+                    console.log('✅ עדכון נדרים פלוס הצליח:', result.message || 'העדכון בוצע');
+                    console.log('📊 פרטי העדכון:', {
+                        matrimId: donor.nedarimMatrimId,
+                        delta: delta,
+                        donorName: donorDisplayName
+                    });
+                } else if (result && result.skipped) {
+                    console.log('ℹ️ עדכון נדלג:', result.message || 'אין צורך בעדכון');
+                } else {
+                    console.error('❌ עדכון נדרים פלוס נכשל:', result?.error || 'שגיאה לא ידועה');
+                    console.error('📋 פרטי הבקשה שנכשלה:', {
+                        matrimId: donor.nedarimMatrimId,
+                        delta: delta,
+                        donorName: donorDisplayName,
+                        url: url
+                    });
+                }
+                
                 return result;
                 
             } catch (error) {
