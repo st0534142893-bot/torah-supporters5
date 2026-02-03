@@ -14890,31 +14890,31 @@
             ensureDonorsNormalized();
             saveData();
             
-            // עדכון מיידי לנדרים פלוס (אם יש nedarimMatrimId) - קורה מיד, לא ממתין לשמירה לגליון
-            if (donor.nedarimMatrimId && actualDelta !== 0) {
-                console.log(`🔄 מעדכן מיידית לנדרים פלוס: ${donorDisplayName}, דלתה: ${actualDelta}`);
-                // עדכון אסינכרוני - לא חוסם את המשך הקוד
-                updateNedarimAmountViaSheets(donor, actualDelta, note).then(result => {
-                    if (result && result.success && !result.skipped) {
-                        console.log(`✅ עודכן בהצלחה בנדרים פלוס: ${donorDisplayName}`);
-                        // הודעה ברורה למשתמש שהעדכון הצליח
-                        showNotification(`✅ עודכן בנדרים פלוס: ${donorDisplayName} - ${Math.abs(actualDelta).toLocaleString()} ₪`, 'success');
-                    } else if (result && result.skipped) {
-                        console.log(`ℹ️ עדכון נדלג בנדרים פלוס: ${donorDisplayName} - ${result.message || 'אין צורך בעדכון'}`);
-                    } else {
-                        console.warn(`⚠️ עדכון נכשל בנדרים פלוס: ${donorDisplayName} - ${result?.error || 'שגיאה לא ידועה'}`);
-                        showNotification(`⚠️ עדכון נדרים פלוס נכשל: ${result?.error || 'שגיאה לא ידועה'}`, 'error');
-                    }
-                }).catch(err => {
-                    console.error('❌ שגיאה בעדכון נדרים פלוס:', err);
-                    showNotification(`❌ שגיאה בעדכון נדרים פלוס: ${err.message}`, 'error');
-                });
-            }
-            
             // שמירה מיידית לגליון - חשוב! כדי שהשינויים יהיו זמינים ממחשבים אחרים
             const url = googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || DEFAULT_GOOGLE_SHEETS_URL || '';
             if (url) {
-                saveToGoogleSheets().then(() => {
+                // שמירה לגליון ואז עדכון נדרים פלוס מהגליון
+                saveToGoogleSheets().then(async () => {
+                    // אחרי השמירה לגליון, מעדכן את נדרים פלוס מהגליון
+                    if (donor.nedarimMatrimId && actualDelta !== 0) {
+                        console.log(`🔄 מעדכן נדרים פלוס מהגליון: ${donorDisplayName}, דלתה: ${actualDelta}`);
+                        try {
+                            const syncResult = await fetch(url + '?action=syncNedarimFromSheet', {
+                                method: 'GET',
+                                redirect: 'follow'
+                            });
+                            const result = await syncResult.json();
+                            if (result && result.success) {
+                                console.log(`✅ עודכן בהצלחה בנדרים פלוס מהגליון: ${donorDisplayName}`);
+                                showNotification(`✅ עודכן בנדרים פלוס: ${donorDisplayName} - ${Math.abs(actualDelta).toLocaleString()} ₪`, 'success');
+                            } else {
+                                console.warn(`⚠️ עדכון נדרים פלוס מהגליון נכשל: ${result?.error || 'שגיאה לא ידועה'}`);
+                            }
+                        } catch (err) {
+                            console.error('❌ שגיאה בעדכון נדרים פלוס מהגליון:', err);
+                        }
+                    }
+                }).then(() => {
                     console.log('✅ פרטי מתרים עודכנו בגליון');
                     
                     // אחרי שמירה מוצלחת, מסיר את ההגנה (אבל רק אחרי כמה שניות כדי שהסנכרון יטען את הערך החדש)
@@ -16803,8 +16803,12 @@
                 const url = googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || DEFAULT_GOOGLE_SHEETS_URL || '';
                 if (url) {
                     try {
-                        await saveToGoogleSheets();
-                        console.log('✅ נשמר לגליון - מספרי מתרים נשמרו');
+                        console.log('💾 שומר לגליון - מספרי מתרים יישמרו בעמודה "nedarimMatrimId" (עמודה 9)');
+                        const saveResult = await saveToGoogleSheets();
+                        if (saveResult && saveResult.success) {
+                            console.log('✅ נשמר לגליון בהצלחה - מספרי מתרים נשמרו בעמודה "nedarimMatrimId"');
+                            console.log(`   סה"כ מתרימים עם מספר מתרים תקין: ${saveResult.donorsWithMatrimId || 0}`);
+                        }
                     } catch (e) {
                         console.warn('⚠️ לא הצלחתי לשמור לגליון:', e);
                     }
