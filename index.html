@@ -5460,8 +5460,8 @@
                                 </div>
                             </div>
                             <div class="donors-bulk-remove-text" id="donorsBulkRemoveText" style="margin-top: 12px; padding: 12px 15px; background: #fff3e0; border-radius: 8px; border: 1px solid #ff9800;">
-                                <h4 style="margin: 0 0 8px 0; font-size: 14px; color: #e65100;">✂️ מחוק מירבי מכל השמות</h4>
-                                <p style="margin: 0 0 10px 0; font-size: 12px; color: #555;">הזן טקסט להסרה (למשל "המיליים וועד שני") – יוסר מכל שמות המתרימים. אחרי השמירה לגליון השמות יעודכנו גם בעמודה C.</p>
+                                <h4 style="margin: 0 0 8px 0; font-size: 14px; color: #e65100;">✂️ מחוק מירבי – שם תצוגה בלבד (עמודה C)</h4>
+                                <p style="margin: 0 0 10px 0; font-size: 12px; color: #555;">הזן טקסט להסרה (למשל "המיליים וועד שני"). הטקסט יוסר רק מ<strong>שם התצוגה</strong> (עמודה C בגליון). השם המקורי (עמודה B) לא משתנה – כך החיבור לנדרים פלוס לא נשבש.</p>
                                 <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px;">
                                     <input type="text" id="bulkRemoveTextInput" placeholder='למשל: המיליים וועד שני' style="min-width: 200px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;">
                                     <button type="button" class="btn btn-small" onclick="removeTextFromAllDonorNames()" style="background: #ff9800; color: white;">הסר מכל השמות</button>
@@ -12535,22 +12535,15 @@
             ensureDonorsNormalized();
             let changedCount = 0;
             let totalRemovals = 0;
+            // מעדכן רק displayName (עמודה C) – לא נוגע ב-name (עמודה B) כדי לא לשבור חיבור לנדרים פלוס
             (donors || []).forEach(d => {
-                let changed = false;
-                if (d.name && String(d.name).includes(textToRemove)) {
-                    d.name = String(d.name).replace(new RegExp(escapeRegExp(textToRemove), 'g'), '').replace(/\s+/g, ' ').trim();
-                    changed = true;
-                    totalRemovals++;
-                }
-                if (d.displayName && String(d.displayName).includes(textToRemove)) {
-                    d.displayName = String(d.displayName).replace(new RegExp(escapeRegExp(textToRemove), 'g'), '').replace(/\s+/g, ' ').trim();
-                    changed = true;
-                    totalRemovals++;
-                }
-                if (changed) {
-                    d.updatedAt = new Date().toISOString();
-                    changedCount++;
-                }
+                const currentDisplay = (d.displayName !== undefined && d.displayName !== null && String(d.displayName).trim() !== '') ? String(d.displayName) : (d.name || '');
+                if (!currentDisplay || !currentDisplay.includes(textToRemove)) return;
+                const cleaned = currentDisplay.replace(new RegExp(escapeRegExp(textToRemove), 'g'), '').replace(/\s+/g, ' ').trim();
+                d.displayName = cleaned;
+                d.updatedAt = new Date().toISOString();
+                changedCount++;
+                totalRemovals++;
             });
             saveData();
             updateDonorsList();
@@ -12559,8 +12552,8 @@
             updateLiveTargets();
             updateLiveView();
             const msg = changedCount > 0
-                ? `הוסר "${textToRemove}" מ־${changedCount} מתרימים (סה"כ ${totalRemovals} הופעות). שמור לגליון כדי לעדכן גם את עמודה C.`
-                : `הטקסט "${textToRemove}" לא נמצא באף שם.`;
+                ? `הוסר "${textToRemove}" מ־שם התצוגה (עמודה C) אצל ${changedCount} מתרימים. השם המקורי (עמודה B) לא שונה. שמור לגליון לעדכון.`
+                : `הטקסט "${textToRemove}" לא נמצא בשם התצוגה אצל אף מתרים.`;
             if (resultEl) {
                 resultEl.textContent = msg;
                 resultEl.style.color = changedCount > 0 ? '#2e7d32' : '#555';
