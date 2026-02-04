@@ -11399,32 +11399,32 @@
             showNotification(message);
         }
 
-            // הצגת הודעה
-            // suppressNotifications - משתנה גלובלי לדיכוי הודעות בתצוגת לייב או בעדכון אוטומטי
-            let suppressNotifications = false;
-            
-            function showNotification(message, force = false) {
-                // אם ההודעות מדוכאות ולא נכפה - לא מציג
-                if (suppressNotifications && !force) {
-                    console.log('📢 [הודעה מדוכאת]:', message);
-                    return;
-                }
-                
-                // לא מציג הודעות בתצוגת לייב (אלא אם נכפה)
-                if (typeof isLiveViewActive === 'function' && isLiveViewActive() && !force) {
-                    console.log('📢 [הודעה מדוכאת בלייב]:', message);
-                    return;
-                }
-                
-                const notification = document.getElementById('notification');
-                if (!notification) return;
-                
-                notification.textContent = message;
-                notification.classList.add('show');
-                setTimeout(() => {
-                    notification.classList.remove('show');
-                }, 2000);
+        // הצגת הודעה
+        // suppressNotifications - משתנה גלובלי לדיכוי הודעות בתצוגת לייב או בעדכון אוטומטי
+        let suppressNotifications = false;
+        
+        function showNotification(message, force = false) {
+            // אם ההודעות מדוכאות ולא נכפה - לא מציג
+            if (suppressNotifications && !force) {
+                console.log('📢 [הודעה מדוכאת]:', message);
+                return;
             }
+            
+            // לא מציג הודעות בתצוגת לייב (אלא אם נכפה)
+            if (typeof isLiveViewActive === 'function' && isLiveViewActive() && !force) {
+                console.log('📢 [הודעה מדוכאת בלייב]:', message);
+                return;
+            }
+            
+            const notification = document.getElementById('notification');
+            if (!notification) return;
+            
+            notification.textContent = message;
+            notification.classList.add('show');
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 2000);
+        }
 
         // ניווט בין מדורים
         function activateSection(section, navItem = null) {
