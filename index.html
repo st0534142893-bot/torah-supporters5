@@ -7848,20 +7848,21 @@
             }
         }
         
-        // פונקציה להפעלת טיימר עדכון אוטומטי
+        // פונקציה להפעלת טיימר עדכון אוטומטי – הבוט רץ מאחורי הקלעים כל X דקות/שעות
         function startAutoRefreshTimer() {
             if (autoRefreshTimer) {
                 clearInterval(autoRefreshTimer);
+                autoRefreshTimer = null;
             }
-            
-            if (autoSyncNedarimEnabled) {
-                // משתמש בתדירות שנשמרה, או 5 דקות כברירת מחדל
-                const intervalMs = (autoSyncIntervalMinutes || 5) * 60 * 1000;
-                autoRefreshTimer = setInterval(async () => {
-                    await performAutoRefresh();
-                }, intervalMs);
-                console.log(`🔄 [הגדרות] טיימר עדכון אוטומטי הוגדר ל-${autoSyncIntervalMinutes || 5} דקות`);
+            if (!autoSyncNedarimEnabled) {
+                return;
             }
+            const intervalMinutes = autoSyncIntervalMinutes || 5;
+            const intervalMs = intervalMinutes * 60 * 1000;
+            autoRefreshTimer = setInterval(async () => {
+                await performAutoRefresh();
+            }, intervalMs);
+            console.log(`🔄 [בוט] עדכון אוטומטי פעיל – הפעולה "${autoSyncSelectedAction === 'all' ? 'כל הכפתורים' : autoSyncSelectedAction}" תרוץ כל ${intervalMinutes} דקות`);
         }
         
         // פונקציות לשמירה וטעינה של הגדרת עדכון אוטומטי נדרים פלוס
@@ -7978,6 +7979,7 @@
                 } catch (error) {
                     console.error('שגיאה בשמירת הגדרת עדכון אוטומטי נדרים פלוס:', error);
                 }
+                startAutoRefreshTimer();
             }
             
             if (select) {
@@ -11296,36 +11298,29 @@
             state.handle = requestAnimationFrame(step);
         }
         
-        // ====== WATCHDOG - מוודא שהגלילות תמיד רצות ======
+        // ====== WATCHDOG - מוודא שהגלילות רצות, בלי להפריע (מרווח גדול = גלילה חלקה) ======
         setInterval(() => {
             if (!isLiveViewActive() || !liveViewSettings.enableAutoScroll) return;
-            
             const now = performance.now();
-            
-            // בדיקת גלילת תורמים
+            const stuckMs = 6000;
+            const intervalMs = 3000;
             if (donorsScrollIsRunning) {
-                // אם עברו יותר מ-2 שניות מהעדכון האחרון, משהו תקוע
-                if (now - donorsScrollLastTime > 2000) {
-                    console.log('⚠️ גלילת תורמים נתקעה - מפעיל מחדש');
+                if (now - donorsScrollLastTime > stuckMs) {
                     donorsScrollIsRunning = false;
                     restartDonorsAutoScroll();
                 }
             } else {
-                // אם הגלילה לא רצה אבל צריכה - מפעיל
                 restartDonorsAutoScroll();
             }
-            
-            // בדיקת גלילת מובילים
             if (leadersScrollIsRunning) {
-                if (now - leadersScrollLastTime > 2000) {
-                    console.log('⚠️ גלילת מובילים נתקעה - מפעיל מחדש');
+                if (now - leadersScrollLastTime > stuckMs) {
                     leadersScrollIsRunning = false;
                     restartLeadersAutoScroll({ immediate: true });
                 }
             } else {
                 restartLeadersAutoScroll({ immediate: true });
             }
-        }, 1000);
+        }, intervalMs);
 
         const donorSearchInput = document.getElementById('donorSearchInput');
         const donorSearchClearButton = document.getElementById('donorSearchClear');
@@ -13249,7 +13244,7 @@
         let isUpdatingLiveView = false;
         let lastLiveViewUpdateWhenActive = 0;
         let updateLiveViewScheduledWhenActive = null;
-        const LIVE_VIEW_BACKGROUND_UPDATE_INTERVAL_MS = 25000; // בתצוגת לייב – עדכון רקע לכל היותר כל 25 שניות (גלילה חלקה)
+        const LIVE_VIEW_BACKGROUND_UPDATE_INTERVAL_MS = 60000; // בתצוגת לייב – עדכון רקע לכל היותר כל דקה (גלילה חלקה, בלי רעידות)
         function updateLiveView(immediate = false) {
             // Debouncing - מניעת עדכונים תכופים מדי
             if (updateLiveViewTimeout && !immediate) {
@@ -13612,10 +13607,9 @@
                     if (!wasScrolling && !donorsScrollIsRunning && liveViewSettings.enableAutoScroll) {
                         requestAnimationFrame(() => restartDonorsAutoScroll());
                     }
-                } else {
-                    if (!donorsScrollIsRunning && liveViewSettings.enableAutoScroll) {
-                        requestAnimationFrame(() => restartDonorsAutoScroll());
-                    }
+                }
+                else {
+                    // עדכון אינקרמנטלי בלבד – לא מפעילים מחדש גלילה (מונע רעידות)
                 }
                 container.querySelectorAll('.live-donor-card[data-entry-type="card"]').forEach(card => {
                     const donorId = card.dataset.donorId;
@@ -13648,8 +13642,17 @@
                 isUpdatingLiveView = false;
             });
         }
+        let lastLeadersListUpdateWhenActive = 0;
+        const LEADERS_LIST_UPDATE_INTERVAL_MS = 15000;
         // עדכון רשימת מובילים
         function updateLeadersList() {
+            if (typeof isLiveViewActive === 'function' && isLiveViewActive()) {
+                const now = Date.now();
+                if (lastLeadersListUpdateWhenActive && (now - lastLeadersListUpdateWhenActive) < LEADERS_LIST_UPDATE_INTERVAL_MS) {
+                    return;
+                }
+                lastLeadersListUpdateWhenActive = now;
+            }
             const leadersList = document.getElementById('leadersList');
             if (!leadersList) return;
             
@@ -14615,17 +14618,20 @@
             fillNedarimCorrectionDonorSelect();
             fillUpdateByApiDonorSelect();
             if (typeof updateNedarimFixCurrentSumLabel === 'function') updateNedarimFixCurrentSumLabel();
+            // הפעלת בוט עדכון אוטומטי מאחורי הקלעים לפי ההגדרה שנטענה
+            startAutoRefreshTimer();
             // סנכרון ראשוני של הנתונים הקיימים
             syncAllDataToDatabase();
         }).catch(error => {
             console.error('❌ שגיאה באתחול בסיס הנתונים:', error);
         });
         
-        // טעינה ראשונית אחרי 2 שניות
+        // ריצה ראשונה של העדכון האוטומטי אחרי 2 שניות – רק אם "הפעל עדכון אוטומטי" מסומן
         setTimeout(async () => {
-            await performAutoRefresh();
-            // סנכרון לבסיס הנתונים אחרי העדכון
-            await syncAllDataToDatabase();
+            if (autoSyncNedarimEnabled) {
+                await performAutoRefresh();
+                await syncAllDataToDatabase();
+            }
         }, 2000);
             // בכל זאת נפעיל את הפונקציות גם אם יש שגיאה
             updateHomeStats();
