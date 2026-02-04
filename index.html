@@ -681,6 +681,56 @@
             line-height: 1.7;
         }
 
+        .instructions-welcome {
+            text-align: center;
+            padding: 28px 24px 32px;
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.12) 0%, rgba(248, 233, 202, 0.25) 50%, rgba(212, 175, 55, 0.08) 100%);
+            border-radius: 20px;
+            border: 1px solid rgba(212, 175, 55, 0.35);
+            margin-bottom: 8px;
+        }
+        .instructions-welcome h2.instructions-welcome-title {
+            font-size: 26px;
+            color: var(--brown-dark);
+            margin: 0 0 12px;
+            font-weight: 700;
+        }
+        .instructions-welcome .instructions-welcome-sub {
+            font-size: 18px;
+            color: var(--brown-medium);
+            line-height: 1.75;
+            margin: 0 0 20px;
+        }
+        .instructions-contact-box {
+            margin-top: 20px;
+            padding: 20px 24px;
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+        .instructions-contact-box .contact-label {
+            font-size: 15px;
+            color: var(--brown-medium);
+            margin-bottom: 6px;
+        }
+        .instructions-contact-box a.instructions-email {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-gold-dark);
+            text-decoration: none;
+        }
+        .instructions-contact-box a.instructions-email:hover {
+            text-decoration: underline;
+            color: var(--brown-dark);
+        }
+        .instructions-intro {
+            font-size: 17px;
+            line-height: 1.8;
+            color: var(--brown-medium);
+            margin: 0 0 8px;
+        }
+
         /* מענק לחתנים */
         .groom-grant-section {
             background: rgba(255, 255, 255, 0.55);
@@ -6406,8 +6456,17 @@
             <!-- הוראות שימוש -->
             <section class="content-section instructions-section" id="instructionsSection">
                 <div class="instructions-panel">
+                    <div class="instructions-welcome">
+                        <h2 class="instructions-welcome-title">מזל טוב! אנחנו שמחים שבחרתם בתוכנת ניהול הקמפיין שלנו</h2>
+                        <p class="instructions-welcome-sub">מדריך שימוש זה יעזור לכם להכיר את המערכת, להפעיל אותה ביעילות ולנצל את כל האפשרויות שהיא מציעה. מומלץ לעבור על ההוראות לפני תחילת העבודה.</p>
+                        <div class="instructions-contact-box">
+                            <div class="contact-label">אנו נשמח לעמוד לשירותכם. מומלץ ליצור קשר כמה שיותר מוקדם לפני פורים.</div>
+                            <a href="mailto:s0534142893@gmail.com" class="instructions-email">s0534142893@gmail.com</a>
+                        </div>
+                    </div>
+
                     <h2>הוראות שימוש בתוכנה</h2>
-                    <p>ברוכים הבאים לכלי הניהול של &quot;תומכי תורה&quot;. בפרק זה תמצאו הסברים מפורטים ליצירת קובצי אקסל, טעינת רשימות, ייצוא נתונים, תפעול יומיומי והבנת כל המדורים במערכת.</p>
+                    <p class="instructions-intro">בפרק זה תמצאו הסברים מפורטים: הכנת קובצי אקסל לייבוא, טעינת רשימות מתרימים, ייצוא נתונים ודוחות, ותפעול כל מדורי המערכת.</p>
 
                     <div class="instructions-grid">
                         <div class="instructions-card">
@@ -6456,6 +6515,10 @@
                     </div>
                     <div class="instructions-note">
                         <strong>פתרון תקלות:</strong> אם מתקבלת שגיאה בייבוא, ודאו שהעמודות ממוספרות נכון, שאין תווים מיותרים בכותרות, ושמרו מחדש את הקובץ כ-.xlsx. הודעות המערכת בתחתית המסך יסייעו באיתור הבעיה.
+                    </div>
+                    <div class="instructions-contact-box" style="margin-top: 8px;">
+                        <div class="contact-label">נתקלתם בשאלה או בבעיה? נשמח לעזור.</div>
+                        <a href="mailto:s0534142893@gmail.com" class="instructions-email">s0534142893@gmail.com</a>
                     </div>
 
                     <div class="raffle-embed-wrapper">
@@ -17052,14 +17115,35 @@
                     console.warn('⚠️ לא הצלחתי למשוך נתונים מנדרים פלוס:', error.message);
                 }
                 
-                // אם אין רשימת מתרימים מנדרים – לא שולחים כלום (מונע שליחת סכום מלא במקום דלתה)
+                // אם אין רשימת מתרימים מנדרים – מנסים סנכרון מהגיליון בשרת (syncNedarimFromSheet)
                 if (!matrimListForComparison || matrimListForComparison.length === 0) {
+                    console.warn('⚠️ לא התקבלה רשימת מתרימים להשוואה – מנסה סנכרון מהגיליון לנדרים בשרת...');
+                    if (!silent) showNedarimStatus('מסנכרן מהגיליון לנדרים פלוס...', 'loading');
+                    var sheetsUrl = googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || '';
+                    if (sheetsUrl) {
+                        try {
+                            var syncUrl = sheetsUrl + (sheetsUrl.indexOf('?') >= 0 ? '&' : '?') + 'action=syncNedarimFromSheet&_=' + Date.now();
+                            var syncRes = await fetch(syncUrl);
+                            var syncData = await syncRes.json();
+                            if (syncData && syncData.success) {
+                                console.log('✅ סנכרון מהגיליון לנדרים פלוס הושלם:', syncData);
+                                if (!silent) {
+                                    showNedarimStatus('הסנכרון מהגיליון לנדרים פלוס הושלם בהצלחה.', 'success');
+                                    showNotification('סנכרון מהגיליון לנדרים פלוס הושלם.', 'success');
+                                }
+                                if (btn) { btn.disabled = false; btn.textContent = '🔄 סנכרון תרומות'; }
+                                return;
+                            }
+                        } catch (syncErr) {
+                            console.warn('סנכרון מהגיליון נכשל:', syncErr);
+                        }
+                    }
                     console.error('❌ לא ניתן לחשב דלתות – לא התקבלה רשימת מתרימים מנדרים פלוס. לא נשלח עדכון לנדרים.');
                     if (!silent) {
                         showNedarimStatus('לא ניתן לסנכרן: לא התקבלה רשימת מתרימים מנדרים פלוס. נסה שוב או הפעל "טען מתרימים מנדרים פלוס".', 'error');
                         showNotification('⚠️ סנכרון לנדרים פלוס נעצר – לא התקבלה רשימת מתרימים. אל תשלח עדכונים בלי רשימה.', 'warning');
                     }
-                    if (btn) { btn.disabled = false; btn.textContent = '🔄 סנכרון תרומות לנדרים פלוס'; }
+                    if (btn) { btn.disabled = false; btn.textContent = '🔄 סנכרון תרומות'; }
                     return;
                 }
                 
