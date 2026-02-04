@@ -2696,6 +2696,8 @@
             transform: translate3d(0, 0, 0);
             backface-visibility: hidden;
             perspective: 1000px;
+            /* מניעת רעידות – גלילה חלקה גם בעדכוני רקע */
+            contain: layout style;
         }
         @keyframes scrollUp {
             0% {
@@ -13148,6 +13150,9 @@
         // עדכון תצוגה בלייב עם debouncing
         let updateLiveViewTimeout = null;
         let isUpdatingLiveView = false;
+        let lastLiveViewUpdateWhenActive = 0;
+        let updateLiveViewScheduledWhenActive = null;
+        const LIVE_VIEW_BACKGROUND_UPDATE_INTERVAL_MS = 15000; // בתצוגת לייב – עדכון רקע לכל היותר כל 15 שניות (גלילה חלקה)
         function updateLiveView(immediate = false) {
             // Debouncing - מניעת עדכונים תכופים מדי
             if (updateLiveViewTimeout && !immediate) {
@@ -13172,6 +13177,21 @@
                 isUpdatingLiveView = false;
                 return;
             }
+            // בתצוגת לייב – דילוג על עדכוני רקע תכופים (מניעת רעידות במסך)
+            if (typeof isLiveViewActive === 'function' && isLiveViewActive() && !immediate) {
+                const now = Date.now();
+                if (lastLiveViewUpdateWhenActive && (now - lastLiveViewUpdateWhenActive) < LIVE_VIEW_BACKGROUND_UPDATE_INTERVAL_MS) {
+                    if (!updateLiveViewScheduledWhenActive) {
+                        const delay = LIVE_VIEW_BACKGROUND_UPDATE_INTERVAL_MS - (now - lastLiveViewUpdateWhenActive);
+                        updateLiveViewScheduledWhenActive = setTimeout(() => {
+                            updateLiveViewScheduledWhenActive = null;
+                            updateLiveView(false);
+                        }, delay);
+                    }
+                    isUpdatingLiveView = false;
+                    return;
+                }
+            }
             
             // יצירת רשימה כפולה לגלילה אינסופית
             // משתמש ב-displayName אם יש, אחרת ב-name
@@ -13181,16 +13201,21 @@
             });
             
             if (donorsWithNames.length === 0) {
-                // לא עוצרים גלילה - הWATCHDOG ידאג
-                scrollContainer.innerHTML = `
-                    <div class="live-donor-card">
-                        <div class="live-donor-info">
-                            <div class="live-donor-name">אין מתרימים עדיין</div>
+                requestAnimationFrame(() => {
+                    const el = document.getElementById('liveDonorsScroll');
+                    if (!el) { isUpdatingLiveView = false; return; }
+                    el.innerHTML = `
+                        <div class="live-donor-card">
+                            <div class="live-donor-info">
+                                <div class="live-donor-name">אין מתרימים עדיין</div>
+                            </div>
                         </div>
-                    </div>
-                `;
-                lastLiveViewStructure = 'empty';
-                lastLiveViewData = new Map();
+                    `;
+                    lastLiveViewStructure = 'empty';
+                    lastLiveViewData = new Map();
+                    if (typeof isLiveViewActive === 'function' && isLiveViewActive() && !immediate) lastLiveViewUpdateWhenActive = Date.now();
+                    isUpdatingLiveView = false;
+                });
                 return;
             }
 
@@ -13424,42 +13449,10 @@
 
             const structureSignature = structureEntries.join('|');
             const needsFullRender = structureSignature !== lastLiveViewStructure;
-            let previousOffset = 0;
             const state = autoScrollStates.donors;
-            if (state) previousOffset = state.offset || 0;
-
-            if (needsFullRender) {
-                // שמירת מיקום הגלילה הנוכחי
-                const wasScrolling = donorsScrollIsRunning;
-                const savedOffset = state ? state.offset : 0;
-                
-                const html = htmlParts.join('');
-                scrollContainer.innerHTML = html + html; // כפול לגלילה אינסופית
-                lastLiveViewStructure = structureSignature;
-                
-                // שחזור מיקום הגלילה בלי להפריע
-                if (state) {
-                    const halfHeight = scrollContainer.scrollHeight / 2;
-                    state.offset = Math.min(savedOffset, halfHeight);
-                    state.distance = halfHeight;
-                    scrollContainer.style.transform = `translate3d(0, ${-state.offset}px, 0)`;
-                }
-                
-                // אם הגלילה כבר רצה - לא להתחיל מחדש, היא כבר ממשיכה
-                // אם לא רצה - להפעיל רק אם עדיין לא רצה
-                if (!wasScrolling && !donorsScrollIsRunning && liveViewSettings.enableAutoScroll) {
-                    requestAnimationFrame(() => {
-                        restartDonorsAutoScroll();
-                    });
-                }
-            } else {
-                // אם הגלילה לא רצה, נפעיל אותה
-                if (!donorsScrollIsRunning && liveViewSettings.enableAutoScroll) {
-                    requestAnimationFrame(() => {
-                        restartDonorsAutoScroll();
-                    });
-                }
-            }
+            const wasScrolling = donorsScrollIsRunning;
+            const savedOffset = state ? state.offset : 0;
+            const html = htmlParts.join('');
 
             const donorDataMap = new Map();
             donorsWithNames.forEach(donor => {
@@ -13483,82 +13476,80 @@
                     goal: data.goal,
                     percentage: 0
                 };
-
                 const nameEl = card.querySelector('.live-donor-name');
                 if (nameEl && nameEl.textContent !== data.name) nameEl.textContent = data.name;
-
                 const groupEl = card.querySelector('.live-donor-group');
                 if (groupEl && groupEl.textContent !== data.groupName) groupEl.textContent = data.groupName;
-
                 const amountValueEl = card.querySelector('.amount-value');
                 if (amountValueEl) {
-                    const fromAmount = prev.amount ?? parseInt(amountValueEl.dataset.amount || '0', 10);
                     amountValueEl.textContent = data.amount.toLocaleString();
                     amountValueEl.dataset.amount = data.amount;
                 }
-
                 const goalValueEl = card.querySelector('.goal-value');
                 if (goalValueEl && (prev.goal !== data.goal || goalValueEl.textContent !== data.goal.toLocaleString())) {
                     goalValueEl.textContent = data.goal.toLocaleString();
                     goalValueEl.dataset.goal = data.goal;
                 }
-
                 const progressWrapper = card.querySelector('.live-donor-progress-circle-wrapper');
                 if (progressWrapper && Math.abs(prev.percentage - data.percentage) > 0.1) {
-                    // עדכון חלק של עיגול ההתקדמות רק אם יש שינוי משמעותי
-                    requestAnimationFrame(() => {
                     progressWrapper.innerHTML = createProgressCircle(Math.min(data.percentage, 100), `donor_${donorId}`, data.percentage);
-                    });
                 }
-
             };
 
-            scrollContainer.querySelectorAll('.live-donor-card[data-entry-type="card"]').forEach(card => {
-                const donorId = card.dataset.donorId;
-                const data = donorDataMap.get(donorId);
-                if (data) updateCardElement(card, data);
+            // עדכון DOM במסגרת פריים אחת – גלילה חלקה בלי רעידות
+            requestAnimationFrame(() => {
+                const container = document.getElementById('liveDonorsScroll');
+                if (!container) {
+                    isUpdatingLiveView = false;
+                    return;
+                }
+                if (needsFullRender) {
+                    container.innerHTML = html + html;
+                    lastLiveViewStructure = structureSignature;
+                    if (state) {
+                        const halfHeight = container.scrollHeight / 2;
+                        state.offset = Math.min(savedOffset, halfHeight);
+                        state.distance = halfHeight;
+                        container.style.transform = `translate3d(0, ${-state.offset}px, 0)`;
+                    }
+                    if (!wasScrolling && !donorsScrollIsRunning && liveViewSettings.enableAutoScroll) {
+                        requestAnimationFrame(() => restartDonorsAutoScroll());
+                    }
+                } else {
+                    if (!donorsScrollIsRunning && liveViewSettings.enableAutoScroll) {
+                        requestAnimationFrame(() => restartDonorsAutoScroll());
+                    }
+                }
+                container.querySelectorAll('.live-donor-card[data-entry-type="card"]').forEach(card => {
+                    const donorId = card.dataset.donorId;
+                    const data = donorDataMap.get(donorId);
+                    if (data) updateCardElement(card, data);
+                });
+                container.querySelectorAll('.live-donor-group-header[data-entry-type="header"]').forEach(header => {
+                    const groupId = header.dataset.groupId;
+                    const group = groups.find(g => g.id === groupId);
+                    if (!group) return;
+                    const groupDonors = donors.filter(d => d.groupId === groupId);
+                    const groupCollected = groupDonors.reduce((sum, donor) => sum + Math.max(0, donor.amount || 0), 0);
+                    const groupGoal = group.goal || 0;
+                    const groupPercentage = groupGoal > 0 ? (groupCollected / groupGoal) * 100 : 0;
+                    const groupPercentDisplay = groupPercentage >= 100 ? Math.round(groupPercentage) : Math.max(0, groupPercentage).toFixed(1);
+                    const progressWidth = Math.min(groupPercentage, 100);
+                    const progressFill = header.querySelector('.group-header-progress-fill');
+                    if (progressFill) progressFill.style.width = `${progressWidth}%`;
+                    const percentageEl = header.querySelector('.group-header-percentage');
+                    if (percentageEl) percentageEl.textContent = groupGoal > 0 ? `${groupPercentDisplay}%` : '—';
+                    const amountsEl = header.querySelector('.group-header-amounts');
+                    if (amountsEl) {
+                        amountsEl.textContent = groupGoal > 0
+                            ? `₪${groupCollected.toLocaleString()} מתוך ₪${groupGoal.toLocaleString()}`
+                            : `₪${groupCollected.toLocaleString()} | ללא יעד מוגדר`;
+                    }
+                });
+                lastLiveViewData = donorDataMap;
+                if (typeof isLiveViewActive === 'function' && isLiveViewActive() && !immediate) lastLiveViewUpdateWhenActive = Date.now();
+                isUpdatingLiveView = false;
             });
-
-            // עדכון כותרות קבוצות
-            scrollContainer.querySelectorAll('.live-donor-group-header[data-entry-type="header"]').forEach(header => {
-                const groupId = header.dataset.groupId;
-                const group = groups.find(g => g.id === groupId);
-                if (!group) return;
-
-                // חישוב נתונים מעודכנים
-                const groupDonors = donors.filter(d => d.groupId === groupId);
-                const groupCollected = groupDonors.reduce((sum, donor) => sum + Math.max(0, donor.amount || 0), 0);
-                const groupGoal = group.goal || 0;
-                const groupPercentage = groupGoal > 0 ? (groupCollected / groupGoal) * 100 : 0;
-                const groupPercentDisplay = groupPercentage >= 100 ? Math.round(groupPercentage) : Math.max(0, groupPercentage).toFixed(1);
-                const progressWidth = Math.min(groupPercentage, 100);
-
-                // עדכון פס ההתקדמות
-                const progressFill = header.querySelector('.group-header-progress-fill');
-                if (progressFill) {
-                    progressFill.style.width = `${progressWidth}%`;
-                }
-
-                // עדכון אחוזים
-                const percentageEl = header.querySelector('.group-header-percentage');
-                if (percentageEl) {
-                    percentageEl.textContent = groupGoal > 0 ? `${groupPercentDisplay}%` : '—';
-                }
-
-                // עדכון סכומים
-                const amountsEl = header.querySelector('.group-header-amounts');
-                if (amountsEl) {
-                    const amountsText = groupGoal > 0 
-                        ? `₪${groupCollected.toLocaleString()} מתוך ₪${groupGoal.toLocaleString()}`
-                        : `₪${groupCollected.toLocaleString()} | ללא יעד מוגדר`;
-                    amountsEl.textContent = amountsText;
-                }
-            });
-
-            lastLiveViewData = donorDataMap;
-
-            // סיום עדכון
-            isUpdatingLiveView = false;
         }
         // עדכון רשימת מובילים
         function updateLeadersList() {
