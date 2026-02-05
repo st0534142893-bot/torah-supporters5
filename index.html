@@ -3361,43 +3361,44 @@
         }
         .live-leaders-scroll-wrapper {
             flex: 1;
-            overflow-y: auto;
+            overflow: hidden;
             overflow-x: hidden;
             position: relative;
             opacity: 1;
             filter: brightness(1) saturate(1);
-            /* הסתרת scrollbar בעמודת המובילים */
-            scrollbar-width: none; /* Firefox */
-            -ms-overflow-style: none; /* IE and Edge */
-            /* גלילה חלקה */
-            scroll-behavior: auto; /* לא smooth כי אנחנו שולטים ידנית */
+            /* גלילה דרך transform – בלי scrollbar */
             -webkit-overflow-scrolling: touch;
-            will-change: scroll-position;
-        }
-        
-        .live-leaders-scroll-wrapper::-webkit-scrollbar {
-            display: none; /* Chrome, Safari, Opera */
         }
 
         .live-leaders-scroll-wrapper.fade-bright {
             filter: brightness(1.9) saturate(1.4);
         }
 
+        /* מיכל פנימי שזז עם transform – גלילה אינסופית חלקה כמו במתרימים */
+        .live-leaders-scroll-inner {
+            will-change: transform;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
         .live-leaders-scroll {
             padding-bottom: 10px;
+            flex-shrink: 0;
         }
         
         .live-leaders-scroll-clone {
             padding-bottom: 10px;
+            flex-shrink: 0;
         }
         
         /* גלילה אינסופית למובילים */
         #leadersScrollPrimary {
-            will-change: transform;
+            will-change: auto;
         }
         
         #leadersScrollClone {
-            will-change: transform;
+            will-change: auto;
         }
 
         .live-leaders-content {
@@ -3420,16 +3421,9 @@
 
         .live-leaders-scroll-wrapper {
             position: relative;
-            overflow-y: auto;
+            overflow: hidden;
             overflow-x: hidden;
             height: 100%;
-            /* הסתרת scrollbar בעמודת המובילים */
-            scrollbar-width: none; /* Firefox */
-            -ms-overflow-style: none; /* IE and Edge */
-        }
-        
-        .live-leaders-scroll-wrapper::-webkit-scrollbar {
-            display: none; /* Chrome, Safari, Opera */
         }
 
         .live-leaders-scroll {
@@ -3440,7 +3434,6 @@
             will-change: auto;
         }
 
-        /* הקלון יוצב אחרי התוכן המקורי לגלילה אינסופית */
         .live-leaders-scroll-clone {
             display: block;
         }
@@ -6308,16 +6301,18 @@
                     <!-- אזור מובילים בצד -->
                     <div class="live-leaders-sidebar">
                         <div class="live-leaders-scroll-wrapper" id="leadersScrollWrapper">
-                            <div class="live-leaders-scroll" id="leadersScrollPrimary">
-                                <div class="live-leaders-content" id="leadersContentBlock">
-                                    <h2 class="leaders-title">מובילים</h2>
-                                    <div class="leaders-list" id="leadersList">
-                                        <!-- יוטען דינמית -->
+                            <div class="live-leaders-scroll-inner" id="leadersScrollInner">
+                                <div class="live-leaders-scroll" id="leadersScrollPrimary">
+                                    <div class="live-leaders-content" id="leadersContentBlock">
+                                        <h2 class="leaders-title">מובילים</h2>
+                                        <div class="leaders-list" id="leadersList">
+                                            <!-- יוטען דינמית -->
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="live-leaders-scroll live-leaders-scroll-clone" id="leadersScrollClone">
-                                <!-- ימולא דינמית -->
+                                <div class="live-leaders-scroll live-leaders-scroll-clone" id="leadersScrollClone">
+                                    <!-- ימולא דינמית -->
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -7811,9 +7806,12 @@
                 // משתמש בתדירות שנשמרה, או 5 דקות כברירת מחדל
                 const intervalMs = (autoSyncIntervalMinutes || 5) * 60 * 1000;
                 autoRefreshTimer = setInterval(async () => {
+                    if (typeof isLiveViewActive === 'function' && isLiveViewActive() && liveViewSettings.enableAutoScroll && donorsScrollIsRunning) {
+                        return;
+                    }
                     await performAutoRefresh();
                 }, intervalMs);
-                console.log(`🔄 [הגדרות] טיימר עדכון אוטומטי הוגדר ל-${autoSyncIntervalMinutes || 5} דקות`);
+                console.log(`🔄 [הגדרות] טיימר עדכון אוטומטי הוגדר ל-${autoSyncIntervalMinutes || 5} דקות (בתצוגת לייב – עדכון רק בסיום מחזור גלילה)`);
             }
         }
         
@@ -11131,7 +11129,13 @@
                 // גלילה אינסופית
                 if (offset >= halfHeight) {
                     offset -= halfHeight;
+                    // סיום מחזור גלילה מלא – מעדכן נדרים + גליון רק כאן (בתצוגת לייב)
+                    if (!state.cycleCompleteFired) {
+                        state.cycleCompleteFired = true;
+                        onDonorsScrollCycleComplete().catch(() => {});
+                    }
                 }
+                if (offset < 10) state.cycleCompleteFired = false;
                 state.offset = offset;
                 container.style.transform = `translate3d(0, ${-offset}px, 0)`;
                 state.handle = requestAnimationFrame(step);
@@ -11140,6 +11144,35 @@
             container.style.willChange = 'transform';
             state.handle = requestAnimationFrame(step);
         }
+        
+        /** אחרי סיום גלילה מלאה של כל המתרימים – מריץ עדכון נדרים + גליון (רק בתצוגת לייב) */
+        async function onDonorsScrollCycleComplete() {
+            if (typeof isLiveViewActive !== 'function' || !isLiveViewActive()) return;
+            if (!liveViewSettings.enableAutoScroll || !donorsScrollIsRunning) return;
+            console.log('🔄 [תצוגת לייב] סיום מחזור גלילה – מעדכן נדרים וגליון...');
+            try {
+                if (autoSyncNedarimEnabled) {
+                    await performAutoRefresh();
+                }
+                const url = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').trim();
+                if (url && googleSheetsSyncEnabled) {
+                    if (sheetSyncLoadEnabled) {
+                        const r = await loadFromGoogleSheets(true);
+                        if (r && r.success && typeof notifyDataChanged === 'function') notifyDataChanged();
+                    }
+                    if (sheetSyncSaveEnabled) {
+                        await saveToGoogleSheets();
+                    }
+                }
+                if (typeof updateLiveView === 'function') updateLiveView();
+                if (typeof updateLeadersList === 'function') updateLeadersList();
+                if (typeof notifyDataChanged === 'function') notifyDataChanged();
+                console.log('✅ [תצוגת לייב] עדכון נדרים וגליון הושלם');
+            } catch (err) {
+                console.warn('⚠️ [תצוגת לייב] שגיאה בעדכון אחרי מחזור גלילה:', err);
+            }
+        }
+        
         // דגל למניעת קפיצות בזמן עדכון
         let leadersScrollIsRunning = false;
         let leadersScrollLastTime = 0;
@@ -11155,11 +11188,12 @@
         
         function doRestartLeadersAutoScroll() {
             const wrapper = document.getElementById('leadersScrollWrapper');
+            const inner = document.getElementById('leadersScrollInner');
             const primary = document.getElementById('leadersScrollPrimary');
             const clone = document.getElementById('leadersScrollClone');
             const state = autoScrollStates.leaders;
 
-            if (!wrapper || !primary || !clone || !state) {
+            if (!wrapper || !inner || !primary || !clone || !state) {
                 leadersScrollIsRunning = false;
                 return;
             }
@@ -11187,7 +11221,7 @@
             clone.innerHTML = primaryContent.outerHTML;
             clone.style.display = 'block';
 
-            const contentHeight = primary.scrollHeight;
+            const contentHeight = primary.offsetHeight;
             if (!contentHeight || !isFinite(contentHeight) || contentHeight < 100) {
                 leadersScrollIsRunning = false;
                 return;
@@ -11196,10 +11230,10 @@
             wrapper.style.opacity = '1';
             wrapper.style.filter = 'brightness(1) saturate(1)';
             
-            // שומר את המיקום הנוכחי
-            let offset = (state.offset && state.offset > 0) ? state.offset : 0;
+            // שומר את המיקום הנוכחי (מהטרנספורם הקודם אם יש)
+            let offset = (state.offset && state.offset > 0) ? state.offset % contentHeight : 0;
             state.distance = contentHeight;
-            wrapper.scrollTop = offset;
+            inner.style.transform = `translate3d(0, ${-offset}px, 0)`;
             
             // מסמן שהגלילה רצה
             leadersScrollIsRunning = true;
@@ -11222,16 +11256,17 @@
                 const speed = 30;
                 offset += speed * delta;
                 
-                // גלילה אינסופית חלקה
+                // גלילה אינסופית חלקה – כמו במתרימים, בלי קפיצה
                 if (offset >= contentHeight) {
-                    offset = offset - contentHeight;
+                    offset -= contentHeight;
                 }
                 
                 state.offset = offset;
-                wrapper.scrollTop = offset;
+                inner.style.transform = `translate3d(0, ${-offset}px, 0)`;
                 state.handle = requestAnimationFrame(step);
             }
 
+            inner.style.willChange = 'transform';
             state.handle = requestAnimationFrame(step);
         }
         
