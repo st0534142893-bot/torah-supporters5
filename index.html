@@ -6002,17 +6002,29 @@
                             </div>
 
                             <div class="liveview-setting-group">
-                                <h4>עדכון אוטומטי בסיום גלילה</h4>
-                                <p style="font-size: 13px; color: var(--muted); margin-bottom: 12px;">בסיום מחזור גלילה (אחרי הצגת כל הקבוצות) הגלילה תיעצר, יוצג התוכן שנבחר, וירוץ העדכון. אחרי סיום העדכון הגלילה תמשיך.</p>
+                                <h4>עדכון אוטומטי בתצוגת לייב</h4>
+                                <p style="font-size: 13px; color: var(--muted); margin-bottom: 12px;">אפשר להריץ עדכון (בדוק סכום, סנכרון תרומות, טען מגליון) בסיום מחזור גלילה – או תוך כדי גלילה בלי לעצור ובלי קפיצות.</p>
                                 <div class="liveview-setting-row">
-                                    <label>מה להציג על המסך בזמן העדכון:</label>
+                                    <label>מתי להריץ עדכון אוטומטי:</label>
+                                    <select id="liveviewUpdateWhen" onchange="updateLiveViewSettings()">
+                                        <option value="end">בסיום מחזור גלילה (עוצר, מציג overlay, מעדכן, ממשיך)</option>
+                                        <option value="during">תוך כדי גלילה (בלי לעצור, בלי קפיצות)</option>
+                                    </select>
+                                </div>
+                                <div class="liveview-setting-row" id="liveviewUpdateDuringIntervalRow" style="display: none;">
+                                    <label>כל כמה דקות (תוך כדי גלילה):</label>
+                                    <input type="number" id="liveviewUpdateDuringMinutes" min="1" max="60" value="5" onchange="updateLiveViewSettings()" style="width: 60px;">
+                                    <span style="font-size: 12px; color: var(--muted);">דקות</span>
+                                </div>
+                                <div class="liveview-setting-row" id="liveviewUpdateEndOptionsRow">
+                                    <label>מה להציג על המסך בזמן העדכון (רק במצב "בסיום מחזור"):</label>
                                     <select id="liveviewUpdateShow" onchange="updateLiveViewSettings()">
                                         <option value="loading">סימן טעינה בלבד</option>
                                         <option value="grants">כללים למתרימים (מענקים)</option>
                                     </select>
                                 </div>
-                                <div class="liveview-setting-row">
-                                    <label>סוג העדכון להרצה:</label>
+                                <div class="liveview-setting-row" id="liveviewUpdateTypeRow">
+                                    <label>סוג העדכון להרצה (בסיום מחזור) / תוך כדי גלילה תמיד: בדוק סכום + סנכרון + טען מגליון:</label>
                                     <select id="liveviewUpdateType" onchange="updateLiveViewSettings()">
                                         <option value="all">כל העדכונים (נדרים + גליון)</option>
                                         <option value="check">בדוק סכום כולל מ-API</option>
@@ -9735,7 +9747,9 @@
             maxDonorsPerGroup: 0,
             showNotificationsOnLiveView: false,
             liveViewUpdateShow: 'loading',
-            liveViewUpdateType: 'all'
+            liveViewUpdateType: 'all',
+            liveViewUpdateWhen: 'end',       // 'end' = בסיום מחזור (עוצר + overlay) | 'during' = תוך כדי גלילה בלי לעצור
+            liveViewUpdateDuringMinutes: 5   // כל כמה דקות כשעובדים במצב "תוך כדי גלילה"
         };
 
         function loadLiveViewSettings() {
@@ -9794,6 +9808,14 @@
             if (liveviewUpdateShow) liveviewUpdateShow.value = liveViewSettings.liveViewUpdateShow || 'loading';
             const liveviewUpdateType = document.getElementById('liveviewUpdateType');
             if (liveviewUpdateType) liveviewUpdateType.value = liveViewSettings.liveViewUpdateType || 'all';
+            const liveviewUpdateWhen = document.getElementById('liveviewUpdateWhen');
+            if (liveviewUpdateWhen) liveviewUpdateWhen.value = liveViewSettings.liveViewUpdateWhen || 'end';
+            const liveviewUpdateDuringMinutes = document.getElementById('liveviewUpdateDuringMinutes');
+            if (liveviewUpdateDuringMinutes) liveviewUpdateDuringMinutes.value = liveViewSettings.liveViewUpdateDuringMinutes || 5;
+            var duringRow = document.getElementById('liveviewUpdateDuringIntervalRow');
+            var endOptionsRow = document.getElementById('liveviewUpdateEndOptionsRow');
+            if (duringRow) duringRow.style.display = (liveViewSettings.liveViewUpdateWhen === 'during') ? '' : 'none';
+            if (endOptionsRow) endOptionsRow.style.display = (liveViewSettings.liveViewUpdateWhen === 'end') ? '' : 'none';
             
             // המרת #ffffff ל-rgba עבור groupHeaderBg אם צריך
             if (liveViewSettings.groupHeaderBg === '#ffffff' || liveViewSettings.groupHeaderBg === '#FFFFFF') {
@@ -9975,6 +9997,12 @@
         }
 
         function updateLiveViewSettings() {
+            var whenEl = document.getElementById('liveviewUpdateWhen');
+            var whenVal = whenEl ? whenEl.value : 'end';
+            var duringRow = document.getElementById('liveviewUpdateDuringIntervalRow');
+            var endOptionsRow = document.getElementById('liveviewUpdateEndOptionsRow');
+            if (duringRow) duringRow.style.display = (whenVal === 'during') ? '' : 'none';
+            if (endOptionsRow) endOptionsRow.style.display = (whenVal === 'end') ? '' : 'none';
             const titleSize = document.getElementById('liveviewTitleSize');
             const titleSizeValue = document.getElementById('liveviewTitleSizeValue');
             const donorNameSize = document.getElementById('liveviewDonorNameSize');
@@ -10170,7 +10198,9 @@
                 maxDonorsPerGroup: maxDonorsPerGroup ? parseInt(maxDonorsPerGroup.value) || 0 : liveViewSettings.maxDonorsPerGroup,
                 showNotificationsOnLiveView: document.getElementById('liveviewShowNotificationsOnLiveView') ? document.getElementById('liveviewShowNotificationsOnLiveView').checked : !!liveViewSettings.showNotificationsOnLiveView,
                 liveViewUpdateShow: document.getElementById('liveviewUpdateShow') ? document.getElementById('liveviewUpdateShow').value : (liveViewSettings.liveViewUpdateShow || 'loading'),
-                liveViewUpdateType: document.getElementById('liveviewUpdateType') ? document.getElementById('liveviewUpdateType').value : (liveViewSettings.liveViewUpdateType || 'all')
+                liveViewUpdateType: document.getElementById('liveviewUpdateType') ? document.getElementById('liveviewUpdateType').value : (liveViewSettings.liveViewUpdateType || 'all'),
+                liveViewUpdateWhen: document.getElementById('liveviewUpdateWhen') ? document.getElementById('liveviewUpdateWhen').value : (liveViewSettings.liveViewUpdateWhen || 'end'),
+                liveViewUpdateDuringMinutes: Math.min(60, Math.max(1, parseInt(document.getElementById('liveviewUpdateDuringMinutes') ? document.getElementById('liveviewUpdateDuringMinutes').value : 5, 10) || 5))
             };
 
             storageSetItem('liveViewSettings', liveViewSettings);
@@ -10242,7 +10272,9 @@
                 maxDonorsPerGroup: 0,
                 showNotificationsOnLiveView: false,
                 liveViewUpdateShow: 'loading',
-                liveViewUpdateType: 'all'
+                liveViewUpdateType: 'all',
+                liveViewUpdateWhen: 'end',
+                liveViewUpdateDuringMinutes: 5
             };
             storageSetItem('liveViewSettings', liveViewSettings);
             loadLiveViewSettings();
@@ -11276,7 +11308,7 @@
                 if (offset >= halfHeight) {
                     offset -= halfHeight;
                     state.cycleCompleteFired = false;
-                    onDonorsScrollCycleComplete().catch(() => {});
+                    if ((liveViewSettings.liveViewUpdateWhen || 'end') === 'end') onDonorsScrollCycleComplete().catch(() => {});
                 }
                 if (offset < 10) state.cycleCompleteFired = false;
                 state.offset = offset;
@@ -11288,7 +11320,44 @@
             state.handle = requestAnimationFrame(step);
         }
         
-        /** אחרי סיום גלילה מלאה – עוצר גלילה, מציג overlay, מריץ עדכון לפי ההגדרה, ואז ממשיך גלילה */
+        /** עדכון תוך כדי גלילה – בלי לעצור, בלי overlay. כמו בוט שלוחץ: בדוק סכום, סנכרון תרומות, טען מגליון. */
+        var isLiveViewUpdateDuringRunning = false;
+        async function runLiveViewUpdateDuring() {
+            if (typeof isLiveViewActive !== 'function' || !isLiveViewActive() || !liveViewSettings.enableAutoScroll) return;
+            if (isLiveViewUpdateDuringRunning) return;
+            isLiveViewUpdateDuringRunning = true;
+            lastLiveViewUpdateAt = Date.now();
+            console.log('🔄 [תצוגת לייב] עדכון תוך כדי גלילה (בלי לעצור)...');
+            try {
+                await checkTotalAmountFromAPI(true);
+                await syncWithNedarimPlus(true);
+                var url = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').trim();
+                if (url && typeof loadFromGoogleSheets === 'function') {
+                    var r = await loadFromGoogleSheets(true);
+                    if (r && r.success && typeof notifyDataChanged === 'function') notifyDataChanged();
+                }
+                if (typeof syncAllDataToDatabase === 'function') await syncAllDataToDatabase();
+                if (typeof updateLiveView === 'function') updateLiveView();
+                if (typeof updateLeadersList === 'function') updateLeadersList();
+                if (typeof notifyDataChanged === 'function') notifyDataChanged();
+                console.log('✅ [תצוגת לייב] עדכון תוך כדי גלילה הושלם');
+            } catch (err) {
+                console.warn('⚠️ [תצוגת לייב] שגיאה בעדכון תוך כדי גלילה:', err);
+            }
+            isLiveViewUpdateDuringRunning = false;
+        }
+
+        function triggerLiveViewUpdateDuring() {
+            if (typeof isLiveViewActive !== 'function' || !isLiveViewActive() || !liveViewSettings.enableAutoScroll) return;
+            if (liveViewSettings.liveViewUpdateWhen !== 'during') return;
+            if (!donorsScrollIsRunning) return;
+            var mins = Math.max(1, Math.min(60, parseInt(liveViewSettings.liveViewUpdateDuringMinutes, 10) || 5));
+            var nowMs = Date.now();
+            if (lastLiveViewUpdateAt > 0 && (nowMs - lastLiveViewUpdateAt) < mins * 60 * 1000) return;
+            runLiveViewUpdateDuring().catch(function() {});
+        }
+
+        /** אחרי סיום גלילה מלאה – עוצר גלילה, מציג overlay, מריץ עדכון לפי ההגדרה, ואז ממשיך גלילה (רק כשההגדרה "בסיום מחזור") */
         async function onDonorsScrollCycleComplete() {
             if (typeof isLiveViewActive !== 'function' || !isLiveViewActive()) {
                 console.log('🔄 [תצוגת לייב] עדכון בסיום גלילה – מדולג (לא בתצוגת לייב)');
@@ -11298,6 +11367,7 @@
                 console.log('🔄 [תצוגת לייב] עדכון בסיום גלילה – מדולג (גלילה אוטומטית כבויה)');
                 return;
             }
+            if ((liveViewSettings.liveViewUpdateWhen || 'end') === 'during') return;
             if (!donorsScrollIsRunning) return;
             console.log('🔄 [תצוגת לייב] סיום מחזור גלילה – מציג overlay ומריץ עדכון...');
             lastLiveViewUpdateAt = Date.now();
@@ -11463,8 +11533,12 @@
             
             const now = performance.now();
             
-            // גיבוי: אם עברו 10 דקות מהעדכון האחרון – מריצים עדכון (למקרה שהמחזור לא הגיע לסוף)
-            if (typeof triggerLiveViewUpdateByTimer === 'function') triggerLiveViewUpdateByTimer();
+            // עדכון אוטומטי: לפי ההגדרה – תוך כדי גלילה (כל X דקות) או גיבוי 10 דקות (בסיום מחזור)
+            if ((liveViewSettings.liveViewUpdateWhen || 'end') === 'during') {
+                if (typeof triggerLiveViewUpdateDuring === 'function') triggerLiveViewUpdateDuring();
+            } else {
+                if (typeof triggerLiveViewUpdateByTimer === 'function') triggerLiveViewUpdateByTimer();
+            }
             
             // בדיקת גלילת תורמים
             if (donorsScrollIsRunning) {
