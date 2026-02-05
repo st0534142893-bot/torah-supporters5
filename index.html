@@ -13314,7 +13314,10 @@
             editingDonorId = null;
             editingShouldFocus = false;
             
-            // עדכון התצוגה אחרי השמירה – עדכון מיידי בתצוגת לייב בלי קפיצות
+            // עדכון הסכום הכולל מהמקומי – עמודת מובילים וסכום קבוצה יתעדכנו מיד
+            const newTotal = donors.reduce((s, d) => s + Math.max(0, d.amount || 0), 0);
+            NEDARIM_CONFIG.totalDonatedFromAPI = newTotal;
+            NEDARIM_CONFIG.apiDataLoaded = true;
             updateDonorsList();
             updateGroupsDisplay();
             updateHomeStats();
@@ -15428,6 +15431,10 @@
                 setTimeout(() => recentlyUpdatedDonors.delete(donorId), 120000);
             }
             
+            // עדכון הסכום הכולל מהמקומי – עמודת מובילים וסכום קבוצה יתעדכנו מיד
+            const newTotal = donors.reduce((s, d) => s + Math.max(0, d.amount || 0), 0);
+            NEDARIM_CONFIG.totalDonatedFromAPI = newTotal;
+            NEDARIM_CONFIG.apiDataLoaded = true;
             updateDonorsList();
             updateGroupsDisplay();
             updateHomeStats();
@@ -15572,6 +15579,10 @@
                 setTimeout(() => recentlyUpdatedDonors.delete(donorId), 120000);
             }
             
+            // עדכון הסכום הכולל מהמקומי – כדי שעמודת המובילים וסכום הקבוצה יתעדכנו מיד
+            const newTotal = donors.reduce((s, d) => s + Math.max(0, d.amount || 0), 0);
+            NEDARIM_CONFIG.totalDonatedFromAPI = newTotal;
+            NEDARIM_CONFIG.apiDataLoaded = true;
             updateDonorsList();
             updateGroupsDisplay();
             updateHomeStats();
