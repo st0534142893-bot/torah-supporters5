@@ -5492,7 +5492,8 @@
                         מחשבון
                     </button>
                     <button class="management-tab" data-tab="sync">עדכונים</button>
-                    <button class="management-tab" data-tab="history">📜 היסטוריה</button>
+                    <button class="management-tab" data-tab="robot"> רובוט אוטומטי</button>
+                    <button class="management-tab" data-tab="history"> היסטוריה</button>
                     <button class="management-tab" data-tab="reset">אפשרויות איפוס</button>
                     <button class="management-tab" data-tab="password">הגדרת סיסמה</button>
                 </div>
@@ -5570,6 +5571,128 @@
                     </div>
                 </div>
 
+                <!-- רובוט אוטומטי -->
+                <div class="management-content" id="robotContent">
+                    <div style="padding: 25px; background: #fafafa; min-height: 100%;">
+                        <h3 style="margin-bottom: 20px; color: var(--brown-dark);">🤖 רובוט אוטומטי</h3>
+                        
+                        <!-- אזהרה על הגבלת פניות -->
+                        <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 10px; padding: 15px; margin-bottom: 20px;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                <span style="font-size: 24px;">⚠️</span>
+                                <strong style="color: #856404; font-size: 16px;">אזהרה חשובה - הגבלת פניות</strong>
+                            </div>
+                            <p style="color: #856404; margin: 0; line-height: 1.6;">
+                                נדרים פלוס מגבילים לעד <strong>500 פניות לשעה</strong>. יש להקפיד על כך שהרובוט לא יפעיל את הכפתורים בתדירות גבוהה מדי.
+                            </p>
+                            <p style="color: #856404; margin-top: 10px; margin-bottom: 0; line-height: 1.6;">
+                                <strong>המלצה:</strong> הגדר תדירות של לפחות 10-15 דקות בין פעולות, במיוחד אם יש לך מספר מסכים פתוחים בו-זמנית.
+                            </p>
+                        </div>
+                        
+                        <!-- הגדרות רובוט -->
+                        <div style="background: rgba(255, 255, 255, 0.9); border-radius: 10px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border);">
+                            <h4 style="margin-bottom: 15px; color: var(--brown-dark);">הגדרות רובוט אוטומטי</h4>
+                            
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 500; margin-bottom: 15px;">
+                                    <input type="checkbox" id="robotEnabledCheckbox" onchange="saveRobotSettings()" style="width: 20px; height: 20px; cursor: pointer;">
+                                    <span>🤖 הפעל רובוט אוטומטי</span>
+                                </label>
+                            </div>
+                            
+                            <div id="robotSettingsPanel" style="display: none; padding-right: 20px; border-top: 1px dashed var(--border); padding-top: 20px;">
+                                <div style="margin-bottom: 20px;">
+                                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text);">בחר איזה כפתורים להפעיל אוטומטית:</label>
+                                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                            <input type="checkbox" id="robotSyncCheckbox" onchange="saveRobotSettings()" style="width: 18px; height: 18px; cursor: pointer;">
+                                            <span>🔄 סנכרון תרומות לנדרים פלוס</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                            <input type="checkbox" id="robotCheckTotalCheckbox" onchange="saveRobotSettings()" style="width: 18px; height: 18px; cursor: pointer;">
+                                            <span>🔍 בדוק סכום כולל מ-API</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                            <input type="checkbox" id="robotLoadSheetCheckbox" onchange="saveRobotSettings()" style="width: 18px; height: 18px; cursor: pointer;">
+                                            <span>📥 טען מהגליון</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                            <input type="checkbox" id="robotSaveSheetCheckbox" onchange="saveRobotSettings()" style="width: 18px; height: 18px; cursor: pointer;">
+                                            <span>💾 שמור לגליון</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div style="margin-bottom: 20px;">
+                                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text);">תדירות הפעלה:</label>
+                                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px; background: #f5f5f5; border-radius: 6px;">
+                                            <input type="checkbox" id="robotContinuousMode" onchange="toggleContinuousMode(); saveRobotSettings();" style="width: 18px; height: 18px; cursor: pointer;">
+                                            <span style="font-weight: 500;">🔄 עדכונים שוטפים (רציף ללא הפסקה)</span>
+                                        </label>
+                                        <div id="robotIntervalContainer" style="display: flex; align-items: center; gap: 10px;">
+                                            <input type="number" id="robotIntervalInput" min="0.5" step="0.5" value="10" onchange="updateRobotIntervalDisplay(); saveRobotSettings();" oninput="updateRobotIntervalDisplay();" style="width: 80px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; background: white;">
+                                            <select id="robotIntervalUnit" onchange="updateRobotIntervalDisplay(); saveRobotSettings();" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; background: white; cursor: pointer;">
+                                                <option value="minutes">דקות</option>
+                                                <option value="hours">שעות</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div style="margin-top: 8px; font-size: 12px; color: var(--muted);">
+                                        💡 <span id="robotIntervalDisplay">הרובוט יפעיל את הכפתורים הנבחרים כל 10 דקות</span>
+                                    </div>
+                                </div>
+                                
+                                <div style="margin-bottom: 20px;">
+                                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text);">אופן ביצוע פעולות:</label>
+                                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                            <input type="radio" name="robotExecutionMode" id="robotSequentialMode" value="sequential" checked onchange="saveRobotSettings();" style="width: 18px; height: 18px; cursor: pointer;">
+                                            <span>⏭️ רציף (זה אחר זה) - כל פעולה מתחילה רק אחרי שהקודמת מסתיימת</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                            <input type="radio" name="robotExecutionMode" id="robotParallelMode" value="parallel" onchange="saveRobotSettings();" style="width: 18px; height: 18px; cursor: pointer;">
+                                            <span>⚡ מקבילי (בו-זמנית) - כל הפעולות מתחילות יחד</span>
+                                        </label>
+                                    </div>
+                                    <div style="margin-top: 8px; font-size: 12px; color: var(--muted);">
+                                        💡 מומלץ: רציף - מונע דריסת נתונים ובעיות סנכרון
+                                    </div>
+                                </div>
+                                
+                                <div style="background: #e3f2fd; border: 1px solid #1976d2; border-radius: 8px; padding: 12px; margin-top: 15px;">
+                                    <div style="font-weight: 500; margin-bottom: 5px; color: #0d47a1;">📋 סטטוס רובוט:</div>
+                                    <div id="robotStatus" style="font-size: 14px; color: #1976d2;">
+                                        הרובוט כבוי
+                                    </div>
+                                    <div id="robotNextRun" style="font-size: 12px; color: #666; margin-top: 5px; display: none;">
+                                        הפעלה הבאה: <span id="robotNextRunTime">—</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- כפתור הפעלה/עצירה ידני -->
+                        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                            <button class="btn btn-success" id="robotStartBtn" onclick="startRobot()" style="display: none;">
+                                ▶️ הפעל רובוט
+                            </button>
+                            <button class="btn btn-danger" id="robotStopBtn" onclick="stopRobot()" style="display: none;">
+                                ⏹️ עצור רובוט
+                            </button>
+                        </div>
+                        
+                        <!-- היסטוריית פעולות -->
+                        <div style="background: rgba(255, 255, 255, 0.9); border-radius: 10px; padding: 20px; border: 1px solid var(--border);">
+                            <h4 style="margin-bottom: 15px; color: var(--brown-dark);">📜 היסטוריית פעולות רובוט</h4>
+                            <div id="robotHistory" style="max-height: 300px; overflow-y: auto; font-size: 13px; color: var(--muted);">
+                                <div style="padding: 10px; text-align: center; color: var(--muted);">אין פעולות עדיין</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- היסטוריה -->
                 <div class="management-content" id="historyContent">
                     <div style="padding: 25px; background: #fafafa; min-height: 100%;">
@@ -6002,46 +6125,16 @@
                                 <div class="liveview-setting-row">
                                     <label>הצג הודעות מערכת על מסך התצוגת לייב:</label>
                                     <label class="switch">
-                                        <input type="checkbox" id="liveviewShowNotificationsOnLiveView" onchange="updateLiveViewSettings()">
+                                        <input type="checkbox" id="liveviewShowNotificationsOnLiveView" onchange="updateLiveViewSettings(); console.log('🔔 [תצוגת לייב] הודעות:', document.getElementById('liveviewShowNotificationsOnLiveView').checked ? 'מופעלות' : 'כבויות');">
                                         <span class="switch-slider"></span>
                                     </label>
                                 </div>
-                                <p style="font-size: 13px; color: var(--muted); margin-top: 6px;">ברירת מחדל: כבוי – בתצוגת לייב לא יופיעו הודעות. הפעל אם תרצה לראות הודעות גם על המסך.</p>
+                                <p style="font-size: 13px; color: var(--muted); margin-top: 6px;">
+                                    <strong>ברירת מחדל: כבוי</strong> – בתצוגת לייב לא יופיעו הודעות. כל הפעולות יעבדו מאחורי הקלעים ללא הפרעה.<br>
+                                    <strong>הפעל</strong> אם תרצה לראות הודעות גם על המסך (לא מומלץ למסכים גדולים).
+                                </p>
                             </div>
 
-                            <div class="liveview-setting-group liveview-setting-group-wide">
-                                <h4>עדכון אוטומטי בתצוגת לייב</h4>
-                                <p style="font-size: 13px; color: var(--muted); margin-bottom: 12px;">אפשר להריץ עדכון (בדוק סכום, סנכרון תרומות, טען מגליון) בסיום מחזור גלילה – או תוך כדי גלילה בלי לעצור ובלי קפיצות.</p>
-                                <div class="liveview-setting-row">
-                                    <label>מתי להריץ עדכון אוטומטי:</label>
-                                    <select id="liveviewUpdateWhen" onchange="updateLiveViewSettings()">
-                                        <option value="end">בסיום מחזור גלילה (עוצר, מציג overlay, מעדכן, ממשיך)</option>
-                                        <option value="during">תוך כדי גלילה (בלי לעצור, בלי קפיצות)</option>
-                                    </select>
-                                </div>
-                                <div class="liveview-setting-row" id="liveviewUpdateDuringIntervalRow" style="display: none;">
-                                    <label>כל כמה דקות (תוך כדי גלילה):</label>
-                                    <input type="number" id="liveviewUpdateDuringMinutes" min="1" max="60" value="5" onchange="updateLiveViewSettings()" style="width: 60px;">
-                                    <span style="font-size: 12px; color: var(--muted);">דקות</span>
-                                </div>
-                                <div class="liveview-setting-row" id="liveviewUpdateEndOptionsRow">
-                                    <label>מה להציג על המסך בזמן העדכון (רק במצב "בסיום מחזור"):</label>
-                                    <select id="liveviewUpdateShow" onchange="updateLiveViewSettings()">
-                                        <option value="loading">סימן טעינה בלבד</option>
-                                        <option value="grants">כללים למתרימים (מענקים)</option>
-                                    </select>
-                                </div>
-                                <div class="liveview-setting-row" id="liveviewUpdateTypeRow">
-                                    <label>סוג העדכון להרצה (בסיום מחזור) / תוך כדי גלילה תמיד: בדוק סכום + סנכרון + טען מגליון:</label>
-                                    <select id="liveviewUpdateType" onchange="updateLiveViewSettings()">
-                                        <option value="all">כל העדכונים (נדרים + גליון)</option>
-                                        <option value="check">בדוק סכום כולל מ-API</option>
-                                        <option value="loadSheet">טען מהגליון</option>
-                                        <option value="sync">סנכרון תרומות לנדרים פלוס</option>
-                                        <option value="loadMatrim">טען מתרימים מנדרים פלוס</option>
-                                    </select>
-                                </div>
-                            </div>
 
                             <div class="liveview-setting-group">
                                 <h4>מהירות גלילה</h4>
@@ -6245,40 +6338,6 @@
                             <p id="updateByApiResult" style="margin-top: 10px; font-size: 12px; min-height: 20px;"></p>
                         </div>
 
-                        <div class="auto-sync-control" style="margin-top: 15px; padding: 15px; background: rgba(255, 255, 255, 0.6); border-radius: 10px; border: 1px solid var(--border);">
-                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 500;">
-                                <input type="checkbox" id="autoSyncNedarimCheckbox" onchange="saveAutoSyncNedarimSetting()" style="width: 20px; height: 20px; cursor: pointer;">
-                                <span>🔄 הפעל עדכון אוטומטי – הפעולה הנבחרת למטה תרוץ אוטומטית כל התדירות שתגדיר (למשל "בדוק סכום כולל מ-API" כל X דקות)</span>
-                            </label>
-                            <div style="margin-top: 12px; padding-right: 30px;">
-                                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text);">בחר איזה כפתור להפעיל אוטומטית:</label>
-                                <select id="autoSyncActionSelect" onchange="saveAutoSyncNedarimSetting()" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; background: white; cursor: pointer; margin-bottom: 12px;">
-                                    <option value="sync">🔄 סנכרון תרומות</option>
-                                    <option value="load">📥 טען מתרימים מנדרים פלוס</option>
-                                    <option value="check">🔍 בדוק סכום כולל מ-API</option>
-                                    <option value="all">⚡ כל הכפתורים בו-זמנית</option>
-                                </select>
-                                <div style="margin-top: 12px;">
-                                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text);">תדירות עדכון אוטומטי:</label>
-                                    <div style="display: flex; align-items: center; gap: 10px;">
-                                        <input type="number" id="autoSyncIntervalInput" min="1" step="1" value="5" onchange="updateAutoSyncIntervalDisplay(); saveAutoSyncNedarimSetting();" oninput="updateAutoSyncIntervalDisplay();" style="width: 80px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; background: white;">
-                                        <select id="autoSyncIntervalUnit" onchange="updateAutoSyncIntervalDisplay(); saveAutoSyncNedarimSetting();" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; background: white; cursor: pointer;">
-                                            <option value="minutes">דקות</option>
-                                            <option value="hours">שעות</option>
-                                        </select>
-                            </div>
-                                    <div style="margin-top: 8px; font-size: 12px; color: var(--muted);">
-                                        💡 העדכון יתבצע כל <span id="autoSyncIntervalDisplay">5 דקות</span>
-                            </div>
-                            </div>
-                                <div style="margin-top: 8px; font-size: 12px; color: var(--muted);" id="autoSyncWarningText">
-                                    💡 בחירת כפתור אחד בלבד עוזרת להימנע מהגבלת 500 קריאות לשעה
-                        </div>
-                            </div>
-                            <div style="margin-top: 8px; font-size: 14px; color: var(--muted); padding-right: 30px;">
-                                ההגדרה נשמרת ונשארת פעילה גם כשפותחים את התוכנה ממחשב אחר
-                            </div>
-                        </div>
 
                         <div class="default-goal-note" style="margin-top: 15px;">השינוי ישפיע על מתרימים חדשים ויעדכן מתרימים קיימים שמשתמשים ביעד ברירת המחדל.</div>
                         <div class="nedarim-sync-status" id="nedarimSyncStatus"></div>
@@ -6319,32 +6378,6 @@
                             
                             <div class="sync-status" id="googleSheetsSyncStatus" style="display: none; padding: 10px; border-radius: 6px; margin-bottom: 15px;"></div>
                             
-                            <div style="margin-top: 15px; margin-bottom: 20px;">
-                                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 500;">
-                                    <input type="checkbox" id="autoGoogleSheetsSyncCheckbox" onchange="saveGoogleSheetsSettings(); applySheetSyncSettings();" style="width: 20px; height: 20px; cursor: pointer;">
-                                    <span>🔄 הפעל עדכון אוטומטי לגליון</span>
-                                </label>
-                                <div id="sheetSyncOptions" style="margin-top: 12px; padding-right: 30px; padding-top: 12px; border-top: 1px dashed var(--border);">
-                                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text);">תדירות עדכון:</label>
-                                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                                        <input type="number" id="sheetSyncIntervalInput" min="1" max="120" value="5" onchange="saveGoogleSheetsSettings(); applySheetSyncSettings();" style="width: 70px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px;">
-                                        <span>דקות</span>
-                                    </div>
-                                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 8px;">
-                                        <input type="checkbox" id="sheetSyncLoadCheckbox" onchange="saveGoogleSheetsSettings(); applySheetSyncSettings();" style="width: 18px; height: 18px; cursor: pointer;">
-                                        <span>📥 טעינה מהגליון – למשוך שינויים מהגליון לתוכנה</span>
-                                    </label>
-                                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 8px;">
-                                        <input type="checkbox" id="sheetSyncSaveCheckbox" onchange="saveGoogleSheetsSettings(); applySheetSyncSettings();" style="width: 18px; height: 18px; cursor: pointer;">
-                                        <span>💾 שמירה לגליון – לשלוח את הנתונים מהתוכנה לגליון</span>
-                                    </label>
-                                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                        <input type="checkbox" id="sheetSyncSaveOnChangeCheckbox" onchange="saveGoogleSheetsSettings();" style="width: 18px; height: 18px; cursor: pointer;">
-                                        <span>שמירה אוטומטית בכל שינוי (מלבד התדירות למעלה)</span>
-                                    </label>
-                                    <p style="margin: 10px 0 0 0; font-size: 12px; color: var(--muted);">💡 ניתן לסמן טעינה בלבד, שמירה בלבד, או את שניהם. טעינה ראשונה מתבצעת גם בעליית התוכנה.</p>
-                                </div>
-                            </div>
                             
                             <div style="background: #fff3e0; border: 2px solid #ff9800; border-radius: 10px; padding: 15px; margin-top: 15px;">
                                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
@@ -8054,23 +8087,11 @@
         }
         
         function updateAutoSyncIntervalDisplay() {
-            const intervalInput = document.getElementById('autoSyncIntervalInput');
-            const unitSelect = document.getElementById('autoSyncIntervalUnit');
-            const display = document.getElementById('autoSyncIntervalDisplay');
-            
-            if (intervalInput && unitSelect && display) {
-                const value = parseInt(intervalInput.value) || 1;
-                const unit = unitSelect.value;
-                
-                if (unit === 'hours') {
-                    display.textContent = value === 1 ? 'שעה אחת' : `${value} שעות`;
-                } else {
-                    display.textContent = value === 1 ? 'דקה אחת' : `${value} דקות`;
-                }
-            }
+            // בוטל - השתמש ברובוט אוטומטי
         }
         
         function saveAutoSyncNedarimSetting() {
+            // בוטל - השתמש ברובוט אוטומטי
             const checkbox = document.getElementById('autoSyncNedarimCheckbox');
             const select = document.getElementById('autoSyncActionSelect');
             const intervalInput = document.getElementById('autoSyncIntervalInput');
@@ -9756,10 +9777,6 @@
             donorsFilter: 'all',
             maxDonorsPerGroup: 0,
             showNotificationsOnLiveView: false,
-            liveViewUpdateShow: 'loading',
-            liveViewUpdateType: 'all',
-            liveViewUpdateWhen: 'end',       // 'end' = בסיום מחזור (עוצר + overlay) | 'during' = תוך כדי גלילה בלי לעצור
-            liveViewUpdateDuringMinutes: 5   // כל כמה דקות כשעובדים במצב "תוך כדי גלילה"
         };
 
         function loadLiveViewSettings() {
@@ -9767,6 +9784,13 @@
             if (saved) {
                 try {
                         liveViewSettings = { ...liveViewSettings, ...saved };
+                        // וידוא שההגדרה של הודעות נטענת נכון
+                        if (typeof saved.showNotificationsOnLiveView !== 'undefined') {
+                            liveViewSettings.showNotificationsOnLiveView = saved.showNotificationsOnLiveView === true;
+                        }
+                        console.log('📥 [תצוגת לייב] הגדרות נטענו:', {
+                            showNotifications: liveViewSettings.showNotificationsOnLiveView
+                        });
                 } catch (e) {
                     console.error('שגיאה בטעינת הגדרות תצוגת לייב:', e);
                 }
@@ -9814,18 +9838,6 @@
             if (enableAutoScroll) enableAutoScroll.checked = liveViewSettings.enableAutoScroll;
             const showNotificationsOnLiveView = document.getElementById('liveviewShowNotificationsOnLiveView');
             if (showNotificationsOnLiveView) showNotificationsOnLiveView.checked = !!liveViewSettings.showNotificationsOnLiveView;
-            const liveviewUpdateShow = document.getElementById('liveviewUpdateShow');
-            if (liveviewUpdateShow) liveviewUpdateShow.value = liveViewSettings.liveViewUpdateShow || 'loading';
-            const liveviewUpdateType = document.getElementById('liveviewUpdateType');
-            if (liveviewUpdateType) liveviewUpdateType.value = liveViewSettings.liveViewUpdateType || 'all';
-            const liveviewUpdateWhen = document.getElementById('liveviewUpdateWhen');
-            if (liveviewUpdateWhen) liveviewUpdateWhen.value = liveViewSettings.liveViewUpdateWhen || 'end';
-            const liveviewUpdateDuringMinutes = document.getElementById('liveviewUpdateDuringMinutes');
-            if (liveviewUpdateDuringMinutes) liveviewUpdateDuringMinutes.value = liveViewSettings.liveViewUpdateDuringMinutes || 5;
-            var duringRow = document.getElementById('liveviewUpdateDuringIntervalRow');
-            var endOptionsRow = document.getElementById('liveviewUpdateEndOptionsRow');
-            if (duringRow) duringRow.style.display = (liveViewSettings.liveViewUpdateWhen === 'during') ? '' : 'none';
-            if (endOptionsRow) endOptionsRow.style.display = (liveViewSettings.liveViewUpdateWhen === 'end') ? '' : 'none';
             
             // המרת #ffffff ל-rgba עבור groupHeaderBg אם צריך
             if (liveViewSettings.groupHeaderBg === '#ffffff' || liveViewSettings.groupHeaderBg === '#FFFFFF') {
@@ -10206,14 +10218,23 @@
                 donorsSortBy: donorsSortBy ? donorsSortBy.value : liveViewSettings.donorsSortBy,
                 donorsFilter: donorsFilter ? donorsFilter.value : liveViewSettings.donorsFilter,
                 maxDonorsPerGroup: maxDonorsPerGroup ? parseInt(maxDonorsPerGroup.value) || 0 : liveViewSettings.maxDonorsPerGroup,
-                showNotificationsOnLiveView: document.getElementById('liveviewShowNotificationsOnLiveView') ? document.getElementById('liveviewShowNotificationsOnLiveView').checked : !!liveViewSettings.showNotificationsOnLiveView,
-                liveViewUpdateShow: document.getElementById('liveviewUpdateShow') ? document.getElementById('liveviewUpdateShow').value : (liveViewSettings.liveViewUpdateShow || 'loading'),
-                liveViewUpdateType: document.getElementById('liveviewUpdateType') ? document.getElementById('liveviewUpdateType').value : (liveViewSettings.liveViewUpdateType || 'all'),
-                liveViewUpdateWhen: document.getElementById('liveviewUpdateWhen') ? document.getElementById('liveviewUpdateWhen').value : (liveViewSettings.liveViewUpdateWhen || 'end'),
-                liveViewUpdateDuringMinutes: Math.min(60, Math.max(1, parseInt(document.getElementById('liveviewUpdateDuringMinutes') ? document.getElementById('liveviewUpdateDuringMinutes').value : 5, 10) || 5))
+                showNotificationsOnLiveView: document.getElementById('liveviewShowNotificationsOnLiveView') ? document.getElementById('liveviewShowNotificationsOnLiveView').checked : (liveViewSettings.showNotificationsOnLiveView === true),
             };
 
+            // שמירת ההגדרות
             storageSetItem('liveViewSettings', liveViewSettings);
+            
+            // עדכון המשתנה הגלובלי מיד כדי שהפונקציה showNotification תבדוק נכון
+            const showNotificationsCheckbox = document.getElementById('liveviewShowNotificationsOnLiveView');
+            if (showNotificationsCheckbox) {
+                liveViewSettings.showNotificationsOnLiveView = showNotificationsCheckbox.checked;
+            }
+            
+            console.log('💾 [תצוגת לייב] הגדרות נשמרו:', {
+                showNotifications: liveViewSettings.showNotificationsOnLiveView,
+                isLiveViewActive: typeof isLiveViewActive === 'function' && isLiveViewActive()
+            });
+            
             applyLiveViewSettings();
             // עדכון התצוגה אם היא פעילה
             const liveSection = document.getElementById('liveviewSection');
@@ -10221,7 +10242,13 @@
                 updateLiveView();
                 updateLeadersList();
             }
-            showNotification('הגדרות תצוגת לייב נשמרו');
+            // מציג הודעה רק אם ההודעות מופעלות בתצוגת לייב או אם לא בתצוגת לייב
+            const isLiveView = typeof isLiveViewActive === 'function' && isLiveViewActive();
+            if (!isLiveView || liveViewSettings.showNotificationsOnLiveView) {
+                showNotification('הגדרות תצוגת לייב נשמרו');
+            } else {
+                console.log('✅ הגדרות תצוגת לייב נשמרו (הודעות כבויות בתצוגת לייב)');
+            }
         }
 
         function resetLiveViewSettings() {
@@ -10281,10 +10308,6 @@
                 donorsFilter: 'all',
                 maxDonorsPerGroup: 0,
                 showNotificationsOnLiveView: false,
-                liveViewUpdateShow: 'loading',
-                liveViewUpdateType: 'all',
-                liveViewUpdateWhen: 'end',
-                liveViewUpdateDuringMinutes: 5
             };
             storageSetItem('liveViewSettings', liveViewSettings);
             loadLiveViewSettings();
@@ -10810,7 +10833,7 @@
                 renderGroomGrantList();
                 
                 // טעינת הגדרת עדכון אוטומטי נדרים פלוס (אחרי טעינת הנתונים)
-                loadAutoSyncNedarimSetting();
+                // loadAutoSyncNedarimSetting(); // בוטל - השתמש ברובוט אוטומטי
                 
                 // טעינת הגדרות תצוגת לייב
                 if (savedLiveViewSettings) {
@@ -11318,7 +11341,6 @@
                 if (offset >= halfHeight) {
                     offset -= halfHeight;
                     state.cycleCompleteFired = false;
-                    if ((liveViewSettings.liveViewUpdateWhen || 'end') === 'end') onDonorsScrollCycleComplete().catch(() => {});
                 }
                 if (offset < 10) state.cycleCompleteFired = false;
                 state.offset = offset;
@@ -11332,10 +11354,9 @@
         
         /** עדכון תוך כדי גלילה – בלי לעצור, בלי overlay. כמו בוט שלוחץ: בדוק סכום, סנכרון תרומות, טען מגליון. */
         var isLiveViewUpdateDuringRunning = false;
+        // פונקציה זו הוסרה - עדכון אוטומטי בתצוגת לייב בוטל
         async function runLiveViewUpdateDuring() {
-            if (typeof isLiveViewActive !== 'function' || !isLiveViewActive() || !liveViewSettings.enableAutoScroll) return;
-            if (isLiveViewUpdateDuringRunning) return;
-            isLiveViewUpdateDuringRunning = true;
+            return; // בוטל
             lastLiveViewUpdateAt = Date.now();
             console.log('🔄 [תצוגת לייב] עדכון תוך כדי גלילה (בלי לעצור)...');
             try {
@@ -11357,87 +11378,18 @@
             isLiveViewUpdateDuringRunning = false;
         }
 
+        // פונקציות אלו הוסרו - עדכון אוטומטי בתצוגת לייב בוטל
         function triggerLiveViewUpdateDuring() {
-            if (typeof isLiveViewActive !== 'function' || !isLiveViewActive() || !liveViewSettings.enableAutoScroll) return;
-            if (liveViewSettings.liveViewUpdateWhen !== 'during') return;
-            if (!donorsScrollIsRunning) return;
-            var mins = Math.max(1, Math.min(60, parseInt(liveViewSettings.liveViewUpdateDuringMinutes, 10) || 5));
-            var nowMs = Date.now();
-            if (lastLiveViewUpdateAt > 0 && (nowMs - lastLiveViewUpdateAt) < mins * 60 * 1000) return;
-            runLiveViewUpdateDuring().catch(function() {});
+            return; // בוטל
         }
 
-        /** אחרי סיום גלילה מלאה – עוצר גלילה, מציג overlay, מריץ עדכון לפי ההגדרה, ואז ממשיך גלילה (רק כשההגדרה "בסיום מחזור") */
         async function onDonorsScrollCycleComplete() {
-            if (typeof isLiveViewActive !== 'function' || !isLiveViewActive()) {
-                console.log('🔄 [תצוגת לייב] עדכון בסיום גלילה – מדולג (לא בתצוגת לייב)');
-                return;
-            }
-            if (!liveViewSettings.enableAutoScroll) {
-                console.log('🔄 [תצוגת לייב] עדכון בסיום גלילה – מדולג (גלילה אוטומטית כבויה)');
-                return;
-            }
-            if ((liveViewSettings.liveViewUpdateWhen || 'end') === 'during') return;
-            if (!donorsScrollIsRunning) return;
-            console.log('🔄 [תצוגת לייב] סיום מחזור גלילה – מציג overlay ומריץ עדכון...');
-            lastLiveViewUpdateAt = Date.now();
-            const overlay = document.getElementById('liveViewUpdateOverlay');
-            const showMode = liveViewSettings.liveViewUpdateShow || 'loading';
-            const updateType = liveViewSettings.liveViewUpdateType || 'all';
-
-            stopAutoScroll('donors');
-            stopAutoScroll('leaders');
-            donorsScrollIsRunning = false;
-            leadersScrollIsRunning = false;
-
-            if (overlay) {
-                overlay.classList.remove('loading-only', 'grants-only');
-                overlay.classList.add(showMode === 'grants' ? 'grants-only' : 'loading-only');
-                overlay.classList.add('show');
-            }
-
-            try {
-                // תמיד מריצים גם "בדוק סכום כולל מ-API" וגם "סנכרון תרומות" (לחיצה על שני הכפתורים)
-                await checkTotalAmountFromAPI(true);
-                await syncWithNedarimPlus(true);
-                // בנוסף – לפי סוג העדכון בהגדרות
-                if (updateType === 'all') {
-                    if (autoSyncNedarimEnabled) await performAutoRefresh();
-                    const url = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').trim();
-                    if (url && googleSheetsSyncEnabled) {
-                        if (sheetSyncLoadEnabled) {
-                            const r = await loadFromGoogleSheets(true);
-                            if (r && r.success && typeof notifyDataChanged === 'function') notifyDataChanged();
-                        }
-                        if (sheetSyncSaveEnabled) await saveToGoogleSheets();
-                    }
-                } else if (updateType === 'loadSheet') {
-                    const r = await loadFromGoogleSheets(true);
-                    if (r && r.success && typeof notifyDataChanged === 'function') notifyDataChanged();
-                } else if (updateType === 'loadMatrim') {
-                    await loadMatrimFromNedarim(true);
-                }
-                if (typeof syncAllDataToDatabase === 'function') await syncAllDataToDatabase();
-                if (typeof updateLiveView === 'function') updateLiveView();
-                if (typeof updateLeadersList === 'function') updateLeadersList();
-                if (typeof notifyDataChanged === 'function') notifyDataChanged();
-                console.log('✅ [תצוגת לייב] עדכון הושלם');
-            } catch (err) {
-                console.warn('⚠️ [תצוגת לייב] שגיאה בעדכון:', err);
-            }
-
-            if (overlay) overlay.classList.remove('show');
-            if (typeof restartDonorsAutoScroll === 'function') restartDonorsAutoScroll();
-            if (typeof restartLeadersAutoScroll === 'function' && isLiveViewActive()) setTimeout(() => restartLeadersAutoScroll({ immediate: true }), 50);
+            return; // בוטל - השתמש ברובוט אוטומטי במדור ניהול
         }
         
+        // פונקציה זו הוסרה - עדכון אוטומטי בתצוגת לייב בוטל, השתמש ברובוט אוטומטי במדור ניהול
         function triggerLiveViewUpdateByTimer() {
-            if (typeof isLiveViewActive !== 'function' || !isLiveViewActive() || !liveViewSettings.enableAutoScroll) return;
-            if (!donorsScrollIsRunning) return;
-            var nowMs = Date.now();
-            if (lastLiveViewUpdateAt > 0 && (nowMs - lastLiveViewUpdateAt) < 10 * 60 * 1000) return;
-            console.log('🔄 [תצוגת לייב] גיבוי לפי זמן (10 דקות) – מריץ עדכון');
-            onDonorsScrollCycleComplete().catch(function() {});
+            return; // בוטל
         }
         
         // דגל למניעת קפיצות בזמן עדכון
@@ -11544,11 +11496,7 @@
             const now = performance.now();
             
             // עדכון אוטומטי: לפי ההגדרה – תוך כדי גלילה (כל X דקות) או גיבוי 10 דקות (בסיום מחזור)
-            if ((liveViewSettings.liveViewUpdateWhen || 'end') === 'during') {
-                if (typeof triggerLiveViewUpdateDuring === 'function') triggerLiveViewUpdateDuring();
-            } else {
-                if (typeof triggerLiveViewUpdateByTimer === 'function') triggerLiveViewUpdateByTimer();
-            }
+            // עדכון אוטומטי בתצוגת לייב בוטל - השתמש ברובוט אוטומטי במדור ניהול
             
             // בדיקת גלילת תורמים
             if (donorsScrollIsRunning) {
@@ -11656,18 +11604,71 @@
             // suppressNotifications - משתנה גלובלי לדיכוי הודעות בתצוגת לייב או בעדכון אוטומטי
             let suppressNotifications = false;
             
-            function showNotification(message, force = false) {
+            function showNotification(message, typeOrForce = false, forceParam = false) {
+                // בדיקה אם הפרמטר השני הוא force (boolean) או type (string)
+                let force = false;
+                let type = 'info';
+                
+                if (typeof typeOrForce === 'boolean') {
+                    // הפרמטר השני הוא force
+                    force = typeOrForce;
+                } else if (typeof typeOrForce === 'string') {
+                    // הפרמטר השני הוא type
+                    type = typeOrForce;
+                    force = forceParam === true;
+                }
+                
                 // אם ההודעות מדוכאות ולא נכפה - לא מציג
                 if (suppressNotifications && !force) {
-                    console.log('📢 [הודעה מדוכאת]:', message);
                     return;
                 }
                 
                 // לא מציג הודעות בתצוגת לייב אלא אם הופעלה האפשרות בהגדרות (או נכפה)
-                if (typeof isLiveViewActive === 'function' && isLiveViewActive() && !force) {
-                    if (!(liveViewSettings && liveViewSettings.showNotificationsOnLiveView)) {
-                        console.log('📢 [הודעה מדוכאת בלייב]:', message);
-                        return;
+                if (!force) {
+                    // בדיקה אם תצוגת לייב פעילה - בדיקה חזקה יותר
+                    let isLiveView = false;
+                    try {
+                        if (typeof isLiveViewActive === 'function') {
+                            isLiveView = isLiveViewActive();
+                        } else {
+                            // בדיקה ישירה של ה-DOM
+                            const liveSection = document.getElementById('liveviewSection');
+                            isLiveView = Boolean(liveSection && liveSection.classList.contains('active'));
+                        }
+                    } catch (e) {
+                        // אם יש שגיאה, בודק ישירות את ה-DOM
+                        const liveSection = document.getElementById('liveviewSection');
+                        isLiveView = Boolean(liveSection && liveSection.classList.contains('active'));
+                    }
+                    
+                    if (isLiveView) {
+                        // טעינת ההגדרה הנוכחית מ-localStorage כדי לוודא שיש לנו את הערך העדכני ביותר
+                        let currentShowNotifications = false;
+                        try {
+                            // קודם כל, בודק את ה-checkbox ישירות (הכי מעודכן)
+                            const checkbox = document.getElementById('liveviewShowNotificationsOnLiveView');
+                            if (checkbox) {
+                                currentShowNotifications = checkbox.checked === true;
+                            } else {
+                                // אם אין checkbox, טוען מ-localStorage
+                                const savedSettings = localStorage.getItem('liveViewSettings');
+                                if (savedSettings) {
+                                    const parsed = JSON.parse(savedSettings);
+                                    currentShowNotifications = parsed.showNotificationsOnLiveView === true;
+                                } else {
+                                    // אם אין הגדרות שמורות, בודק את המשתנה הגלובלי
+                                    currentShowNotifications = liveViewSettings && liveViewSettings.showNotificationsOnLiveView === true;
+                                }
+                            }
+                        } catch (e) {
+                            // אם יש שגיאה, בודק את המשתנה הגלובלי
+                            currentShowNotifications = liveViewSettings && liveViewSettings.showNotificationsOnLiveView === true;
+                        }
+                        
+                        // אם ההודעות כבויות בתצוגת לייב - לא מציג (עובד מאחורי הקלעים)
+                        if (!currentShowNotifications) {
+                            return;
+                        }
                     }
                 }
                 
@@ -11675,6 +11676,12 @@
                 if (!notification) return;
                 
                 notification.textContent = message;
+                
+                // החזרת העיצוב המקורי היפה - רקע לבן שקוף עם גבול זהב
+                notification.className = 'notification';
+                notification.style.background = ''; // איפוס כל שינויי הרקע
+                notification.style.color = ''; // איפוס כל שינויי הצבע
+                
                 notification.classList.add('show');
                 setTimeout(() => {
                     notification.classList.remove('show');
@@ -11860,6 +11867,9 @@
                     updateGroupSelect();
                 } else if (tabName === 'liveview') {
                     loadLiveViewSettings();
+                } else if (tabName === 'robot') {
+                    // רק מעדכן את ה-UI עם הערכים הנוכחיים, לא טוען מחדש מ-localStorage
+                    updateRobotUI();
                 } else if (tabName === 'password') {
                     initPasswordSettingsUI();
                 }
@@ -12170,7 +12180,7 @@
                     });
                 }
                 
-                showNotification('✅ שם הקבוצה עודכן: ' + newName.trim(), true);
+                showNotification('✅ שם הקבוצה עודכן: ' + newName.trim(), 'success', true);
             }
         }
         
@@ -12393,7 +12403,10 @@
             updateDonorsList();
             updateGroupsDisplay();
             updateHomeStats();
-            updateLiveView();
+            // עדכון מיידי של Live View
+            if (typeof updateLiveView === 'function') {
+                updateLiveView(true); // immediate = true
+            }
             updateLeadersList();
             updateLiveTargets();
             showNotification(`מתרים ${name} נוסף בהצלחה`);
@@ -12435,7 +12448,10 @@
             updateDonorsList();
             updateGroupsDisplay();
             updateHomeStats();
-            updateLiveView();
+            // עדכון מיידי של Live View
+            if (typeof updateLiveView === 'function') {
+                updateLiveView(true); // immediate = true
+            }
             updateLeadersList();
             updateLiveTargets();
             showNotification(`מתרים ${name} נוסף לקבוצה בהצלחה`);
@@ -12503,7 +12519,7 @@
                 });
             }
             
-            showNotification('✅ שם התצוגה עודכן: ' + trimmed, true);
+            showNotification('✅ שם התצוגה עודכן: ' + trimmed, 'success', true);
         }
 
         // פונקציה ישנה - משאירה לתאימות
@@ -13281,6 +13297,10 @@
                                 updateHomeStats();
                                 updateLeadersList();
                                 updateLiveTargets();
+                                // עדכון מיידי של Live View
+                                if (typeof updateLiveView === 'function') {
+                                    updateLiveView(true); // immediate = true
+                                }
                             }
                         } catch (err) {
                             console.warn('⚠️ שגיאה בעדכון סכום כולל אחרי עדכון מתרים:', err);
@@ -13308,6 +13328,11 @@
             // שמירה מלאה של כל הנתונים (כבר שמרנו את donors קודם, אבל עכשיו שומרים הכל)
             saveData();
             notifyDataChanged();
+            
+            // עדכון מיידי של Live View אחרי שינוי סכום
+            if (typeof updateLiveView === 'function') {
+                updateLiveView(true); // immediate = true
+            }
             
             // שמירה לגליון - חשוב! כדי שהשינויים (כולל מספר מתרים) יישמרו בגליון
             isUpdatingDonorForNedarim = true;
@@ -14787,13 +14812,503 @@
         hideLiveViewBackButton();
         initLandingCards();
         
-        // פונקציה לעדכון אוטומטי של כל הנתונים מנדרים פלוס
-        async function performAutoRefresh() {
-            // בודק אם עדכון אוטומטי מופעל
-            if (!autoSyncNedarimEnabled) {
-                console.log('ℹ️ [עדכון אוטומטי] עדכון אוטומטי נדרים פלוס מושבת - מדלג על עדכון');
+        // ===== רובוט אוטומטי =====
+        let robotEnabled = false;
+        let robotTimer = null;
+        let robotContinuousRunning = false; // דגל למניעת ריצות מקבילות בעדכונים שוטפים
+        let robotSettings = {
+            sync: false,
+            checkTotal: false,
+            loadSheet: false,
+            saveSheet: false,
+            interval: 10,
+            unit: 'minutes',
+            executionMode: 'sequential', // 'sequential' או 'parallel'
+            continuous: false // עדכונים שוטפים - ללא מרווח זמן
+        };
+        let robotNextRunTime = null;
+        let robotHistory = [];
+        
+        function loadRobotSettings() {
+            storageGetItem('robotSettings', (saved) => {
+                if (saved) {
+                    // משמר את הערכים הקיימים אם הם כבר נשמרו
+                    robotSettings = { 
+                        sync: false,
+                        checkTotal: false,
+                        loadSheet: false,
+                        saveSheet: false,
+                        interval: 10,
+                        unit: 'minutes',
+                        executionMode: 'sequential',
+                        continuous: false,
+                        ...saved 
+                    };
+                    // וודא ש-continuous הוא boolean ולא undefined
+                    robotSettings.continuous = robotSettings.continuous === true;
+                    robotEnabled = robotSettings.enabled === true;
+                    
+                    console.log('📥 [רובוט] טעינת הגדרות:', {
+                        enabled: robotEnabled,
+                        continuous: robotSettings.continuous,
+                        interval: robotSettings.interval,
+                        unit: robotSettings.unit
+                    });
+                    
+                    // אם הרובוט היה פעיל, מפעיל אותו מחדש
+                    if (robotEnabled) {
+                        // ממתין קצת כדי לוודא שהדף נטען לגמרי
+                        setTimeout(() => {
+                            startRobot();
+                        }, 500);
+                    }
+                }
+                updateRobotUI();
+            });
+        }
+        
+        function toggleContinuousMode() {
+            const continuousCheckbox = document.getElementById('robotContinuousMode');
+            const intervalContainer = document.getElementById('robotIntervalContainer');
+            
+            if (continuousCheckbox && intervalContainer) {
+                if (continuousCheckbox.checked) {
+                    intervalContainer.style.opacity = '0.5';
+                    intervalContainer.style.pointerEvents = 'none';
+                } else {
+                    intervalContainer.style.opacity = '1';
+                    intervalContainer.style.pointerEvents = 'auto';
+                }
+            }
+        }
+        
+        function saveRobotSettings() {
+            const checkbox = document.getElementById('robotEnabledCheckbox');
+            const syncCheckbox = document.getElementById('robotSyncCheckbox');
+            const checkTotalCheckbox = document.getElementById('robotCheckTotalCheckbox');
+            const loadSheetCheckbox = document.getElementById('robotLoadSheetCheckbox');
+            const saveSheetCheckbox = document.getElementById('robotSaveSheetCheckbox');
+            const intervalInput = document.getElementById('robotIntervalInput');
+            const unitSelect = document.getElementById('robotIntervalUnit');
+            const sequentialRadio = document.getElementById('robotSequentialMode');
+            const parallelRadio = document.getElementById('robotParallelMode');
+            const continuousCheckbox = document.getElementById('robotContinuousMode');
+            
+            // שמירת המצב הקודם כדי לבדוק אם צריך להפעיל מחדש
+            const wasEnabled = robotEnabled;
+            const wasContinuous = robotSettings.continuous;
+            const wasInterval = robotSettings.interval;
+            const wasUnit = robotSettings.unit;
+            
+            // קריאת הערכים מה-UI
+            if (checkbox) robotEnabled = checkbox.checked;
+            if (syncCheckbox) robotSettings.sync = syncCheckbox.checked;
+            if (checkTotalCheckbox) robotSettings.checkTotal = checkTotalCheckbox.checked;
+            if (loadSheetCheckbox) robotSettings.loadSheet = loadSheetCheckbox.checked;
+            if (saveSheetCheckbox) robotSettings.saveSheet = saveSheetCheckbox.checked;
+            if (intervalInput) robotSettings.interval = parseFloat(intervalInput.value) || 10;
+            if (unitSelect) robotSettings.unit = unitSelect.value;
+            if (sequentialRadio && sequentialRadio.checked) robotSettings.executionMode = 'sequential';
+            if (parallelRadio && parallelRadio.checked) robotSettings.executionMode = 'parallel';
+            if (continuousCheckbox) robotSettings.continuous = continuousCheckbox.checked || false;
+            
+            robotSettings.enabled = robotEnabled;
+            
+            // שמירה מיידית ל-localStorage
+            storageSetItem('robotSettings', robotSettings);
+            updateRobotUI();
+            
+            // בדיקה אם צריך להפעיל מחדש את הרובוט
+            const needsRestart = wasEnabled && (
+                wasContinuous !== robotSettings.continuous ||
+                wasInterval !== robotSettings.interval ||
+                wasUnit !== robotSettings.unit
+            );
+            
+            // אם הרובוט היה פעיל והמשתמש שינה הגדרות שדורשות הפעלה מחדש, או שהמשתמש הפעיל/כיבה את הרובוט
+            if (wasEnabled !== robotEnabled) {
+                // המשתמש הפעיל או כיבה את הרובוט
+                if (robotEnabled) {
+                    startRobot();
+                } else {
+                    stopRobot();
+                }
+            } else if (needsRestart && robotEnabled) {
+                // הרובוט היה פעיל והמשתמש שינה הגדרות שדורשות הפעלה מחדש
+                console.log('🔄 [רובוט] משנה הגדרות - מפעיל מחדש');
+                stopRobot();
+                setTimeout(() => {
+                    startRobot();
+                }, 100);
+            } else if (wasEnabled && robotEnabled) {
+                // הרובוט היה פעיל ונשאר פעיל, רק עדכן את ההגדרות (לא צריך להפעיל מחדש)
+                console.log('✅ [רובוט] עדכון הגדרות ללא הפעלה מחדש');
+                // רק מעדכן את ההגדרות, הרובוט ממשיך לרוץ עם ההגדרות החדשות
+            }
+        }
+        
+        function updateRobotIntervalDisplay() {
+            const intervalInput = document.getElementById('robotIntervalInput');
+            const unitSelect = document.getElementById('robotIntervalUnit');
+            const display = document.getElementById('robotIntervalDisplay');
+            const continuousCheckbox = document.getElementById('robotContinuousMode');
+            
+            if (!display) return;
+            
+            if (continuousCheckbox && continuousCheckbox.checked) {
+                display.textContent = 'הרובוט יפעיל את הכפתורים הנבחרים ברצף ללא הפסקה (עדכונים שוטפים)';
                 return;
             }
+            
+            if (!intervalInput || !unitSelect) return;
+            
+            const value = parseFloat(intervalInput.value) || 10;
+            const unit = unitSelect.value;
+            
+            if (unit === 'hours') {
+                if (value === 1) {
+                    display.textContent = 'הרובוט יפעיל את הכפתורים הנבחרים כל שעה';
+                } else if (value < 1) {
+                    display.textContent = `הרובוט יפעיל את הכפתורים הנבחרים כל ${Math.round(value * 60)} דקות`;
+                } else {
+                    display.textContent = `הרובוט יפעיל את הכפתורים הנבחרים כל ${value} שעות`;
+                }
+            } else {
+                if (value === 1) {
+                    display.textContent = 'הרובוט יפעיל את הכפתורים הנבחרים כל דקה';
+                } else if (value < 1) {
+                    display.textContent = `הרובוט יפעיל את הכפתורים הנבחרים כל ${Math.round(value * 60)} שניות`;
+                } else if (value === Math.floor(value)) {
+                    display.textContent = `הרובוט יפעיל את הכפתורים הנבחרים כל ${value} דקות`;
+                } else {
+                    display.textContent = `הרובוט יפעיל את הכפתורים הנבחרים כל ${value} דקות`;
+                }
+            }
+        }
+        
+        function updateRobotUI() {
+            const checkbox = document.getElementById('robotEnabledCheckbox');
+            const panel = document.getElementById('robotSettingsPanel');
+            const syncCheckbox = document.getElementById('robotSyncCheckbox');
+            const checkTotalCheckbox = document.getElementById('robotCheckTotalCheckbox');
+            const loadSheetCheckbox = document.getElementById('robotLoadSheetCheckbox');
+            const saveSheetCheckbox = document.getElementById('robotSaveSheetCheckbox');
+            const intervalInput = document.getElementById('robotIntervalInput');
+            const unitSelect = document.getElementById('robotIntervalUnit');
+            const sequentialRadio = document.getElementById('robotSequentialMode');
+            const parallelRadio = document.getElementById('robotParallelMode');
+            const continuousCheckbox = document.getElementById('robotContinuousMode');
+            const startBtn = document.getElementById('robotStartBtn');
+            const stopBtn = document.getElementById('robotStopBtn');
+            const statusEl = document.getElementById('robotStatus');
+            const nextRunEl = document.getElementById('robotNextRun');
+            const nextRunTimeEl = document.getElementById('robotNextRunTime');
+            
+            if (checkbox) checkbox.checked = robotEnabled;
+            if (panel) panel.style.display = robotEnabled ? 'block' : 'none';
+            if (syncCheckbox) syncCheckbox.checked = robotSettings.sync || false;
+            if (checkTotalCheckbox) checkTotalCheckbox.checked = robotSettings.checkTotal || false;
+            if (loadSheetCheckbox) loadSheetCheckbox.checked = robotSettings.loadSheet || false;
+            if (saveSheetCheckbox) saveSheetCheckbox.checked = robotSettings.saveSheet || false;
+            if (intervalInput) intervalInput.value = robotSettings.interval || 10;
+            if (unitSelect) unitSelect.value = robotSettings.unit || 'minutes';
+            if (sequentialRadio) sequentialRadio.checked = (robotSettings.executionMode || 'sequential') === 'sequential';
+            if (parallelRadio) parallelRadio.checked = (robotSettings.executionMode || 'sequential') === 'parallel';
+            if (continuousCheckbox) continuousCheckbox.checked = robotSettings.continuous || false;
+            
+            toggleContinuousMode();
+            updateRobotIntervalDisplay();
+            
+            if (startBtn) startBtn.style.display = !robotEnabled ? 'block' : 'none';
+            if (stopBtn) stopBtn.style.display = robotEnabled ? 'block' : 'none';
+            
+            if (statusEl) {
+                if (robotEnabled) {
+                    if (robotSettings.continuous) {
+                        statusEl.textContent = '✅ הרובוט פעיל - עדכונים שוטפים';
+                    } else {
+                        statusEl.textContent = '✅ הרובוט פעיל';
+                    }
+                    statusEl.style.color = '#2e7d32';
+                } else {
+                    statusEl.textContent = '⏸️ הרובוט כבוי';
+                    statusEl.style.color = '#666';
+                }
+            }
+            
+            if (nextRunEl && nextRunTimeEl) {
+                if (robotEnabled && robotNextRunTime && !robotSettings.continuous) {
+                    nextRunEl.style.display = 'block';
+                    const now = new Date();
+                    const nextRun = new Date(robotNextRunTime);
+                    const diff = nextRun - now;
+                    if (diff > 0) {
+                        const minutes = Math.floor(diff / 60000);
+                        const seconds = Math.floor((diff % 60000) / 1000);
+                        nextRunTimeEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                    } else {
+                        nextRunTimeEl.textContent = 'בקרוב...';
+                    }
+                } else {
+                    nextRunEl.style.display = robotSettings.continuous ? 'none' : 'none';
+                }
+            }
+        }
+        
+        async function runRobotActions() {
+            // בדיקה אם הרובוט עדיין פעיל
+            if (!robotEnabled) {
+                console.log('⏹️ [רובוט] הרובוט כבוי - לא מריץ פעולות');
+                return;
+            }
+            
+            const actions = [];
+            
+            if (robotSettings.sync) {
+                actions.push({ name: 'סנכרון תרומות', func: () => syncWithNedarimPlus(true) });
+            }
+            if (robotSettings.checkTotal) {
+                actions.push({ name: 'בדוק סכום כולל מ-API', func: () => checkTotalAmountFromAPI(true) });
+            }
+            if (robotSettings.loadSheet) {
+                actions.push({ name: 'טען מהגליון', func: () => loadFromGoogleSheets(true) });
+            }
+            if (robotSettings.saveSheet) {
+                actions.push({ name: 'שמור לגליון', func: () => saveToGoogleSheets() });
+            }
+            
+            if (actions.length === 0) {
+                addRobotHistory('⚠️ אין פעולות מוגדרות', 'warning');
+                return;
+            }
+            
+            const executionMode = robotSettings.executionMode || 'sequential';
+            // לא מוסיף היסטוריה כל פעם בעדכונים שוטפים כדי לא להציף
+            if (!robotSettings.continuous) {
+                addRobotHistory(`🔄 מתחיל ${actions.length} פעולות (${executionMode === 'sequential' ? 'רציף' : 'מקבילי'})...`, 'info');
+            }
+            
+            if (executionMode === 'parallel') {
+                // ביצוע מקבילי - כל הפעולות מתחילות יחד
+                const promises = actions.map(async (action) => {
+                    try {
+                        if (!robotSettings.continuous) {
+                            addRobotHistory(`▶️ ${action.name}...`, 'info');
+                        }
+                        await action.func();
+                        if (!robotSettings.continuous) {
+                            addRobotHistory(`✅ ${action.name} הושלם`, 'success');
+                        }
+                    } catch (error) {
+                        addRobotHistory(`❌ שגיאה ב-${action.name}: ${error.message}`, 'error');
+                        throw error;
+                    }
+                });
+                
+                try {
+                    await Promise.allSettled(promises);
+                    if (!robotSettings.continuous) {
+                        addRobotHistory(`✅ כל הפעולות הושלמו`, 'success');
+                    }
+                } catch (error) {
+                    addRobotHistory(`⚠️ חלק מהפעולות נכשלו`, 'warning');
+                }
+            } else {
+                // ביצוע רציף - כל פעולה מתחילה רק אחרי שהקודמת מסתיימת
+                for (const action of actions) {
+                    // בדיקה נוספת לפני כל פעולה
+                    if (!robotEnabled) {
+                        console.log('⏹️ [רובוט] הרובוט כבוי במהלך ביצוע - עוצר');
+                        return;
+                    }
+                    
+                    try {
+                        if (!robotSettings.continuous) {
+                            addRobotHistory(`▶️ ${action.name}...`, 'info');
+                        }
+                        await action.func();
+                        if (!robotSettings.continuous) {
+                            addRobotHistory(`✅ ${action.name} הושלם`, 'success');
+                        }
+                    } catch (error) {
+                        addRobotHistory(`❌ שגיאה ב-${action.name}: ${error.message}`, 'error');
+                        // בהרצה רציפה, נמשיך לפעולה הבאה גם אם יש שגיאה
+                    }
+                }
+                
+                if (!robotSettings.continuous) {
+                    addRobotHistory(`✅ כל הפעולות הושלמו`, 'success');
+                }
+            }
+            
+            updateRobotNextRun();
+        }
+        
+        function addRobotHistory(message, type = 'info') {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('he-IL');
+            robotHistory.unshift({
+                time: timeStr,
+                message: message,
+                type: type
+            });
+            
+            // שמירת רק 50 רשומות אחרונות
+            if (robotHistory.length > 50) {
+                robotHistory = robotHistory.slice(0, 50);
+            }
+            
+            updateRobotHistoryDisplay();
+        }
+        
+        function updateRobotHistoryDisplay() {
+            const historyEl = document.getElementById('robotHistory');
+            if (!historyEl) return;
+            
+            if (robotHistory.length === 0) {
+                historyEl.innerHTML = '<div style="padding: 10px; text-align: center; color: var(--muted);">אין פעולות עדיין</div>';
+                return;
+            }
+            
+            const html = robotHistory.map(item => {
+                const color = item.type === 'success' ? '#2e7d32' : 
+                             item.type === 'error' ? '#c62828' : 
+                             item.type === 'warning' ? '#f57c00' : '#1976d2';
+                return `<div style="padding: 8px; border-bottom: 1px solid #eee; color: ${color};">
+                    <span style="font-weight: 500;">[${item.time}]</span> ${item.message}
+                </div>`;
+            }).join('');
+            
+            historyEl.innerHTML = html;
+        }
+        
+        function updateRobotNextRun() {
+            if (!robotEnabled || robotSettings.continuous) return;
+            
+            const intervalValue = robotSettings.interval || 10;
+            const intervalMs = robotSettings.unit === 'hours' 
+                ? intervalValue * 60 * 60 * 1000 
+                : intervalValue * 60 * 1000;
+            
+            robotNextRunTime = Date.now() + intervalMs;
+            updateRobotUI();
+        }
+        
+        function startRobot() {
+            // עוצר את הרובוט הקודם אם הוא פעיל
+            if (robotTimer) {
+                clearInterval(robotTimer);
+                robotTimer = null;
+            }
+            robotContinuousRunning = false;
+            
+            robotEnabled = true;
+            robotSettings.enabled = true;
+            storageSetItem('robotSettings', robotSettings);
+            
+            // בדיקה מפורשת של ההגדרות
+            const isContinuous = robotSettings.continuous === true;
+            
+            console.log('🤖 [רובוט] מפעיל רובוט:', {
+                continuous: isContinuous,
+                interval: robotSettings.interval,
+                unit: robotSettings.unit,
+                sync: robotSettings.sync,
+                checkTotal: robotSettings.checkTotal,
+                loadSheet: robotSettings.loadSheet,
+                saveSheet: robotSettings.saveSheet
+            });
+            
+            // אם זה עדכונים שוטפים, לא משתמשים ב-setInterval אלא ברצף
+            if (isContinuous) {
+                robotContinuousRunning = true;
+                // פונקציה רקורסיבית לריצה רציפה
+                const runContinuous = async () => {
+                    // בדיקה כפולה לפני כל ריצה
+                    if (!robotEnabled || !robotSettings.continuous || !robotContinuousRunning) {
+                        console.log('⏹️ [רובוט] עוצר עדכונים שוטפים');
+                        robotContinuousRunning = false;
+                        return;
+                    }
+                    await runRobotActions();
+                    // ממתין קצת לפני הפעלה הבאה (2 שניות) כדי לא להעמיס על המערכת
+                    setTimeout(runContinuous, 2000);
+                };
+                runContinuous();
+                addRobotHistory('🤖 הרובוט הופעל - עדכונים שוטפים', 'success');
+            } else {
+                // הפעלה ראשונה מיד
+                runRobotActions();
+                
+                const intervalValue = robotSettings.interval || 10;
+                const intervalMs = robotSettings.unit === 'hours' 
+                    ? intervalValue * 60 * 60 * 1000 
+                    : intervalValue * 60 * 1000;
+                
+                console.log(`⏰ [רובוט] מרווח זמן: ${intervalMs}ms (${intervalValue} ${robotSettings.unit})`);
+                
+                updateRobotNextRun();
+                
+                // הפעלות תקופתיות
+                robotTimer = setInterval(() => {
+                    if (!robotEnabled) {
+                        clearInterval(robotTimer);
+                        robotTimer = null;
+                        return;
+                    }
+                    runRobotActions();
+                    updateRobotNextRun();
+                }, intervalMs);
+                
+                addRobotHistory(`🤖 הרובוט הופעל - כל ${intervalValue} ${robotSettings.unit === 'hours' ? 'שעות' : 'דקות'}`, 'success');
+            }
+            
+            updateRobotUI();
+            if (!isContinuous) {
+                showNotification('🤖 הרובוט הופעל', 'success');
+            }
+        }
+        
+        function stopRobot() {
+            console.log('⏹️ [רובוט] עוצר רובוט...');
+            
+            if (robotTimer) {
+                clearInterval(robotTimer);
+                robotTimer = null;
+            }
+            
+            robotEnabled = false;
+            robotSettings.enabled = false;
+            robotContinuousRunning = false; // חשוב מאוד - עוצר את הלולאה הרקורסיבית
+            robotNextRunTime = null;
+            storageSetItem('robotSettings', robotSettings);
+            
+            addRobotHistory('⏹️ הרובוט הופסק', 'info');
+            updateRobotUI();
+            showNotification('⏹️ הרובוט הופסק', 'info');
+        }
+        
+        // הפיכת הפונקציות לנגישות מה-HTML
+        window.startRobot = startRobot;
+        window.stopRobot = stopRobot;
+        window.toggleContinuousMode = toggleContinuousMode;
+        window.saveRobotSettings = saveRobotSettings;
+        window.updateRobotIntervalDisplay = updateRobotIntervalDisplay;
+        
+        // עדכון זמן הפעלה הבאה כל שנייה
+        setInterval(() => {
+            if (robotEnabled) {
+                updateRobotUI();
+            }
+        }, 1000);
+        
+        // טעינת הגדרות בעליית התוכנה
+        loadRobotSettings();
+        // ===== סוף רובוט אוטומטי =====
+        
+        // פונקציה זו הוסרה - השתמש ברובוט אוטומטי במדור ניהול
+        async function performAutoRefresh() {
+            return; // בוטל - השתמש ברובוט אוטומטי
             
             const actionNames = {
                 'sync': 'סנכרון תרומות',
@@ -14856,24 +15371,7 @@
             console.log('✅ בסיס הנתונים מוכן');
             // טעינת הגדרות מבסיס הנתונים
             await loadSettingsFromDatabase();
-            // עדכון ה-UI עם ההגדרות שנטענו
-            const checkbox = document.getElementById('autoSyncNedarimCheckbox');
-            const select = document.getElementById('autoSyncActionSelect');
-            const intervalInput = document.getElementById('autoSyncIntervalInput');
-            const unitSelect = document.getElementById('autoSyncIntervalUnit');
-            
-            if (checkbox) checkbox.checked = autoSyncNedarimEnabled;
-            if (select) select.value = autoSyncSelectedAction;
-            if (intervalInput && unitSelect) {
-                if (autoSyncIntervalMinutes >= 60) {
-                    intervalInput.value = autoSyncIntervalMinutes / 60;
-                    unitSelect.value = 'hours';
-                } else {
-                    intervalInput.value = autoSyncIntervalMinutes;
-                    unitSelect.value = 'minutes';
-                }
-                updateAutoSyncIntervalDisplay();
-            }
+            // עדכון אוטומטי הישן בוטל - השתמש ברובוט אוטומטי במדור ניהול
             fillNedarimCorrectionDonorSelect();
             fillUpdateByApiDonorSelect();
             if (typeof updateNedarimFixCurrentSumLabel === 'function') updateNedarimFixCurrentSumLabel();
@@ -14883,12 +15381,7 @@
             console.error('❌ שגיאה באתחול בסיס הנתונים:', error);
         });
         
-        // טעינה ראשונית אחרי 2 שניות
-        setTimeout(async () => {
-            await performAutoRefresh();
-            // סנכרון לבסיס הנתונים אחרי העדכון
-            await syncAllDataToDatabase();
-        }, 2000);
+        // עדכון אוטומטי הישן בוטל - השתמש ברובוט אוטומטי במדור ניהול
             // בכל זאת נפעיל את הפונקציות גם אם יש שגיאה
             updateHomeStats();
             updateGroupsDisplay();
@@ -16053,6 +16546,12 @@
                 if (matrimId !== null && matrimId !== undefined && String(matrimId).trim() !== '') {
                     // יש מספר מתרים - משתמש בו
                     finalMatrimId = String(matrimId).trim();
+                    // בודק שזה מספר תקין (לא תאריך)
+                    const isDate = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(finalMatrimId) || finalMatrimId.includes('T') || finalMatrimId.includes('Z');
+                    const isNumeric = /^\d+$/.test(finalMatrimId);
+                    if (isDate || !isNumeric) {
+                        throw new Error('מספר מתרים לא תקין - יש להזין רק ספרות (לא תאריך)');
+                    }
                     finalMatrimName = matrimName ? matrimName.trim() : `מספר מתרים: ${matrimId}`;
                 } else {
                     // אין מספר מתרים - מנסה להשתמש בשם (זה יכול לא לעבוד עם ה-API)
@@ -16073,33 +16572,46 @@
                     isReduction: validAmount < 0
                 });
 
-                // ✅ שליחה דרך Netlify Function מאובטחת (או Apps Script אם זמין)
-                if (isAppsScript()) {
-                    return new Promise((resolve, reject) => {
-                        google.script.run
-                            .withSuccessHandler((result) => {
-                                if (result && result.success) {
-                                    console.log('✅ העלאה הצליחה דרך Apps Script:', result);
-                                    resolve({ success: true, message: 'התרומה הועלתה בהצלחה' });
-                                } else {
-                                    console.error('❌ שגיאה מ-Apps Script:', result?.error);
-                                    reject(new Error(result?.error || 'שגיאה בהעלאת תרומה'));
-                                }
-                            })
-                            .withFailureHandler((error) => {
-                                console.error('❌ שגיאה בקריאה ל-Apps Script:', error);
-                                reject(error);
-                            })
-                            .updateNedarimAmount({
-                                recruiterId: finalMatrimId,
-                                amount: validAmount,
-                                clientName: (clientName || 'תורם אנונימי').trim(),
-                                comments: (comments || '').trim()
-                            });
-                    });
+                // ✅ שליחה דרך Google Apps Script (העדיפות הראשונה)
+                const url = googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || DEFAULT_GOOGLE_SHEETS_URL || '';
+                if (url) {
+                    try {
+                        // בונה שם תורם
+                        let clientNameFinal = clientName || 'תורם אנונימי';
+                        if (groupName && groupName.trim() !== '') {
+                            clientNameFinal = `${clientNameFinal} - ${groupName.trim()}`;
+                        }
+                        
+                        // בונה הערה
+                        let commentsFinal = comments || '';
+                        if (validAmount > 0) {
+                            commentsFinal = 'תוספת: ' + Math.abs(validAmount).toLocaleString() + ' ש"ח' + (commentsFinal ? ' | ' + commentsFinal : '');
+                        } else {
+                            commentsFinal = 'הפחתה: ' + Math.abs(validAmount).toLocaleString() + ' ש"ח' + (commentsFinal ? ' | ' + commentsFinal : '');
+                        }
+                        
+                        // משתמש ב-updateNedarimAmountViaSheets דרך donor object
+                        const donorObj = {
+                            nedarimMatrimId: finalMatrimId,
+                            name: finalMatrimName,
+                            displayName: finalMatrimName
+                        };
+                        
+                        const result = await updateNedarimAmountViaSheets(donorObj, validAmount, commentsFinal);
+                        
+                        if (result && result.success) {
+                            console.log('✅ העלאה הצליחה דרך Google Apps Script:', result);
+                            return { success: true, message: result.message || 'התרומה הועלתה בהצלחה' };
+                        } else {
+                            throw new Error(result?.error || 'שגיאה בהעלאת תרומה');
+                        }
+                    } catch (sheetsError) {
+                        console.warn('⚠️ שגיאה בשליחה דרך Google Sheets, מנסה Netlify:', sheetsError);
+                        // ממשיך לנסות דרך Netlify אם יש
+                    }
                 }
-                
-                // ✅ שליחה דרך Netlify Function מאובטחת
+
+                // ✅ שליחה דרך Netlify Function מאובטחת (אם Google Sheets נכשל)
                 try {
                     const proxyUrl = '/.netlify/functions/nedarim-proxy';
                     const mosadIdToSend = NEDARIM_CONFIG.mosadId || '1000642'; // ברירת מחדל
@@ -16153,17 +16665,9 @@
                     }
                 } catch (proxyError) {
                     console.error('❌ שגיאה ב-proxy:', proxyError);
-                    console.error('❌ פרטי השגיאה:', {
-                        message: proxyError.message,
-                        stack: proxyError.stack,
-                        url: proxyUrl,
-                        body: requestBody
-                    });
-                    // הודעה ברורה – רק דרך proxy, בלי שליחה ישירה (אבטחה)
-                    if (proxyError.message && (proxyError.message.includes('Failed to fetch') || 
-                        proxyError.message.includes('NetworkError') || 
-                        proxyError.message.includes('CORS'))) {
-                        throw new Error('לא ניתן להתחבר לשרת. ודא שהאתר פרוס ב-Netlify או שהפונקציה nedarim-proxy פעילה.');
+                    // אם גם Netlify נכשל, זורק שגיאה
+                    if (!url) {
+                        throw new Error('לא ניתן להתחבר לשרת. נא להגדיר כתובת Google Sheets בלשונית "עדכונים".');
                     }
                     throw proxyError;
                 }
@@ -16215,17 +16719,52 @@
             }
             try {
                 console.log('🚀 מושך את כל המתרימים מנדרים פלוס (MatchPlus)...');
-                const apiUrl = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'action=getAllNedarimRecruiters&_=' + Date.now();
-                const response = await fetch(apiUrl);
-                if (!response.ok) throw new Error(`שגיאת שרת: ${response.status}`);
-                const result = await response.json();
-                if (result.success && result.recruiters && result.recruiters.length > 0) {
-                    console.log(`✅ נטענו ${result.recruiters.length} מתרימים מנדרים פלוס (כולל מספר מתרים)`);
-                    if (result.recruiters[0]) console.log('📋 דוגמה:', result.recruiters[0]);
-                    return result.recruiters;
+                
+                // ניסיון 1: getAllNedarimRecruiters
+                let apiUrl = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'action=getAllNedarimRecruiters&_=' + Date.now();
+                let response = await fetch(apiUrl);
+                let result = null;
+                
+                if (response.ok) {
+                    result = await response.json();
+                    // בדיקה אם יש שגיאה של פעולה לא מוכרת
+                    if (result.error && result.error.includes('פעולה לא מוכרת')) {
+                        console.warn('⚠️ הפעולה getAllNedarimRecruiters לא מוכרת. מנסה פעולות חלופיות...');
+                        result = null;
+                    } else if (result.success && result.recruiters) {
+                        if (result.recruiters.length > 0) {
+                            console.log(`✅ נטענו ${result.recruiters.length} מתרימים מנדרים פלוס (כולל מספר מתרים)`);
+                            if (result.recruiters[0]) console.log('📋 דוגמה:', result.recruiters[0]);
+                            return result.recruiters;
+                        }
+                        return [];
+                    }
                 }
-                if (result.success && result.recruiters) return [];
-                throw new Error(result.error || 'לא התקבלו מתרימים');
+                
+                // ניסיון 2: getAll (אם יש recruiters בתוצאה)
+                if (!result || (result.error && result.error.includes('פעולה לא מוכרת'))) {
+                    console.log('🔄 מנסה פעולה חלופית: getAll');
+                    apiUrl = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'action=getAll&_=' + Date.now();
+                    response = await fetch(apiUrl);
+                    if (response.ok) {
+                        result = await response.json();
+                        if (result.success) {
+                            // בדיקה אם יש recruiters בתוצאה
+                            if (result.recruiters && Array.isArray(result.recruiters) && result.recruiters.length > 0) {
+                                console.log(`✅ נטענו ${result.recruiters.length} מתרימים דרך getAll`);
+                                return result.recruiters;
+                            }
+                            // אם אין recruiters, נזרוק שגיאה ברורה
+                            throw new Error('הפעולה getAll לא מחזירה מתרימים. אנא וודא ש-Google Apps Script תומך בפעולה getAllNedarimRecruiters.');
+                        }
+                    }
+                }
+                
+                // אם הגענו לכאן, כל הניסיונות נכשלו
+                if (result && result.error) {
+                    throw new Error(result.error);
+                }
+                throw new Error('לא התקבלו מתרימים מנדרים פלוס. אנא וודא ש-Google Apps Script תומך בפעולה getAllNedarimRecruiters.');
             } catch (error) {
                 console.error('❌ שגיאה במשיכת מתרימים מנדרים פלוס:', error);
                 throw error;
@@ -17609,9 +18148,11 @@
                     console.log(`✅ עדכנו סכום כולל מ-API: ${totalData.Donated.toLocaleString()} ש"ח, יעד: ${totalData.Goal.toLocaleString()} ש"ח`);
                     // מעדכן את התצוגות - בלי להפריע לגלילה בתצוגת לייב
                     updateHomeStats();
-                    if (!isLiveViewActive()) {
-                        updateLeadersList();
-                        updateLiveTargets();
+                    updateLeadersList();
+                    updateLiveTargets();
+                    // עדכון Live View גם אם הוא פעיל (עם debounce)
+                    if (typeof updateLiveView === 'function') {
+                        updateLiveView(false); // לא immediate כדי לא להפריע לגלילה
                     }
                 } else {
                     console.log('ℹ️ ה-API מחזיר 0 או לא עובד - נשתמש בסכום מהתרימים אחרי הסנכרון');
@@ -17813,9 +18354,11 @@
                 
                 // מעדכן את התצוגות עם הסכום הנכון - בלי להפריע לגלילה
                 updateHomeStats();
-                if (!isLiveViewActive()) {
-                    updateLeadersList();
-                    updateLiveTargets();
+                updateLeadersList();
+                updateLiveTargets();
+                // עדכון Live View גם אם הוא פעיל (עם debounce)
+                if (typeof updateLiveView === 'function') {
+                    updateLiveView(false); // לא immediate כדי לא להפריע לגלילה
                 }
 
                 // הודעת הצלחה
@@ -18328,6 +18871,10 @@
                 if (newToken) {
                     githubToken = newToken;
                     localStorage.setItem('githubToken', githubToken);
+                    // איפוס הדגלים כשמזינים Token חדש - עכשיו אפשר לנסות שוב
+                    gistAuthFailed = false;
+                    localStorage.removeItem('gistAuthFailed');
+                    localStorage.removeItem('gistAuthErrorShown');
                 }
             }
             if (checkbox) {
@@ -18658,10 +19205,24 @@
                 return;
             }
             
-            // אם אין Token, נסה לעדכן בלי Token (עובד רק ל-Public Gists)
-            // אם זה Secret Gist, נדרש Token
+            // בדיקה אם יש Token - אם אין Token, ננסה רק אם זה לא שמירה אוטומטית
+            // (בשמירה ידנית, ננסה גם בלי Token - אולי זה Gist ציבורי)
+            const isAutoSave = !statusEl || statusEl.style.display === 'none';
+            
             if (!token) {
-                console.log('⚠️ [שמירה] אין Token - מנסה לעדכן בלי Token (עובד רק ל-Public Gists)');
+                if (isAutoSave) {
+                    // בשמירה אוטומטית, אם אין Token, לא ננסה לשמור (כי כנראה זה Gist פרטי)
+                    // נבדוק אם כבר נכשלנו בעבר
+                    if (localStorage.getItem('gistAuthFailed') === 'true') {
+                        // כבר יודעים שזה לא יעבוד - לא מנסים
+                        return;
+                    }
+                    // ננסה פעם אחת כדי לבדוק אם זה Gist ציבורי או פרטי
+                    console.log('⚠️ [שמירה אוטומטית] אין Token - מנסה פעם אחת (אם זה Gist פרטי, לא ננסה שוב)');
+                } else {
+                    // בשמירה ידנית, ננסה גם בלי Token (אולי זה Gist ציבורי)
+                    console.log('⚠️ [שמירה ידנית] אין Token - מנסה לעדכן בלי Token (עובד רק ל-Public Gists)');
+                }
             }
             
             console.log('💾 [שמירה] מתחיל שמירה ל-Gist:', gistIdValue);
@@ -18700,7 +19261,8 @@
                     if (response.status === 404) {
                         errorMessage = 'Gist לא נמצא. אנא ודא שה-Gist ID נכון או שה-Gist קיים. אם ה-Gist פרטי, ודא שהזנת Token תקין.';
                     } else if (response.status === 401 || response.status === 403) {
-                        errorMessage = '❌ אין הרשאה לעדכן את ה-Gist!\n\nה-Gist שלך הוא Secret (פרטי), ולכן נדרש GitHub Token כדי לעדכן אותו.\n\n📋 איך ליצור Token:\n1. גש ל-GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)\n2. לחץ על "Generate new token (classic)"\n3. תן שם ל-Token (למשל: "Campaign Software")\n4. סמן את התיבה "gist" (זה נותן הרשאה ליצור ולערוך Gists)\n5. לחץ על "Generate token"\n6. העתק את ה-Token והדבק בשדה "GitHub Personal Access Token" למעלה\n\n💡 אחרי שתזין את ה-Token, נסה שוב לשמור.';
+                        // הודעה קצרה יותר - ההוראות המפורטות יוצגו רק אם המשתמש מנסה לשמור ידנית
+                        errorMessage = 'אין הרשאה לעדכן את ה-Gist - נדרש GitHub Token. ראה הגדרות → סנכרון → GitHub Gist';
                     } else {
                         const errorData = await response.json().catch(() => ({}));
                         errorMessage = errorData.message || `שגיאת שרת: ${response.status}`;
@@ -18733,13 +19295,34 @@
                     console.warn('⚠️ שגיאה בסנכרון לבסיס הנתונים:', err);
                 });
             } catch (error) {
+                // אם זו שמירה אוטומטית, לא נציג הודעות מפורטות
+                const isAutoSave = !statusEl || statusEl.style.display === 'none';
+                
+                // אם זו שגיאת הרשאה, נסמן שלא לנסות שוב בשמירה אוטומטית
+                if (error.message && (error.message.includes('אין הרשאה') || error.message.includes('401') || error.message.includes('403'))) {
+                    localStorage.setItem('gistAuthFailed', 'true');
+                    
+                    if (isAutoSave) {
+                        // בשמירה אוטומטית, לא נציג הודעות - רק נסמן שלא לנסות שוב
+                        return;
+                    }
+                }
+                
+                if (isAutoSave) {
+                    // בשמירה אוטומטית, רק נציג בקונסול (לא נציף את המשתמש)
+                    console.warn('⚠️ [Gist אוטומטי] שגיאה:', error.message || error);
+                    return;
+                }
+                
+                // שמירה ידנית - מציג הודעות מפורטות
                 console.error('שגיאה בשמירה ל-Gist:', error);
                 if (statusEl) {
                     statusEl.className = 'sync-status error';
                     statusEl.style.display = 'block';
                     // אם השגיאה היא על הרשאה, מציג הודעה מפורטת יותר
                     if (error.message.includes('אין הרשאה') || error.message.includes('401') || error.message.includes('403')) {
-                        statusEl.innerHTML = error.message.replace(/\n/g, '<br>');
+                        const detailedMessage = '❌ אין הרשאה לעדכן את ה-Gist!\n\nה-Gist שלך הוא Secret (פרטי), ולכן נדרש GitHub Token כדי לעדכן אותו.\n\n📋 איך ליצור Token:\n1. גש ל-GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)\n2. לחץ על "Generate new token (classic)"\n3. תן שם ל-Token (למשל: "Campaign Software")\n4. סמן את התיבה "gist" (זה נותן הרשאה ליצור ולערוך Gists)\n5. לחץ על "Generate token"\n6. העתק את ה-Token והדבק בשדה "GitHub Personal Access Token" למעלה\n\n💡 אחרי שתזין את ה-Token, נסה שוב לשמור.';
+                        statusEl.innerHTML = detailedMessage.replace(/\n/g, '<br>');
                     } else {
                         statusEl.textContent = `❌ ${error.message}`;
                     }
@@ -19025,10 +19608,26 @@
 
         // שמירה אוטומטית אחרי כל שינוי (debounced)
         let saveToGistTimeout = null;
+        // דגל כדי לדעת אם כבר ניסינו לשמור ונכשלנו בגלל הרשאה
+        let gistAuthFailed = localStorage.getItem('gistAuthFailed') === 'true';
+        
         function autoSaveToGist() {
             // שמירה ל-Gist אם יש Gist ID (גם אם סנכרון אוטומטי לא מופעל)
             // זה מבטיח שכל השינויים נשמרים אוטומטית
             if (!gistId) return;
+            
+            // בדיקה אם יש Token
+            const tokenInput = document.getElementById('githubToken');
+            const token = tokenInput && tokenInput.value.trim() ? tokenInput.value.trim() : localStorage.getItem('githubToken');
+            
+            // טעינת הדגל מ-localStorage כדי לדעת אם כבר נכשלנו בעבר
+            const gistAuthFailed = localStorage.getItem('gistAuthFailed') === 'true';
+            
+            // אם אין Token וכבר נכשלנו בעבר בגלל הרשאה, לא ננסה שוב
+            if (!token && gistAuthFailed) {
+                // לא מנסים לשמור - כבר יודעים שזה לא יעבוד
+                return;
+            }
             
             if (saveToGistTimeout) {
                 clearTimeout(saveToGistTimeout);
@@ -19039,8 +19638,21 @@
                 try {
                     await saveToGist();
                     console.log('💾 [אוטומטי] הנתונים נשמרו ל-Gist');
+                    // איפוס הדגלים אחרי שמירה מוצלחת
+                    localStorage.removeItem('gistAuthFailed');
+                    localStorage.removeItem('gistAuthErrorShown');
                 } catch (err) {
-                    console.warn('⚠️ שגיאה בשמירה אוטומטית ל-Gist:', err);
+                    // אם זו שגיאת הרשאה, נסמן שלא לנסות שוב עד שיוזן Token
+                    if (err.message && (err.message.includes('אין הרשאה') || err.message.includes('401') || err.message.includes('403'))) {
+                        localStorage.setItem('gistAuthFailed', 'true');
+                        // נציג הודעה רק פעם אחת
+                        if (!localStorage.getItem('gistAuthErrorShown')) {
+                            console.warn('⚠️ [Gist] נדרש GitHub Token לעדכן Gist פרטי. ראה הגדרות → סנכרון → GitHub Gist');
+                            localStorage.setItem('gistAuthErrorShown', 'true');
+                        }
+                    } else {
+                        console.warn('⚠️ שגיאה בשמירה אוטומטית ל-Gist:', err.message || err);
+                    }
                 }
             }, 3000);
         }
@@ -19063,28 +19675,30 @@
         // שמירת הגדרות Google Sheets
         function saveGoogleSheetsSettings() {
             const urlInput = document.getElementById('googleSheetsWebAppUrl');
-            const autoSyncCheckbox = document.getElementById('autoGoogleSheetsSyncCheckbox');
-            const intervalInput = document.getElementById('sheetSyncIntervalInput');
-            const loadCheckbox = document.getElementById('sheetSyncLoadCheckbox');
-            const saveCheckbox = document.getElementById('sheetSyncSaveCheckbox');
-            const saveOnChangeCheckbox = document.getElementById('sheetSyncSaveOnChangeCheckbox');
+            // עדכון אוטומטי לגליון בוטל - השתמש ברובוט אוטומטי במדור ניהול
+            // const autoSyncCheckbox = document.getElementById('autoGoogleSheetsSyncCheckbox');
+            // const intervalInput = document.getElementById('sheetSyncIntervalInput');
+            // const loadCheckbox = document.getElementById('sheetSyncLoadCheckbox');
+            // const saveCheckbox = document.getElementById('sheetSyncSaveCheckbox');
+            // const saveOnChangeCheckbox = document.getElementById('sheetSyncSaveOnChangeCheckbox');
             
             let urlToSave = '';
-            let syncEnabled = false;
+            // let syncEnabled = false;
             if (urlInput) urlToSave = urlInput.value.trim();
-            if (autoSyncCheckbox) syncEnabled = autoSyncCheckbox.checked;
-            if (intervalInput) sheetSyncIntervalMinutes = Math.max(1, parseInt(intervalInput.value) || 5);
-            if (loadCheckbox) sheetSyncLoadEnabled = loadCheckbox.checked;
-            if (saveCheckbox) sheetSyncSaveEnabled = saveCheckbox.checked;
-            if (saveOnChangeCheckbox) sheetSyncSaveOnChange = saveOnChangeCheckbox.checked;
+            // if (autoSyncCheckbox) syncEnabled = autoSyncCheckbox.checked;
+            // if (intervalInput) sheetSyncIntervalMinutes = Math.max(1, parseInt(intervalInput.value) || 5);
+            // if (loadCheckbox) sheetSyncLoadEnabled = loadCheckbox.checked;
+            // if (saveCheckbox) sheetSyncSaveEnabled = saveCheckbox.checked;
+            // if (saveOnChangeCheckbox) sheetSyncSaveOnChange = saveOnChangeCheckbox.checked;
             
             try {
                 localStorage.setItem('googleSheetsWebAppUrl', urlToSave);
-                localStorage.setItem('googleSheetsSyncEnabled', syncEnabled ? 'true' : 'false');
-                localStorage.setItem('sheetSyncIntervalMinutes', String(sheetSyncIntervalMinutes));
-                localStorage.setItem('sheetSyncLoadEnabled', sheetSyncLoadEnabled ? 'true' : 'false');
-                localStorage.setItem('sheetSyncSaveEnabled', sheetSyncSaveEnabled ? 'true' : 'false');
-                localStorage.setItem('sheetSyncSaveOnChange', sheetSyncSaveOnChange ? 'true' : 'false');
+                // עדכון אוטומטי לגליון בוטל - השתמש ברובוט אוטומטי במדור ניהול
+                // localStorage.setItem('googleSheetsSyncEnabled', syncEnabled ? 'true' : 'false');
+                // localStorage.setItem('sheetSyncIntervalMinutes', String(sheetSyncIntervalMinutes));
+                // localStorage.setItem('sheetSyncLoadEnabled', sheetSyncLoadEnabled ? 'true' : 'false');
+                // localStorage.setItem('sheetSyncSaveEnabled', sheetSyncSaveEnabled ? 'true' : 'false');
+                // localStorage.setItem('sheetSyncSaveOnChange', sheetSyncSaveOnChange ? 'true' : 'false');
                 console.log('💾 הגדרות Google Sheets נשמרו');
             } catch (e) {
                 console.warn('שגיאה בשמירת הגדרות Google Sheets:', e);
@@ -19096,37 +19710,39 @@
             try {
                 const savedUrl = localStorage.getItem('googleSheetsWebAppUrl');
                 googleSheetsWebAppUrl = savedUrl || DEFAULT_GOOGLE_SHEETS_URL || '';
-                var savedSync = localStorage.getItem('googleSheetsSyncEnabled');
-                googleSheetsSyncEnabled = savedSync === 'true' || (savedSync === null && (googleSheetsWebAppUrl || '').trim().length > 0);
-                sheetSyncIntervalMinutes = Math.max(1, parseInt(localStorage.getItem('sheetSyncIntervalMinutes')) || 5);
-                sheetSyncLoadEnabled = localStorage.getItem('sheetSyncLoadEnabled') !== 'false';
-                sheetSyncSaveEnabled = localStorage.getItem('sheetSyncSaveEnabled') !== 'false';
-                sheetSyncSaveOnChange = localStorage.getItem('sheetSyncSaveOnChange') !== 'false';
+                // עדכון אוטומטי לגליון בוטל - השתמש ברובוט אוטומטי במדור ניהול
+                // var savedSync = localStorage.getItem('googleSheetsSyncEnabled');
+                // googleSheetsSyncEnabled = savedSync === 'true' || (savedSync === null && (googleSheetsWebAppUrl || '').trim().length > 0);
+                // sheetSyncIntervalMinutes = Math.max(1, parseInt(localStorage.getItem('sheetSyncIntervalMinutes')) || 5);
+                // sheetSyncLoadEnabled = localStorage.getItem('sheetSyncLoadEnabled') !== 'false';
+                // sheetSyncSaveEnabled = localStorage.getItem('sheetSyncSaveEnabled') !== 'false';
+                // sheetSyncSaveOnChange = localStorage.getItem('sheetSyncSaveOnChange') !== 'false';
                 if (DEFAULT_GOOGLE_SHEETS_URL && !savedUrl) {
                     localStorage.setItem('googleSheetsWebAppUrl', DEFAULT_GOOGLE_SHEETS_URL);
                 }
                 const urlInput = document.getElementById('googleSheetsWebAppUrl');
-                const autoSyncCheckbox = document.getElementById('autoGoogleSheetsSyncCheckbox');
-                const intervalInput = document.getElementById('sheetSyncIntervalInput');
-                const loadCheckbox = document.getElementById('sheetSyncLoadCheckbox');
-                const saveCheckbox = document.getElementById('sheetSyncSaveCheckbox');
-                const saveOnChangeCheckbox = document.getElementById('sheetSyncSaveOnChangeCheckbox');
+                // const autoSyncCheckbox = document.getElementById('autoGoogleSheetsSyncCheckbox');
+                // const intervalInput = document.getElementById('sheetSyncIntervalInput');
+                // const loadCheckbox = document.getElementById('sheetSyncLoadCheckbox');
+                // const saveCheckbox = document.getElementById('sheetSyncSaveCheckbox');
+                // const saveOnChangeCheckbox = document.getElementById('sheetSyncSaveOnChangeCheckbox');
                 if (urlInput) urlInput.value = googleSheetsWebAppUrl;
-                if (autoSyncCheckbox) autoSyncCheckbox.checked = googleSheetsSyncEnabled;
-                if (intervalInput) intervalInput.value = sheetSyncIntervalMinutes;
-                if (loadCheckbox) loadCheckbox.checked = sheetSyncLoadEnabled;
-                if (saveCheckbox) saveCheckbox.checked = sheetSyncSaveEnabled;
-                if (saveOnChangeCheckbox) saveOnChangeCheckbox.checked = sheetSyncSaveOnChange;
+                // if (autoSyncCheckbox) autoSyncCheckbox.checked = googleSheetsSyncEnabled;
+                // if (intervalInput) intervalInput.value = sheetSyncIntervalMinutes;
+                // if (loadCheckbox) loadCheckbox.checked = sheetSyncLoadEnabled;
+                // if (saveCheckbox) saveCheckbox.checked = sheetSyncSaveEnabled;
+                // if (saveOnChangeCheckbox) saveOnChangeCheckbox.checked = sheetSyncSaveOnChange;
                 console.log('📂 הגדרות Google Sheets נטענו');
             } catch (e) {
                 console.warn('שגיאה בטעינת הגדרות Google Sheets:', e);
             }
         }
         function applySheetSyncSettings() {
-            stopLiveViewSyncPolling();
-            if (googleSheetsSyncEnabled && (googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || '').trim()) {
-                startLiveViewSyncPolling();
-            }
+            // בוטל - השתמש ברובוט אוטומטי במדור ניהול
+            // stopLiveViewSyncPolling();
+            // if (googleSheetsSyncEnabled && (googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || '').trim()) {
+            //     startLiveViewSyncPolling();
+            // }
         }
         
         // הצגת סטטוס Google Sheets
@@ -19549,6 +20165,10 @@
                             if (r && r.success) {
                                 if (typeof refreshAllScreensFromData === 'function') refreshAllScreensFromData();
                                 if (typeof notifyDataChanged === 'function') notifyDataChanged();
+                                // עדכון מיידי של Live View אחרי טעינה מהגליון
+                                if (typeof updateLiveView === 'function') {
+                                    updateLiveView(true); // immediate = true
+                                }
                             }
                         }
                     }
@@ -20219,7 +20839,10 @@
                         updateHomeStats();
                         updateLeadersList();
                         updateLiveTargets();
-                        updateLiveView();
+                        // עדכון מיידי של Live View
+                        if (typeof updateLiveView === 'function') {
+                            updateLiveView(true); // immediate = true
+                        }
                         if (resultEl) resultEl.textContent = '✅ העדכון נשלח בהצלחה. הסכום בתוכנה ובגליון עודכן בהתאם.';
                     }
                 } else {
@@ -20617,7 +21240,7 @@
             console.log('🚀 [אתחול] טוען הגדרות סנכרון...');
             loadGistSyncSettings();
             loadGoogleSheetsSettings();
-            if (typeof applySheetSyncSettings === 'function') applySheetSyncSettings();
+            // applySheetSyncSettings(); // בוטל - השתמש ברובוט אוטומטי
             loadComputerSettings();
             
             // מחכה קצת כדי לוודא שהכל נטען
@@ -20644,8 +21267,8 @@
                     console.error('❌ [אתחול] שגיאה בטעינה מ-Google Sheets:', error);
                 }
                 
-                // הפעלת סנכרון תקופתי - כל המסכים יקבלו עדכונים אוטומטית כל 5 שניות
-                startLiveViewSyncPolling();
+                // סנכרון תקופתי בוטל - השתמש ברובוט אוטומטי במדור ניהול
+                // startLiveViewSyncPolling();
             }
             // אחרת, בדיקה אם יש Gist ID
             else if (gistId && gistId.trim()) {
@@ -20662,21 +21285,7 @@
                     await loadFromGist();
                     console.log('✅ [אתחול] הנתונים נטענו בהצלחה מ-Gist');
                     
-                    // אחרי טעינת הנתונים, עושה סנכרון תרומות אוטומטית (אם מופעל)
-                    if (autoSyncNedarimEnabled) {
-                        setTimeout(async () => {
-                            console.log('🔄 [אתחול] מבצע סנכרון תרומות אוטומטית...');
-                            try {
-                                await syncWithNedarimPlus(true); // silent mode
-                                // שמירה ל-Gist אחרי הסנכרון (אם סנכרון אוטומטי מופעל)
-                                if (gistSyncEnabled) {
-                                    await saveToGist();
-                                }
-                            } catch (error) {
-                                console.warn('⚠️ [אתחול] שגיאה בסנכרון תרומות:', error);
-                            }
-                        }, 3000);
-                    }
+                    // סנכרון אוטומטי בוטל - השתמש ברובוט אוטומטי במדור ניהול
                 } catch (error) {
                     console.error('❌ [אתחול] שגיאה בטעינה מ-Gist:', error);
                     if (statusEl) {
