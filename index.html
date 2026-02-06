@@ -609,76 +609,244 @@
         }
 
         .instructions-section {
-            background: rgba(255, 255, 255, 0.6);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
         }
 
         .instructions-panel {
-            max-width: 960px;
+            max-width: 1200px;
             width: 100%;
             margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
-            border: 2px solid var(--primary-gold);
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 8px 32px rgba(212, 175, 55, 0.25);
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 24px;
+            padding: 50px 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             display: flex;
             flex-direction: column;
-            gap: 24px;
+            gap: 40px;
+        }
+
+        .instructions-hero {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 3px solid var(--primary-gold);
+            margin-bottom: 30px;
+        }
+
+        .instructions-hero h1 {
+            font-size: clamp(32px, 4vw, 48px);
+            color: var(--brown-dark);
+            margin-bottom: 15px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-gold) 0%, var(--primary-gold-dark) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .instructions-hero p {
+            font-size: clamp(18px, 2vw, 22px);
+            color: var(--brown-medium);
+            line-height: 1.8;
+            max-width: 800px;
+            margin: 0 auto;
         }
 
         .instructions-panel h2 {
-            font-size: 28px;
+            font-size: clamp(24px, 3vw, 32px);
             color: var(--brown-dark);
+            margin-bottom: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .instructions-panel h2::before {
+            content: '';
+            width: 4px;
+            height: 30px;
+            background: linear-gradient(135deg, var(--primary-gold) 0%, var(--primary-gold-dark) 100%);
+            border-radius: 2px;
         }
 
         .instructions-panel p {
-            line-height: 1.8;
+            line-height: 1.9;
             color: var(--brown-medium);
+            font-size: clamp(16px, 1.5vw, 18px);
         }
 
         .instructions-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 18px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
         }
 
         .instructions-card {
-            background: rgba(245, 230, 211, 0.6);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 20px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 233, 202, 0.8) 100%);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 20px;
+            padding: 28px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 16px;
             color: var(--brown-dark);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .instructions-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4);
+            border-color: var(--primary-gold);
         }
 
         .instructions-card h3 {
             margin: 0;
-            font-size: 20px;
+            font-size: clamp(20px, 2vw, 24px);
             color: var(--brown-dark);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .instructions-card h3::before {
+            content: '✨';
+            font-size: 24px;
         }
 
         .instructions-card ol,
         .instructions-card ul {
             margin: 0;
-            padding-right: 20px;
+            padding-right: 25px;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 10px;
         }
 
         .instructions-card li {
-            line-height: 1.6;
+            line-height: 1.8;
+            font-size: clamp(15px, 1.3vw, 17px);
         }
 
         .instructions-note {
-            background: rgba(16, 185, 129, 0.12);
-            border-right: 4px solid var(--success);
-            padding: 16px;
-            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.08) 100%);
+            border-right: 5px solid var(--success);
+            padding: 20px 25px;
+            border-radius: 16px;
             color: var(--brown-dark);
-            line-height: 1.7;
+            line-height: 1.9;
+            font-size: clamp(15px, 1.4vw, 17px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+        }
+
+        .instructions-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .feature-item {
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(212, 175, 55, 0.05) 100%);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .feature-item:hover {
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(212, 175, 55, 0.1) 100%);
+            transform: translateX(-5px);
+        }
+
+        .feature-icon {
+            font-size: 32px;
+            flex-shrink: 0;
+        }
+
+        .feature-content h4 {
+            margin: 0 0 8px 0;
+            color: var(--brown-dark);
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .feature-content p {
+            margin: 0;
+            color: var(--brown-medium);
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .support-section {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            border-radius: 20px;
+            padding: 35px;
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .support-section h3 {
+            font-size: clamp(22px, 2.5vw, 28px);
+            color: var(--brown-dark);
+            margin-bottom: 15px;
+        }
+
+        .support-section p {
+            font-size: clamp(16px, 1.5vw, 18px);
+            color: var(--brown-medium);
+            margin-bottom: 25px;
+            line-height: 1.8;
+        }
+
+        .support-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white !important;
+            padding: 16px 32px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-size: clamp(16px, 1.5vw, 18px);
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .support-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }
+
+        .support-button:active {
+            transform: translateY(-1px);
+        }
+
+        @media (max-width: 768px) {
+            .instructions-panel {
+                padding: 30px 20px;
+                gap: 30px;
+            }
+
+            .instructions-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .instructions-features {
+                grid-template-columns: 1fr;
+            }
         }
 
         /* מענק לחתנים */
@@ -1197,67 +1365,137 @@
         }
 
         .management-calculator-panel {
-            display: none;
-            background: rgba(255, 255, 255, 0.92);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 18px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 18px rgba(212, 175, 55, 0.25);
-        }
-
-        .management-calculator-panel.active {
             display: block;
+            background: #1c1c1e;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            max-width: 320px;
+            margin-left: auto;
+            margin-right: auto;
+            position: relative;
+        }
+        
+        @media (max-width: 480px) {
+            .management-calculator-panel {
+                max-width: 100%;
+                padding: 15px;
+            }
+            
+            .management-calculator-display {
+                font-size: 40px !important;
+                padding: 25px 15px !important;
+            }
+            
+            .management-calculator-grid {
+                gap: 10px;
+            }
+            
+            .management-calculator-grid button {
+                font-size: 24px;
+            }
         }
 
         .management-calculator-display {
             width: 100%;
-            padding: 14px;
-            border-radius: 10px;
-            border: 1px solid var(--border);
-            background: rgba(0, 0, 0, 0.05);
-            font-size: 24px;
-            font-weight: 600;
-            text-align: left;
-            margin-bottom: 12px;
+            padding: 30px 20px;
+            border-radius: 0;
+            border: none;
+            background: transparent;
+            font-size: 48px;
+            font-weight: 300;
+            text-align: right;
+            margin-bottom: 20px;
             direction: ltr;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+            min-height: 60px;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .management-calculator-grid {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 10px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
         }
 
         .management-calculator-grid button {
-            padding: 12px;
+            padding: 0;
             border: none;
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.85);
-            border: 1px solid var(--border);
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--brown-dark);
+            border-radius: 50%;
+            background: #505050;
+            font-size: 28px;
+            font-weight: 400;
+            color: #ffffff;
             cursor: pointer;
-            transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
+            transition: all 0.15s ease;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .management-calculator-grid button:active {
+            transform: scale(0.95);
+            opacity: 0.8;
         }
 
         .management-calculator-grid button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.2);
+            background: #606060;
+        }
+
+        .management-calculator-grid button.function {
+            background: #d4d4d2;
+            color: #000000;
+        }
+
+        .management-calculator-grid button.function:hover {
+            background: #e5e5e3;
         }
 
         .management-calculator-grid button.operator {
-            background: rgba(212, 175, 55, 0.15);
-            border-color: rgba(212, 175, 55, 0.4);
-            color: var(--primary-gold-dark);
+            background: #ff9500;
+            color: #ffffff;
+        }
+
+        .management-calculator-grid button.operator:hover {
+            background: #ffad33;
+        }
+
+        .management-calculator-grid button.operator:active {
+            background: #e68500;
         }
 
         .management-calculator-grid button.span-two {
             grid-column: span 2;
-            background: linear-gradient(120deg, var(--primary-gold), var(--primary-gold-dark));
-            color: white;
-            border-color: transparent;
+            border-radius: 50px;
+            aspect-ratio: 2.2;
+        }
+
+        .management-calculator-grid button.zero {
+            grid-column: span 2;
+            border-radius: 50px;
+            aspect-ratio: 2.2;
+            justify-content: flex-start;
+            padding-left: 32px;
+        }
+        
+        /* אנימציות חלקות לכפתורים */
+        .management-calculator-grid button {
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        
+        /* שיפור התצוגה למספרים ארוכים */
+        .management-calculator-display {
+            word-break: break-all;
+            overflow-wrap: break-word;
+            line-height: 1.2;
         }
         .donor-name-input {
             width: 100%;
@@ -5488,9 +5726,7 @@
                     <button class="management-tab active" data-tab="groups">ניהול קבוצות</button>
                     <button class="management-tab" data-tab="donors">ניהול מתרימים</button>
                     <button class="management-tab" data-tab="liveview">הגדרות תצוגת לייב</button>
-                    <button type="button" class="management-tab management-calculator-trigger" onclick="toggleManagementCalculator()">
-                        מחשבון
-                    </button>
+                    <button class="management-tab" data-tab="calculator">מחשבון</button>
                     <button class="management-tab" data-tab="sync">עדכונים</button>
                     <button class="management-tab" data-tab="robot"> רובוט אוטומטי</button>
                     <button class="management-tab" data-tab="history"> היסטוריה</button>
@@ -5498,26 +5734,33 @@
                     <button class="management-tab" data-tab="password">הגדרת סיסמה</button>
                 </div>
 
-                <div class="management-calculator-panel" id="managementCalculatorPanel">
-                    <div class="management-calculator-display" id="managementCalculatorDisplay">0</div>
-                    <div class="management-calculator-grid">
-                        <button onclick="managementCalcInput('7')">7</button>
-                        <button onclick="managementCalcInput('8')">8</button>
-                        <button onclick="managementCalcInput('9')">9</button>
-                        <button class="operator" onclick="managementCalcInput('/')">÷</button>
-                        <button onclick="managementCalcInput('4')">4</button>
-                        <button onclick="managementCalcInput('5')">5</button>
-                        <button onclick="managementCalcInput('6')">6</button>
-                        <button class="operator" onclick="managementCalcInput('*')">×</button>
-                        <button onclick="managementCalcInput('1')">1</button>
-                        <button onclick="managementCalcInput('2')">2</button>
-                        <button onclick="managementCalcInput('3')">3</button>
-                        <button class="operator" onclick="managementCalcInput('-')">−</button>
-                        <button onclick="managementCalcInput('0')">0</button>
-                        <button onclick="managementCalcInput('.')">.</button>
-                        <button onclick="managementCalcClear()">C</button>
-                        <button class="operator" onclick="managementCalcInput('+')">+</button>
-                        <button class="span-two" onclick="managementCalcCalculate()">=</button>
+                <!-- מחשבון -->
+                <div class="management-content" id="calculatorContent">
+                    <div style="display: flex; justify-content: center; padding: 20px;">
+                        <div class="management-calculator-panel" id="managementCalculatorPanel" style="display: block;">
+                            <div class="management-calculator-display" id="managementCalculatorDisplay">0</div>
+                            <div class="management-calculator-grid">
+                                <button class="function" onclick="managementCalcClear()">C</button>
+                                <button class="function" onclick="managementCalcInput('±')">±</button>
+                                <button class="function" onclick="managementCalcInput('%')">%</button>
+                                <button class="operator" onclick="managementCalcInput('/')">÷</button>
+                                <button onclick="managementCalcInput('7')">7</button>
+                                <button onclick="managementCalcInput('8')">8</button>
+                                <button onclick="managementCalcInput('9')">9</button>
+                                <button class="operator" onclick="managementCalcInput('*')">×</button>
+                                <button onclick="managementCalcInput('4')">4</button>
+                                <button onclick="managementCalcInput('5')">5</button>
+                                <button onclick="managementCalcInput('6')">6</button>
+                                <button class="operator" onclick="managementCalcInput('-')">−</button>
+                                <button onclick="managementCalcInput('1')">1</button>
+                                <button onclick="managementCalcInput('2')">2</button>
+                                <button onclick="managementCalcInput('3')">3</button>
+                                <button class="operator" onclick="managementCalcInput('+')">+</button>
+                                <button class="zero" onclick="managementCalcInput('0')">0</button>
+                                <button onclick="managementCalcInput('.')">.</button>
+                                <button class="operator" onclick="managementCalcCalculate()">=</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -5602,6 +5845,9 @@
                             </div>
                             
                             <div id="robotSettingsPanel" style="display: none; padding-right: 20px; border-top: 1px dashed var(--border); padding-top: 20px;">
+                                <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 12px; margin-bottom: 15px; font-size: 13px;">
+                                    <strong>💡 טיפ:</strong> אם אתה רואה הגדרות ישנות, נסה לרענן את הדף עם <code>Ctrl+Shift+R</code> (או <code>Cmd+Shift+R</code> ב-Mac) כדי לנקות את ה-cache.
+                                </div>
                                 <div style="margin-bottom: 20px;">
                                     <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text);">בחר איזה כפתורים להפעיל אוטומטית:</label>
                                     <div style="display: flex; flex-direction: column; gap: 10px;">
@@ -6597,72 +6843,257 @@
             <!-- הוראות שימוש -->
             <section class="content-section instructions-section" id="instructionsSection">
                 <div class="instructions-panel">
-                    <h2>הוראות שימוש בתוכנה</h2>
-                    <p>ברוכים הבאים לכלי הניהול של &quot;תומכי תורה&quot;. בפרק זה תמצאו הסברים מפורטים ליצירת קובצי אקסל, טעינת רשימות, ייצוא נתונים, תפעול יומיומי והבנת כל המדורים במערכת.</p>
+                    <div class="instructions-hero">
+                        <h1>🎯 מערכת ניהול קמפיין גיוס כספים</h1>
+                        <p>מערכת מתקדמת ומקיפה לניהול קמפיין גיוס כספים, המאפשרת ניהול מלא של מתרימים, קבוצות, סנכרון עם מערכות חיצוניות ותצוגת נתונים בזמן אמת. המערכת מספקת כלים מקצועיים לניהול יעיל ומסודר של כל תהליך הגיוס.</p>
+                    </div>
 
-                    <div class="instructions-grid">
+                    <div>
+                        <h2>מה התוכנה עושה?</h2>
+                        <p>המערכת היא פלטפורמה דיגיטלית מתקדמת המרכזת את כל פעולות ניהול קמפיין הגיוס במקום אחד. היא מאפשרת:</p>
+                        <div class="instructions-features">
+                            <div class="feature-item">
+                                <div class="feature-icon">👥</div>
+                                <div class="feature-content">
+                                    <h4>ניהול מתרימים וקבוצות</h4>
+                                    <p>יצירה, עריכה וניהול מלא של מתרימים, חלוקה לקבוצות, מעקב אחר יעדים אישיים וקבוצתיים</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon">🔄</div>
+                                <div class="feature-content">
+                                    <h4>סנכרון אוטומטי</h4>
+                                    <p>חיבור ישיר ל-API של נדרים פלוס ולגליונות Google Sheets לסנכרון נתונים אוטומטי</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon">📊</div>
+                                <div class="feature-content">
+                                    <h4>תצוגת לייב</h4>
+                                    <p>תצוגה דינמית בזמן אמת למקרן או מסך גדול עם עדכונים אוטומטיים של הנתונים</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon">📈</div>
+                                <div class="feature-content">
+                                    <h4>ניתוח ופילוח נתונים</h4>
+                                    <p>דוחות מפורטים, גרפים, פילוח לפי קבוצות, סטטיסטיקות מתקדמות ומעקב אחר ביצועים</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon">💰</div>
+                                <div class="feature-content">
+                                    <h4>ניהול כספים</h4>
+                                    <p>רישום הכנסות והוצאות, מעקב אחר תקציב, ייצוא דוחות כספיים וניתוח כלכלי</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon">🤖</div>
+                                <div class="feature-content">
+                                    <h4>רובוט אוטומטי</h4>
+                                    <p>ביצוע פעולות סנכרון אוטומטיות בפרקי זמן קבועים ללא התערבות ידנית</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h2>מה אפשר לעשות בתוכנה?</h2>
+                        <div class="instructions-grid">
+                            <div class="instructions-card">
+                                <h3>דף הבית</h3>
+                                <ul>
+                                    <li>צפייה במדדים מרכזיים: יעד המצ'ינג, סכום שנאסף, מספר מתרימים</li>
+                                    <li>מעקב אחר ממוצע תרומה וסטטיסטיקות כלליות</li>
+                                    <li>תצוגה ויזואלית של התקדמות הקמפיין</li>
+                                </ul>
+                            </div>
+
+                            <div class="instructions-card">
+                                <h3>ניהול</h3>
+                                <ul>
+                                    <li>יצירה ועריכה של קבוצות מתרימים</li>
+                                    <li>הוספה ועדכון פרטי מתרימים</li>
+                                    <li>טעינת רשימות מקובצי Excel</li>
+                                    <li>הזנת תשלומים והיסטוריית פעולות</li>
+                                    <li>ניהול סיסמאות והרשאות</li>
+                                    <li>שימוש במחשבון מובנה</li>
+                                </ul>
+                            </div>
+
+                            <div class="instructions-card">
+                                <h3>תצוגת לייב</h3>
+                                <ul>
+                                    <li>תצוגה דינמית למקרן או מסך גדול</li>
+                                    <li>הצגת מובילים ועמידה ביעדים</li>
+                                    <li>עדכונים בזמן אמת</li>
+                                    <li>התאמה אישית של העיצוב והתצוגה</li>
+                                </ul>
+                            </div>
+
+                            <div class="instructions-card">
+                                <h3>סנכרון</h3>
+                                <ul>
+                                    <li>סנכרון אוטומטי עם נדרים פלוס (API)</li>
+                                    <li>חיבור לגליונות Google Sheets</li>
+                                    <li>טעינה ושמירה אוטומטית של נתונים</li>
+                                    <li>רובוט אוטומטי לביצוע פעולות בפרקי זמן קבועים</li>
+                                </ul>
+                            </div>
+
+                            <div class="instructions-card">
+                                <h3>חישוב לכל השנה</h3>
+                                <ul>
+                                    <li>רישום הכנסות והוצאות</li>
+                                    <li>סינון לפי סוג או שנה</li>
+                                    <li>תצוגות גרפיות וניתוח כלכלי</li>
+                                    <li>ייצוא דוחות כספיים ל-Excel</li>
+                                </ul>
+                            </div>
+
+                            <div class="instructions-card">
+                                <h3>תכנון קמפיין</h3>
+                                <ul>
+                                    <li>קביעת יעדים לשנים הבאות</li>
+                                    <li>תכנון תאריכים ומשימות</li>
+                                    <li>החלת תכניות על הנתונים הקיימים</li>
+                                    <li>מעקב אחר ביצוע התכנית</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h2>היתרונות של המערכת</h2>
+                        <div class="instructions-features">
+                            <div class="feature-item">
+                                <div class="feature-icon">⚡</div>
+                                <div class="feature-content">
+                                    <h4>חיסכון בזמן</h4>
+                                    <p>אוטומציה מלאה של תהליכי סנכרון ועדכון, חיסכון של שעות עבודה יקרות</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon">🎯</div>
+                                <div class="feature-content">
+                                    <h4>דיוק מקסימלי</h4>
+                                    <p>מניעת טעויות אנוש, סנכרון אוטומטי מונע כפילויות ואי-התאמות</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon">📱</div>
+                                <div class="feature-content">
+                                    <h4>נגישות מלאה</h4>
+                                    <p>גישה מכל מכשיר - מחשב, טאבלט או סמארטפון, ללא צורך בהתקנות</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon">🔒</div>
+                                <div class="feature-content">
+                                    <h4>אבטחה מתקדמת</h4>
+                                    <p>ניהול הרשאות, סיסמאות מוצפנות וגיבוי אוטומטי לנתונים</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon">📊</div>
+                                <div class="feature-content">
+                                    <h4>דוחות מפורטים</h4>
+                                    <p>יצירת דוחות מקצועיים, גרפים וניתוחים מתקדמים בכמה קליקים</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon">🔄</div>
+                                <div class="feature-content">
+                                    <h4>עדכונים בזמן אמת</h4>
+                                    <p>כל שינוי משתקף מיד במערכת ובתצוגת הלייב ללא צורך ברענון</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h2>הוראות הפעלה מפורטות</h2>
+                        
                         <div class="instructions-card">
-                            <h3>הכנת קובץ אקסל לייבוא</h3>
+                            <h3>התחלת עבודה ראשונית</h3>
                             <ol>
-                                <li>פתחו גיליון חדש באקסל והוסיפו שורת כותרת עם העמודות: <strong>שם מתרים</strong> (חובה), <strong>סכום</strong>, <strong>קבוצה</strong>, <strong>יעד אישי</strong>. ניתן להשתמש גם בכותרות באנגלית (Name, Amount, Group, Goal).</li>
-                                <li>ליצירת רשימת שמות בלבד ניתן להשאיר עמודת סכום ויעד ריקות. המערכת תגדיר לכל מתרים סכום פתיחה 0 ויעד ברירת מחדל.</li>
-                                <li>כדי לשייך מתרים לקבוצה קיימת, ודאו ששם הקבוצה בגיליון זהה בדיוק לשם שמופיע במערכת. אם העמודה &quot;קבוצה&quot; ריקה – ניתן לבחור קבוצה בזמן הטעינה.</li>
-                                <li>שמרו את הקובץ בפורמט <strong>.xlsx</strong> (שם מומלץ: donors_import.xlsx) וודאו שאין שורות ריקות מיותרות בסוף הקובץ.</li>
+                                <li><strong>הגדרת חיבור ל-API:</strong> עברו למדור "ניהול" → "עדכונים" והזינו את ה-URL של Google Apps Script שלכם</li>
+                                <li><strong>הגדרת Google Sheets:</strong> הזינו את מזהה הגליון (Sheet ID) ואת שם הגליון</li>
+                                <li><strong>הגדרת נדרים פלוס:</strong> הזינו את פרטי החיבור ל-API של נדרים פלוס</li>
+                                <li><strong>יצירת קבוצות:</strong> עברו ל"ניהול קבוצות" ויצרו את הקבוצות הראשונות</li>
                             </ol>
                         </div>
 
                         <div class="instructions-card">
-                            <h3>טעינת הרשימה לתוכנה</h3>
+                            <h3>הפעלת תצוגת לייב</h3>
                             <ol>
-                                <li>עברו למדור <strong>ניהול</strong>, פתחו את כרטיס הקבוצה הרצויה ולחצו על הכפתור <strong>טעינת רשימה מקובץ אקסל</strong>.</li>
-                                <li>בחרו את הקובץ שהכנתם. אם מופיעה עמודת &quot;קבוצה&quot; בגיליון, המערכת תזהה את הקבוצה אוטומטית; אחרת המתרימים יתווספו לקבוצה שנבחרה בעת הלחיצה.</li>
-                                <li>המערכת מזהה כותרות כגון &quot;שם&quot;, &quot;שם מתרים&quot;, Name וכדומה. אם נמצאו רק שמות בעמודה הראשונה – המתרימים ייווצרו עם יעד ברירת מחדל וסכום 0.</li>
-                                <li>בסיום הטעינה תופיע הודעה כמה מתרימים נטענו. עברו על הרשימה, תקנו סכומים או שמות לפי הצורך ולבסוף לחצו על &quot;שמור&quot; אם נעשו שינויים ידניים.</li>
+                                <li>עברו למדור "תצוגה בלייב"</li>
+                                <li>התאימו את העיצוב והגדרות התצוגה לפי הצורך</li>
+                                <li>לחצו על "הפעל תצוגת לייב"</li>
+                                <li>פתחו את הקישור בחלון נפרד או העתיקו את ה-URL למקרן</li>
+                                <li>התצוגה תתעדכן אוטומטית עם כל שינוי בנתונים</li>
                             </ol>
                         </div>
 
                         <div class="instructions-card">
-                            <h3>ייצוא נתונים ודוחות</h3>
+                            <h3>שימוש ברובוט אוטומטי</h3>
                             <ol>
-                                <li>במדור <strong>חישוב לכל השנה</strong> השתמשו בכפתור <strong>ייצוא לאקסל</strong> להפקת קובץ finance_export.xlsx הכולל הכנסות, הוצאות ויתרות.</li>
-                                <li>במדור <strong>ניהול</strong> בתוך פרטי מתרים ניתן ללחוץ על <strong>ייצוא היסטוריה לאקסל</strong> לקבלת קובץ donors_history.xlsx עם כל הפעולות שהוזנו.</li>
-                                <li>שלבו את הנתונים המיוצאים עם הסיכומים על המסך (סכומים, ממוצעים, עמידה ביעדים) לצורך הדפסה, שיתוף וניהול מעקב של הנהלה וגזברות.</li>
+                                <li>עברו למדור "ניהול" → "רובוט אוטומטי"</li>
+                                <li>בחרו את הפעולות שברצונכם לבצע (סנכרון תרומות, בדיקת סכום מ-API, טעינה/שמירה לגליון)</li>
+                                <li>הגדירו את תדירות העדכון (בדקות או שניות)</li>
+                                <li>בחרו בין ביצוע רציף או מקבילי</li>
+                                <li>לחצו על "הפעל רובוט" - המערכת תבצע את הפעולות אוטומטית</li>
                             </ol>
                         </div>
 
                         <div class="instructions-card">
-                            <h3>סקירת המדורים והפעלתם</h3>
+                            <h3>סנכרון ידני</h3>
                             <ol>
-                                <li><strong>דף הבית:</strong> מציג מדדים מרכזיים – יעד המצ&apos;ינג, סכום שנאסף, מספר מתרימים וממוצע תרומה.</li>
-                                <li><strong>ניהול:</strong> יצירת קבוצות, הוספת מתרימים, ניהול סיסמה, טעינת אקסל, הזנת תשלומים והיסטוריית פעולות.</li>
-                                <li><strong>תצוגה בלייב:</strong> תצוגת אירוע חיה למקרן/מסך גדול עם מובילים, עמידה ביעדים ועיצוב דינמי.</li>
-                                <li><strong>חישוב לכל השנה:</strong> רישום הכנסות והוצאות, סינון לפי סוג או שנה, תצוגות גרפיות וייצוא.</li>
-                                <li><strong>תכנון קמפיין:</strong> קביעת יעדים לשנה הבאה, תאריכים, משימות פתיחה והחלת התכנית על הנתונים.</li>
+                                <li><strong>סנכרון עם נדרים פלוס:</strong> עברו ל"ניהול" → "עדכונים" ולחצו על "סנכרון תרומות לנדרים פלוס"</li>
+                                <li><strong>בדיקת סכום מ-API:</strong> לחצו על "בדוק סכום כולל מ-API" לקבלת נתונים מעודכנים</li>
+                                <li><strong>טעינה מגליון:</strong> לחצו על "טען מגליון" לייבוא נתונים מ-Google Sheets</li>
+                                <li><strong>שמירה לגליון:</strong> לחצו על "שמור לגליון" לייצוא נתונים ל-Google Sheets</li>
+                            </ol>
+                        </div>
+
+                        <div class="instructions-card">
+                            <h3>ייצוא דוחות</h3>
+                            <ol>
+                                <li><strong>דוח כספי:</strong> עברו ל"חישוב לכל השנה" ולחצו על "ייצוא לאקסל"</li>
+                                <li><strong>היסטוריית מתרימים:</strong> במדור "ניהול" → "ניהול מתרימים", פתחו פרטי מתרים ולחצו "ייצוא היסטוריה לאקסל"</li>
+                                <li>הקבצים יורדו אוטומטית למחשב שלכם</li>
                             </ol>
                         </div>
                     </div>
 
                     <div class="instructions-note">
-                        <strong>טיפ:</strong> בצעו גיבוי שבועי לקבצי האקסל, בדקו שהיעדים מעודכנים לפני אירועים גדולים ודאגו לעדכן את התצוגה בלייב לאחר כל טעינה או שינוי נתונים משמעותי.
-                    </div>
-                    <div class="instructions-note">
-                        <strong>פתרון תקלות:</strong> אם מתקבלת שגיאה בייבוא, ודאו שהעמודות ממוספרות נכון, שאין תווים מיותרים בכותרות, ושמרו מחדש את הקובץ כ-.xlsx. הודעות המערכת בתחתית המסך יסייעו באיתור הבעיה.
+                        <strong>💡 טיפים חשובים:</strong>
+                        <ul style="margin-top: 10px; padding-right: 20px;">
+                            <li>בצעו גיבוי שבועי של הנתונים באמצעות ייצוא ל-Excel</li>
+                            <li>ודאו שהיעדים מעודכנים לפני אירועים גדולים</li>
+                            <li>עדכנו את תצוגת הלייב לאחר כל שינוי משמעותי בנתונים</li>
+                            <li>השתמשו ברובוט האוטומטי לחיסכון בזמן, אך הקפידו על תדירות סבירה (לפחות 10 דקות בין פעולות)</li>
+                            <li>בדקו את חיבור ה-API לפני שימוש בתכונות הסנכרון</li>
+                        </ul>
                     </div>
 
-                    <div class="raffle-embed-wrapper">
-                        <h3>מגריל ההגרלות – הפעלה מתוך המערכת</h3>
-                        <p>אפשר להפעיל כאן את כלי ההגרלות החיצוני או לפתוח אותו בלשונית נפרדת לנוחות מרבית.</p>
-                        <div class="raffle-embed-actions">
-                            <a href="https://shlomo-yeshiva.github.io/Lottery-system/" target="_blank" rel="noopener noreferrer">
-                                פתיחה בחלון חדש
-                            </a>
-                        </div>
-                        <iframe class="raffle-embed-frame"
-                                src="https://shlomo-yeshiva.github.io/Lottery-system/"
-                                title="מגריל ההגרלות"
-                                loading="lazy"
-                                allow="clipboard-read; clipboard-write">
-                        </iframe>
+                    <div class="instructions-note">
+                        <strong>🔧 פתרון תקלות נפוצות:</strong>
+                        <ul style="margin-top: 10px; padding-right: 20px;">
+                            <li><strong>שגיאת ייבוא:</strong> ודאו שהעמודות ממוספרות נכון, שאין תווים מיותרים בכותרות, ושמרו את הקובץ בפורמט .xlsx</li>
+                            <li><strong>בעיית סנכרון:</strong> בדקו את חיבור ה-API והגדרות Google Sheets במדור "עדכונים"</li>
+                            <li><strong>תצוגת לייב לא מתעדכנת:</strong> ודאו שהרובוט האוטומטי פעיל או עדכנו ידנית</li>
+                            <li><strong>בעיית הרשאות:</strong> בדקו את הגדרות הסיסמה והרשאות במדור "הגדרת סיסמה"</li>
+                        </ul>
+                    </div>
+
+                    <div class="support-section">
+                        <h3>צריכים עזרה? אנחנו כאן בשבילכם!</h3>
+                        <p>אם נתקלתם בבעיה, יש לכם שאלה או הצעה לשיפור - אנחנו כאן לעזור. צרו איתנו קשר ונשמח לסייע.</p>
+                        <button onclick="contactDeveloper()" class="support-button">
+                            📧 צור קשר עם המפתח
+                        </button>
+                        <p style="margin-top: 15px; font-size: 14px; color: var(--brown-medium);">או העתיקו את המייל: <strong style="color: var(--primary-gold); cursor: pointer;" onclick="navigator.clipboard.writeText('s0534142893@gmail.com').then(() => alert('המייל הועתק!'))">s0534142893@gmail.com</strong></p>
                     </div>
                 </div>
             </section>
@@ -11854,12 +12285,6 @@
                     contentElement.classList.add('active');
                 }
                 
-                // סגירת מחשבון אם היה פתוח בעת מעבר בין טאבים
-                const calcPanel = document.getElementById('managementCalculatorPanel');
-                if (calcPanel && calcPanel.classList.contains('active')) {
-                    calcPanel.classList.remove('active');
-                }
-                
                 if (tabName === 'groups') {
                     updateGroupsDisplay();
                 } else if (tabName === 'donors') {
@@ -11872,6 +12297,14 @@
                     updateRobotUI();
                 } else if (tabName === 'password') {
                     initPasswordSettingsUI();
+                } else if (tabName === 'calculator') {
+                    // איפוס המחשבון כשפותחים אותו
+                    managementCalcClear();
+                    // הוספת תמיכה במקלדת
+                    document.addEventListener('keydown', handleCalculatorKeyboard);
+                } else {
+                    // הסרת תמיכה במקלדת כשעוברים לטאב אחר
+                    document.removeEventListener('keydown', handleCalculatorKeyboard);
                 }
             });
         });
@@ -12012,19 +12445,132 @@
             if (willOpen) {
                 // לפני פתיחה - לוודא שכל תוכן אחר מוצג רגיל, אבל המחשבון יופיע לבדו
                 panel.classList.add('active');
+                // איפוס המחשבון כשפותחים אותו
+                managementCalcClear();
+                // הוספת תמיכה במקלדת
+                document.addEventListener('keydown', handleCalculatorKeyboard);
             } else {
                 panel.classList.remove('active');
+                // הסרת תמיכה במקלדת כשסוגרים
+                document.removeEventListener('keydown', handleCalculatorKeyboard);
+            }
+        }
+        
+        function handleCalculatorKeyboard(event) {
+            const calculatorContent = document.getElementById('calculatorContent');
+            if (!calculatorContent || !calculatorContent.classList.contains('active')) return;
+            
+            const key = event.key;
+            
+            // מספרים
+            if (/[0-9]/.test(key)) {
+                event.preventDefault();
+                managementCalcInput(key);
+                return;
+            }
+            
+            // אופרטורים
+            if (key === '+') {
+                event.preventDefault();
+                managementCalcInput('+');
+            } else if (key === '-') {
+                event.preventDefault();
+                managementCalcInput('-');
+            } else if (key === '*') {
+                event.preventDefault();
+                managementCalcInput('*');
+            } else if (key === '/') {
+                event.preventDefault();
+                managementCalcInput('/');
+            } else if (key === '.') {
+                event.preventDefault();
+                managementCalcInput('.');
+            } else if (key === '%') {
+                event.preventDefault();
+                managementCalcInput('%');
+            } else if (key === 'Enter' || key === '=') {
+                event.preventDefault();
+                managementCalcCalculate();
+            } else if (key === 'Escape' || key === 'c' || key === 'C') {
+                event.preventDefault();
+                managementCalcClear();
+            } else if (key === 'Backspace') {
+                event.preventDefault();
+                if (managementCalculatorState.expression) {
+                    managementCalculatorState.expression = managementCalculatorState.expression.slice(0, -1);
+                    if (managementCalculatorState.expression === '') {
+                        updateManagementCalculatorDisplay('0');
+                    } else {
+                        updateManagementCalculatorDisplay(managementCalculatorState.expression);
+                    }
+                }
             }
         }
 
         function updateManagementCalculatorDisplay(value) {
             const display = document.getElementById('managementCalculatorDisplay');
             if (display) {
-                display.textContent = value;
+                // פורמט יפה למספרים גדולים
+                let displayValue = String(value);
+                
+                // אם זה מספר גדול, נציג אותו בפורמט יפה
+                if (!isNaN(displayValue) && displayValue !== 'שגיאה') {
+                    const num = parseFloat(displayValue);
+                    if (Math.abs(num) >= 1000000) {
+                        displayValue = num.toExponential(3);
+                    } else if (Math.abs(num) >= 1000) {
+                        displayValue = num.toLocaleString('he-IL', { maximumFractionDigits: 10 });
+                    }
+                }
+                
+                display.textContent = displayValue;
+                
+                // התאמת גודל הפונט למספרים ארוכים
+                if (displayValue.length > 10) {
+                    display.style.fontSize = '36px';
+                } else if (displayValue.length > 7) {
+                    display.style.fontSize = '42px';
+                } else {
+                    display.style.fontSize = '48px';
+                }
             }
         }
 
         function managementCalcInput(value) {
+            // טיפול בכפתורים מיוחדים
+            if (value === '±') {
+                // החלפת סימן
+                if (managementCalculatorState.expression && managementCalculatorState.expression !== '0') {
+                    if (managementCalculatorState.expression.startsWith('-')) {
+                        managementCalculatorState.expression = managementCalculatorState.expression.substring(1);
+                    } else {
+                        managementCalculatorState.expression = '-' + managementCalculatorState.expression;
+                    }
+                    updateManagementCalculatorDisplay(managementCalculatorState.expression);
+                }
+                return;
+            }
+            
+            if (value === '%') {
+                // חישוב אחוז
+                try {
+                    const sanitized = managementCalculatorState.expression.replace(/[^0-9+\-*/.]/g, '');
+                    if (sanitized) {
+                        const result = Function(`"use strict"; return (${sanitized})`)();
+                        const percentResult = Number.isFinite(result) ? result / 100 : 0;
+                        managementCalculatorState.expression = String(percentResult);
+                        updateManagementCalculatorDisplay(managementCalculatorState.expression);
+                        managementCalculatorState.shouldReset = true;
+                    }
+                } catch (error) {
+                    updateManagementCalculatorDisplay('שגיאה');
+                    managementCalculatorState.expression = '';
+                    managementCalculatorState.shouldReset = true;
+                }
+                return;
+            }
+            
+            // טיפול רגיל בכניסות
             if (!managementCalculatorState.expression || managementCalculatorState.shouldReset) {
                 if (/[0-9.]/.test(value)) {
                     managementCalculatorState.expression = value;
@@ -12035,7 +12581,14 @@
                     managementCalculatorState.expression += value;
                 }
             } else {
-                managementCalculatorState.expression += value;
+                // מניעת כפילות של אופרטורים
+                const lastChar = managementCalculatorState.expression.slice(-1);
+                if (/[+\-*/]/.test(value) && /[+\-*/]/.test(lastChar)) {
+                    // מחליף את האופרטור האחרון
+                    managementCalculatorState.expression = managementCalculatorState.expression.slice(0, -1) + value;
+                } else {
+                    managementCalculatorState.expression += value;
+                }
             }
             updateManagementCalculatorDisplay(managementCalculatorState.expression);
         }
@@ -12048,14 +12601,28 @@
 
         function managementCalcCalculate() {
             try {
-                const sanitized = managementCalculatorState.expression.replace(/[^0-9+\-*/.]/g, '');
+                // החלפת סימנים לעיבוד נכון
+                let sanitized = managementCalculatorState.expression
+                    .replace(/×/g, '*')
+                    .replace(/÷/g, '/')
+                    .replace(/−/g, '-')
+                    .replace(/[^0-9+\-*/.]/g, '');
+                
                 if (!sanitized) {
                     updateManagementCalculatorDisplay('0');
                     return;
                 }
+                
                 const result = Function(`"use strict"; return (${sanitized})`)();
-                const fixedResult = Number.isFinite(result) ? parseFloat(result.toFixed(6)) : 'שגיאה';
-                updateManagementCalculatorDisplay(String(fixedResult));
+                const fixedResult = Number.isFinite(result) ? parseFloat(result.toFixed(10)) : 'שגיאה';
+                
+                // הסרת אפסים מיותרים אחרי הנקודה העשרונית
+                let displayResult = String(fixedResult);
+                if (displayResult.includes('.')) {
+                    displayResult = displayResult.replace(/\.?0+$/, '');
+                }
+                
+                updateManagementCalculatorDisplay(displayResult);
                 managementCalculatorState.expression = String(fixedResult);
                 managementCalculatorState.shouldReset = true;
             } catch (error) {
@@ -14844,15 +15411,29 @@
                         continuous: false,
                         ...saved 
                     };
-                    // וודא ש-continuous הוא boolean ולא undefined
+                    // וודא שכל הערכים הם מהסוג הנכון
                     robotSettings.continuous = robotSettings.continuous === true;
+                    robotSettings.sync = robotSettings.sync === true;
+                    robotSettings.checkTotal = robotSettings.checkTotal === true;
+                    robotSettings.loadSheet = robotSettings.loadSheet === true;
+                    robotSettings.saveSheet = robotSettings.saveSheet === true;
+                    robotSettings.interval = parseFloat(robotSettings.interval) || 10;
+                    robotSettings.unit = robotSettings.unit || 'minutes';
+                    robotSettings.executionMode = robotSettings.executionMode || 'sequential';
                     robotEnabled = robotSettings.enabled === true;
+                    
+                    // שמירה מחדש כדי לוודא שהפורמט נכון
+                    storageSetItem('robotSettings', robotSettings);
                     
                     console.log('📥 [רובוט] טעינת הגדרות:', {
                         enabled: robotEnabled,
                         continuous: robotSettings.continuous,
                         interval: robotSettings.interval,
-                        unit: robotSettings.unit
+                        unit: robotSettings.unit,
+                        sync: robotSettings.sync,
+                        checkTotal: robotSettings.checkTotal,
+                        loadSheet: robotSettings.loadSheet,
+                        saveSheet: robotSettings.saveSheet
                     });
                     
                     // אם הרובוט היה פעיל, מפעיל אותו מחדש
@@ -14862,6 +15443,20 @@
                             startRobot();
                         }, 500);
                     }
+                } else {
+                    // אם אין הגדרות שמורות, מאתחל עם ברירת מחדל
+                    robotSettings = {
+                        sync: false,
+                        checkTotal: false,
+                        loadSheet: false,
+                        saveSheet: false,
+                        interval: 10,
+                        unit: 'minutes',
+                        executionMode: 'sequential',
+                        continuous: false,
+                        enabled: false
+                    };
+                    robotEnabled = false;
                 }
                 updateRobotUI();
             });
@@ -14914,8 +15509,30 @@
             
             robotSettings.enabled = robotEnabled;
             
+            // וידוא שכל הערכים נכונים לפני שמירה
+            robotSettings.continuous = robotSettings.continuous === true;
+            robotSettings.sync = robotSettings.sync === true;
+            robotSettings.checkTotal = robotSettings.checkTotal === true;
+            robotSettings.loadSheet = robotSettings.loadSheet === true;
+            robotSettings.saveSheet = robotSettings.saveSheet === true;
+            robotSettings.interval = parseFloat(robotSettings.interval) || 10;
+            robotSettings.unit = robotSettings.unit || 'minutes';
+            robotSettings.executionMode = robotSettings.executionMode || 'sequential';
+            
             // שמירה מיידית ל-localStorage
             storageSetItem('robotSettings', robotSettings);
+            
+            console.log('💾 [רובוט] הגדרות נשמרו:', {
+                enabled: robotEnabled,
+                continuous: robotSettings.continuous,
+                interval: robotSettings.interval,
+                unit: robotSettings.unit,
+                sync: robotSettings.sync,
+                checkTotal: robotSettings.checkTotal,
+                loadSheet: robotSettings.loadSheet,
+                saveSheet: robotSettings.saveSheet
+            });
+            
             updateRobotUI();
             
             // בדיקה אם צריך להפעיל מחדש את הרובוט
@@ -14987,6 +15604,26 @@
         }
         
         function updateRobotUI() {
+            // טעינה מחדש של ההגדרות מ-localStorage כדי לוודא שיש לנו את הערכים העדכניים ביותר
+            try {
+                const savedSettings = localStorage.getItem('robotSettings');
+                if (savedSettings) {
+                    const parsed = JSON.parse(savedSettings);
+                    // עדכון המשתנה הגלובלי עם הערכים העדכניים
+                    if (parsed.enabled !== undefined) robotEnabled = parsed.enabled === true;
+                    if (parsed.continuous !== undefined) robotSettings.continuous = parsed.continuous === true;
+                    if (parsed.sync !== undefined) robotSettings.sync = parsed.sync === true;
+                    if (parsed.checkTotal !== undefined) robotSettings.checkTotal = parsed.checkTotal === true;
+                    if (parsed.loadSheet !== undefined) robotSettings.loadSheet = parsed.loadSheet === true;
+                    if (parsed.saveSheet !== undefined) robotSettings.saveSheet = parsed.saveSheet === true;
+                    if (parsed.interval !== undefined) robotSettings.interval = parseFloat(parsed.interval) || 10;
+                    if (parsed.unit !== undefined) robotSettings.unit = parsed.unit || 'minutes';
+                    if (parsed.executionMode !== undefined) robotSettings.executionMode = parsed.executionMode || 'sequential';
+                }
+            } catch (e) {
+                console.warn('⚠️ [רובוט] שגיאה בטעינת הגדרות מ-localStorage:', e);
+            }
+            
             const checkbox = document.getElementById('robotEnabledCheckbox');
             const panel = document.getElementById('robotSettingsPanel');
             const syncCheckbox = document.getElementById('robotSyncCheckbox');
@@ -15006,15 +15643,15 @@
             
             if (checkbox) checkbox.checked = robotEnabled;
             if (panel) panel.style.display = robotEnabled ? 'block' : 'none';
-            if (syncCheckbox) syncCheckbox.checked = robotSettings.sync || false;
-            if (checkTotalCheckbox) checkTotalCheckbox.checked = robotSettings.checkTotal || false;
-            if (loadSheetCheckbox) loadSheetCheckbox.checked = robotSettings.loadSheet || false;
-            if (saveSheetCheckbox) saveSheetCheckbox.checked = robotSettings.saveSheet || false;
+            if (syncCheckbox) syncCheckbox.checked = robotSettings.sync === true;
+            if (checkTotalCheckbox) checkTotalCheckbox.checked = robotSettings.checkTotal === true;
+            if (loadSheetCheckbox) loadSheetCheckbox.checked = robotSettings.loadSheet === true;
+            if (saveSheetCheckbox) saveSheetCheckbox.checked = robotSettings.saveSheet === true;
             if (intervalInput) intervalInput.value = robotSettings.interval || 10;
             if (unitSelect) unitSelect.value = robotSettings.unit || 'minutes';
             if (sequentialRadio) sequentialRadio.checked = (robotSettings.executionMode || 'sequential') === 'sequential';
             if (parallelRadio) parallelRadio.checked = (robotSettings.executionMode || 'sequential') === 'parallel';
-            if (continuousCheckbox) continuousCheckbox.checked = robotSettings.continuous || false;
+            if (continuousCheckbox) continuousCheckbox.checked = robotSettings.continuous === true;
             
             toggleContinuousMode();
             updateRobotIntervalDisplay();
@@ -21306,6 +21943,17 @@
         });
         
         // ===== סוף מערכת סנכרון דרך GitHub Gist =====
+
+        // פונקציה ליצירת קשר עם המפתח
+        function contactDeveloper() {
+            const email = 's0534142893@gmail.com';
+            const subject = encodeURIComponent('תמיכה טכנית - מערכת ניהול קמפיין');
+            const body = encodeURIComponent('שלום,\n\nאני זקוק לעזרה בנושא:\n\n\nתודה!');
+            window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+        }
+
+        // הופך את הפונקציה לזמינה גלובלית
+        window.contactDeveloper = contactDeveloper;
 
     </script>
 </body>
