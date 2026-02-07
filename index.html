@@ -5432,6 +5432,7 @@
                 <button class="nav-item" data-section="liveview">תצוגה בלייב</button>
                 <button class="nav-item" data-section="breakdown">פילוח נתונים</button>
                 <button class="nav-item" data-section="management">ניהול</button>
+                <button class="nav-item" data-section="robot">🤖 רובוט אוטומטי</button>
                 <button class="nav-item" data-section="raffle">מערכת הגרלות</button>
                 <button class="nav-item" data-section="scouts">ניהול סיירות</button>
                 <button class="nav-item" data-section="toolkit">ארגז כלים לתתני״ק הצעיר</button>
@@ -12254,9 +12255,21 @@
             }
 
                 document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
-                const targetSection = document.getElementById(section + 'Section');
+                const effectiveSection = (section === 'robot') ? 'management' : section;
+                const targetSection = document.getElementById(effectiveSection + 'Section');
                 if (targetSection) {
-                    requestAnimationFrame(() => targetSection.classList.add('active'));
+                    requestAnimationFrame(() => {
+                        targetSection.classList.add('active');
+                        if (section === 'robot') {
+                            document.querySelectorAll('.management-tab').forEach(t => t.classList.remove('active'));
+                            const robotTab = document.querySelector('.management-tab[data-tab="robot"]');
+                            if (robotTab) robotTab.classList.add('active');
+                            document.querySelectorAll('.management-content').forEach(c => c.classList.remove('active'));
+                            const robotContent = document.getElementById('robotContent');
+                            if (robotContent) robotContent.classList.add('active');
+                            if (typeof window.updateRobotUI === 'function') window.updateRobotUI();
+                        }
+                    });
                 }
 
                 const appContainer = document.querySelector('.app-container');
@@ -12352,6 +12365,13 @@
                     if (isSectionProtected('management')) {
                         if (!requestSectionAccess('management')) {
                             return; // המשתמש ביטל או הזין סיסמה שגויה
+                        }
+                    }
+                }
+                if (section === 'robot') {
+                    if (isSectionProtected('management') || isSectionProtected('management-robot')) {
+                        if (!requestSectionAccess('management') && !requestSectionAccess('management-robot')) {
+                            return;
                         }
                     }
                 }
