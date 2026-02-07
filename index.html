@@ -5857,7 +5857,7 @@
                                 <span>הפעל רובוט אוטומטי</span>
                             </label>
                             
-                            <div id="robotSettingsPanel" style="display: none; padding-top: 20px; border-top: 1px solid var(--border);">
+                            <div id="robotSettingsPanel" style="display: block; padding-top: 20px; border-top: 1px solid var(--border);">
                                 <div style="margin-bottom: 20px;">
                                     <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--text);">פעולות להפעלה אוטומטית</label>
                                     <p style="font-size: 12px; color: var(--muted); margin-bottom: 8px;">בחר פעולות וגרור לשינוי סדר הביצוע.</p>
@@ -15717,7 +15717,7 @@
             const nextRunEl = document.getElementById('robotNextRun');
             const nextRunTimeEl = document.getElementById('robotNextRunTime');
             if (checkbox) checkbox.checked = robotEnabled;
-            if (panel) panel.style.display = robotEnabled ? 'block' : 'none';
+            if (panel) panel.style.display = 'block';
             if (intervalInput) intervalInput.value = robotSettings.interval || 10;
             if (unitSelect) unitSelect.value = robotSettings.unit || 'minutes';
             if (sequentialRadio) sequentialRadio.checked = (robotSettings.executionMode || 'sequential') === 'sequential';
