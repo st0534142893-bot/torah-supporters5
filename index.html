@@ -5851,6 +5851,11 @@
                             <strong>⚠️ הגבלת פניות:</strong> נדרים פלוס מאפשרים עד 500 פניות לשעה. מומלץ להגדיר מרווח של 10–15 דקות לפחות בין ריצות, במיוחד עם כמה מסכים פתוחים.
                         </div>
                         
+                        <div style="margin-bottom: 25px; display: flex; gap: 12px; flex-wrap: wrap;">
+                            <button class="btn btn-success" id="robotStartBtn" onclick="startRobot()" style="padding: 16px 32px; font-size: 18px; font-weight: 600; min-width: 200px; border-radius: 10px; box-shadow: 0 2px 8px rgba(16,185,129,0.3);">▶️ הפעל רובוט</button>
+                            <button class="btn btn-danger" id="robotStopBtn" onclick="stopRobot()" style="padding: 16px 32px; font-size: 18px; font-weight: 600; min-width: 200px; border-radius: 10px; box-shadow: 0 2px 8px rgba(239,68,68,0.3); display: none;">⏹️ עצור רובוט</button>
+                        </div>
+                        
                         <div style="background: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border);">
                             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600; margin-bottom: 18px; font-size: 15px;">
                                 <input type="checkbox" id="robotEnabledCheckbox" onchange="saveRobotSettings()" style="width: 20px; height: 20px; cursor: pointer;">
@@ -5906,11 +5911,6 @@
                                     <div id="robotNextRun" style="font-size: 12px; color: #666; margin-top: 4px; display: none;">הפעלה הבאה: <span id="robotNextRunTime">—</span></div>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                            <button class="btn btn-success" id="robotStartBtn" onclick="startRobot()" style="display: none;">▶️ הפעל רובוט</button>
-                            <button class="btn btn-danger" id="robotStopBtn" onclick="stopRobot()" style="display: none;">⏹️ עצור רובוט</button>
                         </div>
                         
                         <div style="background: white; border-radius: 10px; padding: 20px; border: 1px solid var(--border);">
@@ -15898,7 +15898,7 @@
         }
         
         function startRobot() {
-            // עוצר את הרובוט הקודם אם הוא פעיל
+            saveRobotSettings();
             if (robotTimer) {
                 clearInterval(robotTimer);
                 robotTimer = null;
