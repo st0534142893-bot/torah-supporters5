@@ -609,9 +609,12 @@
         }
 
         .instructions-section {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 40px 20px;
+            background: linear-gradient(135deg, rgba(245, 230, 211, 0.95) 0%, rgba(255, 248, 220, 0.95) 100%);
+        }
+        #instructionsSection.instructions-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 
         .instructions-panel {
@@ -4246,8 +4249,8 @@
         .app-lock-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(29, 20, 9, 0.6);
-            backdrop-filter: blur(8px);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.85) 0%, rgba(118, 75, 162, 0.9) 100%);
+            backdrop-filter: blur(12px);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -4262,47 +4265,74 @@
         }
 
         .app-lock-dialog {
-            background: rgba(255, 255, 255, 0.96);
-            border: 2px solid var(--primary-gold);
-            border-radius: 28px;
-            padding: 32px;
-            width: min(92vw, 420px);
+            background: rgba(255, 255, 255, 0.98);
+            border: none;
+            border-radius: 24px;
+            padding: 40px 36px;
+            width: min(92vw, 400px);
             text-align: center;
-            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.25);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255,255,255,0.2) inset;
+            animation: appLockFadeIn 0.35s ease;
+        }
+
+        @keyframes appLockFadeIn {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .app-lock-logo {
+            margin-bottom: 20px;
         }
 
         .app-lock-dialog h2 {
-            margin-bottom: 10px;
+            margin: 0 0 8px;
             color: var(--brown-dark);
+            font-size: 24px;
         }
 
         .app-lock-dialog p {
-            margin-bottom: 14px;
+            margin: 0 0 20px;
             color: var(--muted);
             line-height: 1.5;
+            font-size: 15px;
         }
 
         .app-lock-password-input {
             width: 100%;
-            padding: 14px;
-            border-radius: 999px;
-            border: 1px solid var(--border);
+            padding: 16px 20px;
+            border-radius: 12px;
+            border: 2px solid #e5e7eb;
             text-align: center;
             font-size: 18px;
-            margin-bottom: 12px;
+            margin-bottom: 16px;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+
+        .app-lock-password-input:focus {
+            outline: none;
+            border-color: var(--primary-gold);
+        }
+
+        .app-lock-actions .btn {
+            padding: 14px 40px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 12px;
         }
 
         .app-lock-actions {
             display: flex;
             justify-content: center;
-            margin-top: 8px;
+            margin-top: 4px;
         }
 
         .app-lock-error {
             min-height: 24px;
-            margin-top: 14px;
-            color: var(--error);
+            margin-top: 16px;
+            color: #dc2626;
             font-weight: 600;
+            font-size: 14px;
         }
 
         @keyframes fadeInOut {
@@ -5412,11 +5442,12 @@
 <body>
     <div class="app-lock-overlay hidden" id="appLockOverlay" role="dialog" aria-modal="true" aria-labelledby="appLockTitle">
         <div class="app-lock-dialog">
-            <h2 id="appLockTitle">כניסת מנהל</h2>
-            <p>המערכת נעולה. הזן את סיסמת הניהול כדי להמשיך לעבוד.</p>
-            <input type="password" id="appLockPasswordInput" class="app-lock-password-input" placeholder="סיסמה" autocomplete="current-password" onkeydown="handleAppLockKeyDown(event)">
+            <div class="app-lock-logo"><img src="https://i.postimg.cc/ZRMCLxgW/wgw-t-t-dhws.png" alt="לוגו" style="height:64px;"></div>
+            <h2 id="appLockTitle">כניסה למערכת</h2>
+            <p>המערכת נעולה. הזן את סיסמת הניהול כדי להמשיך.</p>
+            <input type="password" id="appLockPasswordInput" class="app-lock-password-input" placeholder="הזן סיסמה" autocomplete="current-password" onkeydown="handleAppLockKeyDown(event)">
             <div class="app-lock-actions">
-                <button class="btn" type="button" onclick="handleAppLockSubmit()">כניסה</button>
+                <button class="btn btn-primary" type="button" onclick="handleAppLockSubmit()">כניסה</button>
             </div>
             <p class="app-lock-error" id="appLockError"></p>
         </div>
@@ -6639,22 +6670,20 @@
                 <!-- הגדרת סיסמה -->
                 <div class="management-content" id="passwordContent">
                     <div class="password-settings-panel">
-                        <h3>הגדרת סיסמה למדורים</h3>
+                        <h3>מסך כניסה והגנת סיסמה</h3>
+                        <div class="password-toggle-row" style="margin-bottom: 16px; padding: 14px; background: #f0f9ff; border-radius: 12px; border: 1px solid #bae6fd;">
+                            <label class="switch-label" style="cursor: pointer;">
+                                <input type="checkbox" id="passwordAppLockToggle">
+                                <span style="font-weight: 600;">דרוש סיסמה במסך הכניסה – נעילת כל התוכנה</span>
+                            </label>
+                            <p style="margin: 8px 0 0 0; font-size: 13px; color: #64748b;">כאשר מסומן, יוצג מסך כניסה יפה לפני גישה לתוכנה. ניתן להפעיל גם בלי לבחור מדורים מוגנים.</p>
+                        </div>
                         <div class="password-toggle-row">
                             <label class="switch-label">
                                 <input type="checkbox" id="passwordEnableToggle">
-                                <span>הפעל דרישת סיסמה למדורים שנבחרו</span>
+                                <span>הפעל דרישת סיסמה למדורים ספציפיים (לאחר הכניסה)</span>
                             </label>
                         </div>
-                        <div class="password-toggle-row">
-                            <label class="switch-label">
-                                <input type="checkbox" id="passwordAppLockToggle">
-                                <span>דרוש סיסמה כבר במסך הכניסה לתוכנה</span>
-                            </label>
-                        </div>
-                        <p class="password-lock-note">
-                            כאשר אפשרות זו פעילה, המערכת תציג מסך נעילה לפני הצגת כל הנתונים ותיפתח רק לאחר הזנת הסיסמה. הסיסמה נשמרת בצד שרת (Google Apps Script) ולא בדפדפן.
-                        </p>
 
                         <div class="password-sections">
                             <h4>בחר אילו מדורים ידרשו סיסמה</h4>
@@ -8290,7 +8319,7 @@
         }
 
         function isAppLockRequired() {
-            return Boolean(serverRequiresAppUnlock || (accessControl?.enabled && accessControl?.password && accessControl?.requireAppUnlock));
+            return Boolean(serverRequiresAppUnlock || (accessControl?.requireAppUnlock && accessControl?.password));
         }
 
         function toggleAppLockOverlay(show) {
@@ -10160,9 +10189,9 @@
                 return;
             }
 
-            accessControl.enabled = enableRequested && !!accessControl.password;
-            accessControl.protectedSections = accessControl.enabled ? selectedSections : [];
             accessControl.requireAppUnlock = Boolean(appLockToggle && appLockToggle.checked);
+            accessControl.enabled = (enableRequested && !!accessControl.password) || accessControl.requireAppUnlock;
+            accessControl.protectedSections = accessControl.enabled ? selectedSections : [];
 
             if (!accessControl.enabled) {
                 accessControl.protectedSections = [];
@@ -15462,7 +15491,7 @@
             let robotEnabled = false, robotTimer = null, robotContinuousRunning = false, robotNextRunTime = null, robotHistory = [];
             let robotSettings = { actionOrder: [...ROBOT_ACTION_IDS], actionEnabled: { sync: false, loadMatrim: false, checkTotal: false, loadSheet: false, saveSheet: false, syncGoogleSheets: false }, interval: 10, unit: 'minutes', executionMode: 'sequential', continuous: false, continuousIntervalSeconds: 60 };
             function migrateRobotSettingsFromLegacy(saved) { if (saved.sync !== undefined || saved.checkTotal !== undefined) { const ae = robotSettings.actionEnabled || {}; ae.sync = saved.sync === true; ae.checkTotal = saved.checkTotal === true; ae.loadSheet = saved.loadSheet === true; ae.saveSheet = saved.saveSheet === true; ae.loadMatrim = ae.loadMatrim || false; ae.syncGoogleSheets = ae.syncGoogleSheets || false; robotSettings.actionEnabled = ae; if (!saved.actionOrder) robotSettings.actionOrder = [...ROBOT_ACTION_IDS]; } }
-            function loadRobotSettings() { storageGetItem('robotSettings', (saved) => { if (saved) { robotSettings = { actionOrder: [...ROBOT_ACTION_IDS], actionEnabled: { sync: false, loadMatrim: false, checkTotal: false, loadSheet: false, saveSheet: false, syncGoogleSheets: false }, interval: 10, unit: 'minutes', executionMode: 'sequential', continuous: false, continuousIntervalSeconds: 60, ...saved }; migrateRobotSettingsFromLegacy(saved); robotSettings.continuous = robotSettings.continuous === true; robotSettings.interval = parseFloat(robotSettings.interval) || 10; robotSettings.unit = robotSettings.unit || 'minutes'; robotSettings.executionMode = robotSettings.executionMode || 'sequential'; robotSettings.continuousIntervalSeconds = Math.max(15, Math.min(300, parseInt(robotSettings.continuousIntervalSeconds, 10) || 60)); robotEnabled = robotSettings.enabled === true; if (!robotSettings.actionOrder || !Array.isArray(robotSettings.actionOrder)) robotSettings.actionOrder = [...ROBOT_ACTION_IDS]; if (!robotSettings.actionEnabled || typeof robotSettings.actionEnabled !== 'object') robotSettings.actionEnabled = { sync: false, loadMatrim: false, checkTotal: false, loadSheet: false, saveSheet: false, syncGoogleSheets: false }; storageSetItem('robotSettings', robotSettings); if (robotEnabled) setTimeout(() => startRobot(), 500); } else { robotSettings.actionOrder = [...ROBOT_ACTION_IDS]; robotSettings.actionEnabled = { sync: false, loadMatrim: false, checkTotal: false, loadSheet: false, saveSheet: false, syncGoogleSheets: false }; robotEnabled = false; } renderRobotActionsList(); updateRobotUI(); }); }
+            function loadRobotSettings() { storageGetItem('robotSettings', (saved) => { if (saved) { robotSettings = { actionOrder: [...ROBOT_ACTION_IDS], actionEnabled: { sync: false, loadMatrim: false, checkTotal: false, loadSheet: false, saveSheet: false, syncGoogleSheets: false }, interval: 10, unit: 'minutes', executionMode: 'sequential', continuous: false, continuousIntervalSeconds: 60, ...saved }; migrateRobotSettingsFromLegacy(saved); robotSettings.continuous = robotSettings.continuous === true; robotSettings.interval = parseFloat(robotSettings.interval) || 10; robotSettings.unit = robotSettings.unit || 'minutes'; robotSettings.executionMode = robotSettings.executionMode || 'sequential'; robotSettings.continuousIntervalSeconds = Math.max(15, Math.min(300, parseInt(robotSettings.continuousIntervalSeconds, 10) || 60)); robotEnabled = robotSettings.enabled === true; if (!robotSettings.actionOrder || !Array.isArray(robotSettings.actionOrder)) robotSettings.actionOrder = [...ROBOT_ACTION_IDS]; if (!robotSettings.actionEnabled || typeof robotSettings.actionEnabled !== 'object') robotSettings.actionEnabled = { sync: false, loadMatrim: false, checkTotal: false, loadSheet: false, saveSheet: false, syncGoogleSheets: false }; if (robotEnabled) setTimeout(() => startRobot(), 500); } else { robotSettings.actionOrder = [...ROBOT_ACTION_IDS]; robotSettings.actionEnabled = { sync: false, loadMatrim: false, checkTotal: false, loadSheet: false, saveSheet: false, syncGoogleSheets: false }; robotEnabled = false; } renderRobotActionsList(); updateRobotUI(); }); }
             function renderRobotActionsList() { const listEl = document.getElementById('robotActionsList'); if (!listEl) return; const order = robotSettings.actionOrder || [...ROBOT_ACTION_IDS]; const enabled = robotSettings.actionEnabled || {}; listEl.innerHTML = order.map((id) => { const cfg = robotActionsConfig[id]; if (!cfg) return ''; const checked = enabled[id] === true; return `<div class="robot-action-row" data-action-id="${id}" draggable="true" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #f8f9fa; border-radius: 8px; cursor: grab; border: 1px solid #e9ecef;"><span class="robot-drag-handle" style="cursor: grab; color: #999; font-size: 18px;">⋮⋮</span><input type="checkbox" id="robotAction_${id}" ${checked ? 'checked' : ''} onchange="toggleRobotAction('${id}'); saveRobotSettings();" style="width: 18px; height: 18px; cursor: pointer;"><label for="robotAction_${id}" style="flex: 1; cursor: pointer; margin: 0;">${cfg.name}</label></div>`; }).join(''); attachRobotListDragListeners(); }
             function attachRobotListDragListeners() { const listEl = document.getElementById('robotActionsList'); if (!listEl) return; let draggedEl = null; listEl.querySelectorAll('.robot-action-row').forEach(row => { row.addEventListener('dragstart', (e) => { draggedEl = row; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', row.dataset.actionId); row.style.opacity = '0.5'; }); row.addEventListener('dragend', (e) => { row.style.opacity = '1'; draggedEl = null; }); row.addEventListener('dragover', (e) => { e.preventDefault(); if (draggedEl && draggedEl !== row) row.style.borderTop = '2px solid #1976d2'; }); row.addEventListener('dragleave', (e) => { row.style.borderTop = '1px solid #e9ecef'; }); row.addEventListener('drop', (e) => { e.preventDefault(); row.style.borderTop = '1px solid #e9ecef'; if (!draggedEl || draggedEl === row) return; const order = [...(robotSettings.actionOrder || ROBOT_ACTION_IDS)]; const fromId = draggedEl.dataset.actionId; const toId = row.dataset.actionId; const fromIdx = order.indexOf(fromId); const toIdx = order.indexOf(toId); if (fromIdx >= 0 && toIdx >= 0) { order.splice(fromIdx, 1); order.splice(toIdx, 0, fromId); robotSettings.actionOrder = order; storageSetItem('robotSettings', robotSettings); renderRobotActionsList(); } draggedEl = null; }); }); }
             window.toggleRobotAction = function(id) { if (!robotSettings.actionEnabled) robotSettings.actionEnabled = {}; robotSettings.actionEnabled[id] = document.getElementById('robotAction_' + id)?.checked === true; };
@@ -15470,7 +15499,7 @@
             function saveRobotSettings(skipRestart) { const checkbox = document.getElementById('robotEnabledCheckbox'); if (checkbox) robotEnabled = checkbox.checked; ROBOT_ACTION_IDS.forEach(id => { const cb = document.getElementById('robotAction_' + id); if (cb && robotSettings.actionEnabled) robotSettings.actionEnabled[id] = cb.checked === true; }); const intervalInput = document.getElementById('robotIntervalInput'); const unitSelect = document.getElementById('robotIntervalUnit'); const continuousCheckbox = document.getElementById('robotContinuousMode'); const continuousIntervalInput = document.getElementById('robotContinuousIntervalInput'); const seqRadio = document.getElementById('robotSequentialMode'); const parRadio = document.getElementById('robotParallelMode'); if (intervalInput) robotSettings.interval = parseFloat(intervalInput.value) || 10; if (unitSelect) robotSettings.unit = unitSelect.value; if (continuousCheckbox) robotSettings.continuous = continuousCheckbox.checked === true; if (continuousIntervalInput) robotSettings.continuousIntervalSeconds = Math.max(15, Math.min(300, parseInt(continuousIntervalInput.value, 10) || 60)); if (seqRadio && seqRadio.checked) robotSettings.executionMode = 'sequential'; if (parRadio && parRadio.checked) robotSettings.executionMode = 'parallel'; robotSettings.enabled = robotEnabled; storageSetItem('robotSettings', robotSettings); updateRobotUI(); if (!skipRestart) { if (robotEnabled) startRobot(); else stopRobot(); } }
             function updateRobotIntervalDisplay() { const intervalInput = document.getElementById('robotIntervalInput'); const unitSelect = document.getElementById('robotIntervalUnit'); const display = document.getElementById('robotIntervalDisplay'); const continuousCheckbox = document.getElementById('robotContinuousMode'); if (!display) return; if (continuousCheckbox && continuousCheckbox.checked) { display.textContent = 'הרובוט יפעיל את הכפתורים הנבחרים ברצף עדכונים שוטפים'; return; } if (!intervalInput || !unitSelect) return; const value = parseFloat(intervalInput.value) || 10; const unit = unitSelect.value; display.textContent = unit === 'hours' ? `הרובוט יפעיל כל ${value} שעות` : `הרובוט יפעיל כל ${value} דקות`; }
             function addRobotHistory(msg, type) { robotHistory.unshift({ t: new Date().toLocaleTimeString('he-IL'), msg, type: type || 'info' }); const el = document.getElementById('robotHistory'); if (!el) return; const inner = el.querySelector('.robot-history-inner') || (function(){ const d = document.createElement('div'); d.className = 'robot-history-inner'; el.innerHTML = ''; el.appendChild(d); return d; })(); inner.innerHTML = robotHistory.slice(0, 80).map(h => { const c = { success: '#22c55e', error: '#ef4444', warning: '#f59e0b', info: '#6b7280' }[h.type] || '#6b7280'; return `<div style="margin:4px 0;color:${c}">[${h.t}] ${h.msg}</div>`; }).join(''); }
-            function updateRobotUI() { try { const savedSettings = localStorage.getItem('robotSettings'); if (savedSettings) { const p = JSON.parse(savedSettings); if (p.enabled !== undefined) robotEnabled = p.enabled === true; if (p.continuous !== undefined) robotSettings.continuous = p.continuous === true; if (p.interval !== undefined) robotSettings.interval = parseFloat(p.interval) || 10; if (p.unit !== undefined) robotSettings.unit = p.unit || 'minutes'; if (p.actionEnabled) robotSettings.actionEnabled = p.actionEnabled; if (p.executionMode) robotSettings.executionMode = p.executionMode; } } catch(e) {} const checkbox = document.getElementById('robotEnabledCheckbox'); const panel = document.getElementById('robotSettingsPanel'); if (checkbox) checkbox.checked = robotEnabled; if (panel) panel.style.display = 'block'; const intervalInput = document.getElementById('robotIntervalInput'); const unitSelect = document.getElementById('robotIntervalUnit'); const continuousCheckbox = document.getElementById('robotContinuousMode'); const continuousIntervalInput = document.getElementById('robotContinuousIntervalInput'); const seqRadio = document.getElementById('robotSequentialMode'); const parRadio = document.getElementById('robotParallelMode'); if (intervalInput) intervalInput.value = robotSettings.interval || 10; if (unitSelect) unitSelect.value = robotSettings.unit || 'minutes'; if (continuousCheckbox) continuousCheckbox.checked = robotSettings.continuous === true; if (continuousIntervalInput) continuousIntervalInput.value = robotSettings.continuousIntervalSeconds || 60; if (seqRadio) seqRadio.checked = (robotSettings.executionMode || 'sequential') === 'sequential'; if (parRadio) parRadio.checked = (robotSettings.executionMode || 'sequential') === 'parallel'; ROBOT_ACTION_IDS.forEach(id => { const cb = document.getElementById('robotAction_' + id); if (cb && robotSettings.actionEnabled) cb.checked = robotSettings.actionEnabled[id] === true; }); toggleContinuousMode(); updateRobotIntervalDisplay(); const startBtn = document.getElementById('robotStartBtn'); const stopBtn = document.getElementById('robotStopBtn'); const statusEl = document.getElementById('robotStatus'); if (startBtn) startBtn.style.display = !robotEnabled ? 'block' : 'none'; if (stopBtn) stopBtn.style.display = robotEnabled ? 'block' : 'none'; if (statusEl) statusEl.textContent = robotEnabled ? 'הרובוט פעיל' : 'הרובוט כבוי'; const nextRunEl = document.getElementById('robotNextRun'); const nextRunTimeEl = document.getElementById('robotNextRunTime'); if (nextRunEl && nextRunTimeEl) { if (robotEnabled && !robotSettings.continuous && robotNextRunTime) { nextRunEl.style.display = 'block'; const diff = Math.max(0, robotNextRunTime - Date.now()); const mins = Math.floor(diff / 60000); const secs = Math.floor((diff % 60000) / 1000); nextRunTimeEl.textContent = mins > 0 ? mins + ' דק\' ' + secs + ' שנ\'' : secs + ' שניות'; } else { nextRunEl.style.display = 'none'; } } }
+            function updateRobotUI() { const checkbox = document.getElementById('robotEnabledCheckbox'); const panel = document.getElementById('robotSettingsPanel'); if (checkbox) checkbox.checked = robotEnabled; if (panel) panel.style.display = 'block'; const intervalInput = document.getElementById('robotIntervalInput'); const unitSelect = document.getElementById('robotIntervalUnit'); const continuousCheckbox = document.getElementById('robotContinuousMode'); const continuousIntervalInput = document.getElementById('robotContinuousIntervalInput'); const seqRadio = document.getElementById('robotSequentialMode'); const parRadio = document.getElementById('robotParallelMode'); if (intervalInput) intervalInput.value = robotSettings.interval || 10; if (unitSelect) unitSelect.value = robotSettings.unit || 'minutes'; if (continuousCheckbox) continuousCheckbox.checked = robotSettings.continuous === true; if (continuousIntervalInput) continuousIntervalInput.value = robotSettings.continuousIntervalSeconds || 60; if (seqRadio) seqRadio.checked = (robotSettings.executionMode || 'sequential') === 'sequential'; if (parRadio) parRadio.checked = (robotSettings.executionMode || 'sequential') === 'parallel'; ROBOT_ACTION_IDS.forEach(id => { const cb = document.getElementById('robotAction_' + id); if (cb && robotSettings.actionEnabled) cb.checked = robotSettings.actionEnabled[id] === true; }); toggleContinuousMode(); updateRobotIntervalDisplay(); const startBtn = document.getElementById('robotStartBtn'); const stopBtn = document.getElementById('robotStopBtn'); const statusEl = document.getElementById('robotStatus'); if (startBtn) startBtn.style.display = !robotEnabled ? 'block' : 'none'; if (stopBtn) stopBtn.style.display = robotEnabled ? 'block' : 'none'; if (statusEl) statusEl.textContent = robotEnabled ? 'הרובוט פעיל' : 'הרובוט כבוי'; const nextRunEl = document.getElementById('robotNextRun'); const nextRunTimeEl = document.getElementById('robotNextRunTime'); if (nextRunEl && nextRunTimeEl) { if (robotEnabled && !robotSettings.continuous && robotNextRunTime) { nextRunEl.style.display = 'block'; const diff = Math.max(0, robotNextRunTime - Date.now()); const mins = Math.floor(diff / 60000); const secs = Math.floor((diff % 60000) / 1000); nextRunTimeEl.textContent = mins > 0 ? mins + ' דק\' ' + secs + ' שנ\'' : secs + ' שניות'; } else { nextRunEl.style.display = 'none'; } } }
             function updateRobotNextRun() { if (robotSettings.continuous) return; const iv = robotSettings.interval || 10; const ms = robotSettings.unit === 'hours' ? iv * 60 * 60 * 1000 : iv * 60 * 1000; robotNextRunTime = Date.now() + ms; }
             function runRobotActions() { if (!robotEnabled) return; const order = robotSettings.actionOrder || [...ROBOT_ACTION_IDS]; const enabled = robotSettings.actionEnabled || {}; const items = []; for (const id of order) { if (enabled[id] === true && robotActionsConfig[id]) items.push(robotActionsConfig[id]); } if (items.length === 0) { addRobotHistory('סמן לפחות פעולה אחת', 'warning'); return; } addRobotHistory('מתחיל ' + items.length + ' פעולות...', 'info'); const exec = robotSettings.executionMode === 'parallel' ? async () => { const results = await Promise.all(items.map(async (cfg) => { addRobotHistory('▶ ' + cfg.name, 'info'); try { await cfg.func(); addRobotHistory('✓ ' + cfg.name, 'success'); return true; } catch (e) { addRobotHistory('✗ ' + cfg.name + ': ' + (e.message || e), 'error'); return false; } })); const ok = results.filter(Boolean).length; addRobotHistory('הושלם: ' + ok + '/' + items.length + ' הצליחו', ok === items.length ? 'success' : 'warning'); } : async () => { let ok = 0; for (const cfg of items) { addRobotHistory('▶ ' + cfg.name, 'info'); try { await cfg.func(); addRobotHistory('✓ ' + cfg.name, 'success'); ok++; } catch (e) { addRobotHistory('✗ ' + cfg.name + ': ' + (e.message || e), 'error'); } } addRobotHistory('הושלם: ' + ok + '/' + items.length + ' הצליחו', ok === items.length ? 'success' : 'warning'); }; exec().catch(() => {}); }
             function startRobot() { saveRobotSettings(true); if (robotTimer) { clearInterval(robotTimer); robotTimer = null; } robotContinuousRunning = false; robotEnabled = true; robotSettings.enabled = true; storageSetItem('robotSettings', robotSettings); const isContinuous = robotSettings.continuous === true; if (isContinuous) { robotContinuousRunning = true; const intervalSec = Math.max(15, robotSettings.continuousIntervalSeconds || 60); const runC = async () => { if (!robotEnabled || !robotSettings.continuous || !robotContinuousRunning) return; await runRobotActions(); setTimeout(runC, intervalSec * 1000); }; runC(); addRobotHistory('הרובוט הופעל - עדכונים שוטפים', 'success'); } else { runRobotActions(); const iv = robotSettings.interval || 10; const ms = robotSettings.unit === 'hours' ? iv * 60 * 60 * 1000 : iv * 60 * 1000; updateRobotNextRun(); robotNextRunTime = Date.now() + ms; robotTimer = setInterval(() => { if (!robotEnabled) { clearInterval(robotTimer); robotTimer = null; return; } runRobotActions(); updateRobotNextRun(); robotNextRunTime = Date.now() + ms; }, ms); addRobotHistory('הרובוט הופעל - כל ' + iv + (robotSettings.unit === 'hours' ? ' שעות' : ' דקות'), 'success'); } updateRobotUI(); }
