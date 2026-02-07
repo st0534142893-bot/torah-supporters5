@@ -7121,6 +7121,13 @@
     <div class="notification" id="notification"></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
+        // Stubs לרובוט - נטענים מיד כדי למנוע ReferenceError אם המשתמש לוחץ לפני loadData
+        if (typeof window !== 'undefined') {
+            window.saveRobotSettings = window.saveRobotSettings || function(){};
+            window.updateRobotUI = window.updateRobotUI || function(){};
+            window.toggleContinuousMode = window.toggleContinuousMode || function(){};
+            window.updateRobotIntervalDisplay = window.updateRobotIntervalDisplay || function(){};
+        }
         // Wrapper functions ל-Apps Script - החלפת localStorage
         // פונקציה לבדיקה אם אנחנו ב-Apps Script (בדיקה דינמית)
         function isAppsScript() {
@@ -12404,7 +12411,7 @@
                     loadLiveViewSettings();
                 } else if (tabName === 'robot') {
                     // רק מעדכן את ה-UI עם הערכים הנוכחיים, לא טוען מחדש מ-localStorage
-                    updateRobotUI();
+                    if (typeof window.updateRobotUI === 'function') window.updateRobotUI();
                 } else if (tabName === 'password') {
                     initPasswordSettingsUI();
                 } else if (tabName === 'calculator') {
@@ -15667,7 +15674,12 @@
                 setTimeout(() => startRobot(), 100);
             }
         }
-        if (typeof window !== 'undefined') window.saveRobotSettings = saveRobotSettings;
+        if (typeof window !== 'undefined') {
+            window.saveRobotSettings = saveRobotSettings;
+            window.updateRobotUI = updateRobotUI;
+            window.toggleContinuousMode = toggleContinuousMode;
+            window.updateRobotIntervalDisplay = updateRobotIntervalDisplay;
+        }
         
         function updateRobotIntervalDisplay() {
             const intervalInput = document.getElementById('robotIntervalInput');
@@ -16010,6 +16022,7 @@
         window.stopRobot = stopRobot;
         window.toggleContinuousMode = toggleContinuousMode;
         window.saveRobotSettings = saveRobotSettings;
+        window.updateRobotUI = updateRobotUI;
         window.updateRobotIntervalDisplay = updateRobotIntervalDisplay;
         
         // עדכון זמן הפעלה הבאה כל שנייה
