@@ -20286,13 +20286,57 @@
                     }
                 }
                 
-                // טעינת הגדרות (כולל רובוט – כדי שיהיה זהה בכל מכשיר/חשבון)
+                // טעינת כל ההגדרות והנתונים מהגליון (כדי שיהיה זהה בכל מכשיר/חשבון)
                 if (result.settings) {
-                    if (result.settings.defaultDonorGoal) {
-                        defaultDonorGoal = Number(result.settings.defaultDonorGoal);
+                    const s = result.settings;
+                    if (s.defaultDonorGoal != null) defaultDonorGoal = Number(s.defaultDonorGoal);
+                    if (s.matchingGoal != null && typeof matchingGoal !== 'undefined') matchingGoal = Number(s.matchingGoal);
+                    if (s.addresses && Array.isArray(s.addresses)) {
+                        addresses = s.addresses;
+                        try { localStorage.setItem('addresses', JSON.stringify(addresses)); storageSetItem('addresses', addresses); } catch (e) {}
+                        if (typeof updateAddressesList === 'function') updateAddressesList();
                     }
-                    if (result.settings.robotSettings && typeof result.settings.robotSettings === 'object') {
-                        const rs = result.settings.robotSettings;
+                    if (s.liveViewSettings && typeof liveViewSettings !== 'undefined') {
+                        Object.assign(liveViewSettings, s.liveViewSettings);
+                        try { localStorage.setItem('liveViewSettings', JSON.stringify(liveViewSettings)); storageSetItem('liveViewSettings', liveViewSettings); } catch (e) {}
+                        if (typeof applyLiveViewSettings === 'function') applyLiveViewSettings();
+                    }
+                    if (s.campaignPlanning && typeof campaignPlanning !== 'undefined') {
+                        Object.assign(campaignPlanning, s.campaignPlanning);
+                        try { localStorage.setItem('campaignPlanning', JSON.stringify(campaignPlanning)); storageSetItem('campaignPlanning', campaignPlanning); } catch (e) {}
+                    }
+                    if (s.accessControl && typeof accessControl !== 'undefined') {
+                        Object.assign(accessControl, s.accessControl);
+                        try { localStorage.setItem('accessControl', JSON.stringify(accessControl)); storageSetItem('accessControl', accessControl); } catch (e) {}
+                        if (typeof initPasswordSettingsUI === 'function') initPasswordSettingsUI();
+                    }
+                    if (s.appSettings) {
+                        if (s.appSettings.matchingGoal != null && typeof matchingGoal !== 'undefined') matchingGoal = Number(s.appSettings.matchingGoal);
+                        if (s.appSettings.defaultGroupGoal != null && typeof defaultGroupGoal !== 'undefined') defaultGroupGoal = Number(s.appSettings.defaultGroupGoal);
+                        if (s.appSettings.defaultDonorGoal != null && typeof defaultDonorGoal !== 'undefined') defaultDonorGoal = Number(s.appSettings.defaultDonorGoal);
+                        if (s.appSettings.totalRecruiters != null && typeof totalRecruiters !== 'undefined') totalRecruiters = Number(s.appSettings.totalRecruiters);
+                        try { const appS = { matchingGoal, defaultGroupGoal, defaultDonorGoal, totalRecruiters }; storageSetItem('appSettings', appS); } catch (e) {}
+                    }
+                    if (s.toolkitTips && typeof toolkitTips !== 'undefined') {
+                        Object.assign(toolkitTips, s.toolkitTips);
+                        try { localStorage.setItem('toolkitTips', JSON.stringify(toolkitTips)); storageSetItem('toolkitTips', toolkitTips); } catch (e) {}
+                    }
+                    if (s.scoutsSchedule && typeof scoutsSchedule !== 'undefined') {
+                        scoutsSchedule = typeof normalizeScoutsSchedule === 'function' ? normalizeScoutsSchedule(s.scoutsSchedule) : s.scoutsSchedule;
+                        try { localStorage.setItem('scoutsSchedule', JSON.stringify(scoutsSchedule)); storageSetItem('scoutsSchedule', scoutsSchedule); } catch (e) {}
+                    }
+                    if (s.groomGrants && typeof groomGrants !== 'undefined') {
+                        const raw = Array.isArray(s.groomGrants) ? s.groomGrants : (s.groomGrants.grants ? s.groomGrants.grants : []);
+                        groomGrants = typeof normalizeGroomGrants === 'function' ? normalizeGroomGrants(raw) : raw;
+                        try { localStorage.setItem('groomGrants', JSON.stringify(groomGrants)); storageSetItem('groomGrants', groomGrants); } catch (e) {}
+                        if (typeof renderGroomGrantList === 'function') renderGroomGrantList();
+                    }
+                    if (s.financeState && typeof financeState !== 'undefined') {
+                        Object.assign(financeState, s.financeState);
+                        try { localStorage.setItem('financeState', JSON.stringify(financeState)); storageSetItem('financeState', financeState); } catch (e) {}
+                    }
+                    if (s.robotSettings && typeof robotSettings !== 'undefined') {
+                        const rs = s.robotSettings;
                         const ae = rs.actionEnabled && typeof rs.actionEnabled === 'object' ? rs.actionEnabled : {};
                         if (rs.sync !== undefined) ae.sync = rs.sync === true;
                         if (rs.checkTotal !== undefined) ae.checkTotal = rs.checkTotal === true;
@@ -20306,7 +20350,8 @@
                             executionMode: (rs.executionMode === 'parallel' ? 'parallel' : 'sequential'),
                             continuous: rs.continuous === true,
                             continuousIntervalSeconds: Math.max(15, Math.min(300, parseInt(rs.continuousIntervalSeconds, 10) || 60)),
-                            enabled: rs.enabled === true
+                            enabled: rs.enabled === true,
+                            requireAppUnlock: rs.requireAppUnlock === true
                         };
                         robotEnabled = robotSettings.enabled;
                         try {
@@ -20520,7 +20565,17 @@
                     groups: groups,
                     settings: {
                         defaultDonorGoal: defaultDonorGoal,
-                        robotSettings: rs || {}
+                        robotSettings: rs || {},
+                        addresses: typeof addresses !== 'undefined' ? addresses : [],
+                        liveViewSettings: typeof liveViewSettings !== 'undefined' ? liveViewSettings : null,
+                        campaignPlanning: typeof campaignPlanning !== 'undefined' ? campaignPlanning : null,
+                        accessControl: typeof accessControl !== 'undefined' ? accessControl : null,
+                        matchingGoal: typeof matchingGoal !== 'undefined' ? matchingGoal : null,
+                        appSettings: { matchingGoal: typeof matchingGoal !== 'undefined' ? matchingGoal : null, defaultGroupGoal: typeof defaultGroupGoal !== 'undefined' ? defaultGroupGoal : null, defaultDonorGoal: typeof defaultDonorGoal !== 'undefined' ? defaultDonorGoal : null, totalRecruiters: typeof totalRecruiters !== 'undefined' ? totalRecruiters : null },
+                        toolkitTips: typeof toolkitTips !== 'undefined' ? toolkitTips : null,
+                        scoutsSchedule: typeof scoutsSchedule !== 'undefined' ? scoutsSchedule : null,
+                        groomGrants: typeof groomGrants !== 'undefined' ? groomGrants : null,
+                        financeState: typeof financeState !== 'undefined' ? financeState : null
                     }
                 };
                 
@@ -20542,7 +20597,7 @@
                     throw new Error(result.error);
                 }
                 
-                const message = `✅ נשמרו ${donors.length} מתרימים ו-${groups.length} קבוצות לגליון`;
+                const message = `✅ נשמרו ${donors.length} מתרימים, ${groups.length} קבוצות + כתובות והגדרות לגליון`;
                 console.log('💾 [Google Sheets] הצלחה!', message);
                 
                 return { success: true };
@@ -20567,12 +20622,26 @@
             showGoogleSheetsStatus('🔄 מסנכרן נתונים...', 'info');
             
             try {
+                let rs = null;
+                try { rs = typeof robotSettings !== 'undefined' ? robotSettings : null; } catch (_) {}
+                if (!rs) try { rs = JSON.parse(localStorage.getItem('robotSettings') || '{}'); } catch (_) { rs = {}; }
                 const dataToSync = {
                     action: 'syncAll',
                     donors: donors,
                     groups: groups,
                     settings: {
-                        defaultDonorGoal: defaultDonorGoal
+                        defaultDonorGoal: defaultDonorGoal,
+                        robotSettings: rs || {},
+                        addresses: typeof addresses !== 'undefined' ? addresses : [],
+                        liveViewSettings: typeof liveViewSettings !== 'undefined' ? liveViewSettings : null,
+                        campaignPlanning: typeof campaignPlanning !== 'undefined' ? campaignPlanning : null,
+                        accessControl: typeof accessControl !== 'undefined' ? accessControl : null,
+                        matchingGoal: typeof matchingGoal !== 'undefined' ? matchingGoal : null,
+                        appSettings: { matchingGoal: typeof matchingGoal !== 'undefined' ? matchingGoal : null, defaultGroupGoal: typeof defaultGroupGoal !== 'undefined' ? defaultGroupGoal : null, defaultDonorGoal: typeof defaultDonorGoal !== 'undefined' ? defaultDonorGoal : null, totalRecruiters: typeof totalRecruiters !== 'undefined' ? totalRecruiters : null },
+                        toolkitTips: typeof toolkitTips !== 'undefined' ? toolkitTips : null,
+                        scoutsSchedule: typeof scoutsSchedule !== 'undefined' ? scoutsSchedule : null,
+                        groomGrants: typeof groomGrants !== 'undefined' ? groomGrants : null,
+                        financeState: typeof financeState !== 'undefined' ? financeState : null
                     }
                 };
                 
@@ -20592,11 +20661,25 @@
                 }
                 
                 // עדכון הנתונים המקומיים עם התוצאה הממוזגת
-                if (result.donors && Array.isArray(result.donors)) {
-                    donors = result.donors;
-                }
-                if (result.groups && Array.isArray(result.groups)) {
-                    groups = result.groups;
+                if (result.donors && Array.isArray(result.donors)) donors = result.donors;
+                if (result.groups && Array.isArray(result.groups)) groups = result.groups;
+                if (result.settings) {
+                    const s = result.settings;
+                    if (s.defaultDonorGoal != null) defaultDonorGoal = Number(s.defaultDonorGoal);
+                    if (s.addresses && Array.isArray(s.addresses)) { addresses = s.addresses; if (typeof updateAddressesList === 'function') updateAddressesList(); }
+                    if (s.liveViewSettings && typeof liveViewSettings !== 'undefined') { Object.assign(liveViewSettings, s.liveViewSettings); if (typeof applyLiveViewSettings === 'function') applyLiveViewSettings(); }
+                    if (s.campaignPlanning && typeof campaignPlanning !== 'undefined') Object.assign(campaignPlanning, s.campaignPlanning);
+                    if (s.accessControl && typeof accessControl !== 'undefined') { Object.assign(accessControl, s.accessControl); if (typeof initPasswordSettingsUI === 'function') initPasswordSettingsUI(); }
+                    if (s.appSettings) {
+                        if (s.appSettings.matchingGoal != null) matchingGoal = Number(s.appSettings.matchingGoal);
+                        if (s.appSettings.defaultGroupGoal != null) defaultGroupGoal = Number(s.appSettings.defaultGroupGoal);
+                        if (s.appSettings.defaultDonorGoal != null) defaultDonorGoal = Number(s.appSettings.defaultDonorGoal);
+                        if (s.appSettings.totalRecruiters != null) totalRecruiters = Number(s.appSettings.totalRecruiters);
+                    }
+                    if (s.toolkitTips && typeof toolkitTips !== 'undefined') Object.assign(toolkitTips, s.toolkitTips);
+                    if (s.scoutsSchedule && typeof scoutsSchedule !== 'undefined') scoutsSchedule = typeof normalizeScoutsSchedule === 'function' ? normalizeScoutsSchedule(s.scoutsSchedule) : s.scoutsSchedule;
+                    if (s.groomGrants && typeof groomGrants !== 'undefined') { const raw = Array.isArray(s.groomGrants) ? s.groomGrants : (s.groomGrants.grants || []); groomGrants = typeof normalizeGroomGrants === 'function' ? normalizeGroomGrants(raw) : raw; if (typeof renderGroomGrantList === 'function') renderGroomGrantList(); }
+                    if (s.financeState && typeof financeState !== 'undefined') Object.assign(financeState, s.financeState);
                 }
                 
                 // שמירה מקומית ועדכון תצוגה
