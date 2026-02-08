@@ -18117,9 +18117,9 @@
         }
 
         // פונקציה ראשית לסנכרון עם נדרים פלוס (משתמש ב-MatchPlus API)
-        // 🔄 סנכרון דו-כיווני: מעדכן סכומים לנדרים פלוס וגם מושך נתונים משם
-        // pullOnly = true: רק מושך מנדרים (לסנכרון אוטומטי) - לא דוחף לנדרים! מונע אינפלציה וחסימת עמותה.
-        async function syncWithNedarimPlus(silent = false, pullOnly = false) {
+        // 📥 סנכרון משיכה בלבד – כמו הקוד הישן שעובד! מושך נתונים מנדרים פלוס, לא דוחף.
+        // עדכון סכומים לנדרים מתבצע רק דרך: הוספת מתרים, הוספת תשלום (עם אישור משתמש).
+        async function syncWithNedarimPlus(silent = false, pullOnly = true) {
             if (syncWithNedarimPlusInProgress) {
                 console.warn('⚠️ [סנכרון] סנכרון כבר רץ – דילוג (מונע כפילות דלתות בנדרים פלוס)');
                 return;
@@ -18145,8 +18145,8 @@
                 console.log(pullOnly ? '🔄 מתחיל משיכה מנדרים פלוס (ללא דחיפה לנדרים)...' : '🔄 מתחיל סנכרון דו-כיווני עם נדרים פלוס...');
                 console.log('═══════════════════════════════════════════════════════');
 
-                // ========== שלב 1: עדכון סכומים לנדרים פלוס (מדולג בסנכרון אוטומטי!) ==========
-                if (!pullOnly) {
+                // ========== שלב 1: דחיפה לנדרים – כבויה! (כמו הקוד הישן – רק משיכה, מונע אינפלציה) ==========
+                if (false && !pullOnly) {  // לא דוחף – סנכרון = משיכה בלבד
                 if (NEDARIM_CONFIG.blockPushToNedarim) {
                     console.warn('🛑 [חירום] דחיפה לנדרים חסומה – מדלגים על שלב 1 (לא שולחים עדכונים). רק מושכים נתונים.');
                     if (!silent) showNedarimStatus('דחיפה חסומה – רק מושך נתונים מנדרים', 'warning');
@@ -18570,8 +18570,24 @@
                     });
 
                     if (existingDonor) {
-                        // מתרים כבר קיים בתוכנה (לפי מספר מתרים) – לא דורסים ולא מעדכנים מנדרים
-                        console.log(`⏭️ מתרים "${matrimName}" (מס' ${matrimIdStr}) כבר קיים בתוכנה – מדלג (לא מעדכן)`);
+                        // מתרים קיים – מעדכן סכום מנדרים פלוס (כמו הקוד הישן שעובד)
+                        const oldAmount = existingDonor.amount || 0;
+                        existingDonor.amount = matrimAmount;
+                        if (matrimGoal > 0) existingDonor.personalGoal = matrimGoal;
+                        if (!existingDonor.nedarimMatrimId) existingDonor.nedarimMatrimId = matrimIdStr;
+                        const delta = matrimAmount - oldAmount;
+                        if (delta !== 0) {
+                            updatedDonors++;
+                            if (!Array.isArray(existingDonor.history)) existingDonor.history = [];
+                            existingDonor.history.unshift({
+                                id: Date.now() + Math.random(),
+                                date: new Date().toISOString(),
+                                delta: delta,
+                                amountAfter: existingDonor.amount,
+                                source: 'nedarim_plus',
+                                note: `עדכון מנדרים פלוס - סכום: ${matrimAmount} ש"ח`
+                            });
+                        }
                         return;
                     }
 
@@ -18669,15 +18685,13 @@
                     updateLiveView(false); // לא immediate כדי לא להפריע לגלילה
                 }
 
-                // הודעת הצלחה
-                let message = `סנכרון דו-כיווני הושלם! ${matrimList.length} מתרימים | ${updatedToNedarim} עודכנו בנדרים פלוס | ${updatedDonors} עודכנו מהתוכנה`;
+                // הודעת הצלחה (סנכרון משיכה בלבד – כמו הקוד הישן)
+                let message = `סנכרון הושלם! ${matrimList.length} מתרימים | ${updatedDonors} עודכנו מהתוכנה`;
                 message += ` | סכום כולל: ${finalTotalFromDonors.toLocaleString()} ש"ח`;
                 if (movedToNedarimGroup > 0) {
                     message += ` | ${movedToNedarimGroup} מתרימים הועברו לקבוצה "נדרים פלוס"`;
                 }
-                if (failedUpdates > 0) {
-                    message += ` | ⚠️ ${failedUpdates} עדכונים נכשלו`;
-                }
+                // (אין עוד דחיפה לנדרים – סנכרון משיכה בלבד)
                 
                 if (!silent) {
                 showNedarimStatus(message, 'success');
