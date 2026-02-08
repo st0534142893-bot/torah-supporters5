@@ -12450,16 +12450,20 @@
             step();
         }
         function updateHomeStats() {
-            // סכום שנאסף = מ-API אם נטען (מקור האמת מנדרים פלוס), אחרת סכום המתרימים במערכת
-            const fromApi = (NEDARIM_CONFIG.apiDataLoaded && NEDARIM_CONFIG.totalDonatedFromAPI != null && NEDARIM_CONFIG.totalDonatedFromAPI >= 0);
-            const totalCollected = fromApi ? NEDARIM_CONFIG.totalDonatedFromAPI : donors.reduce((sum, d) => sum + (d.amount || 0), 0);
-            
             // יעד המצינג – מ-API אם נטען וערכו סביר, אחרת מהיעד המקומי
             const currentGoal = (NEDARIM_CONFIG.apiDataLoaded && 
                                 NEDARIM_CONFIG.goalFromAPI !== null && 
                                 NEDARIM_CONFIG.goalFromAPI > 0)
                 ? NEDARIM_CONFIG.goalFromAPI 
                 : matchingGoal;
+            const localSum = donors.reduce((sum, d) => sum + (d.amount || 0), 0);
+            // סכום שנאסף – מ-API אם נטען וסביר; אם גבוה פי 1.5 מהיעד, לא סומכים עליו (באג/כפילות) ומשתמשים בסכום המקומי
+            const fromApi = (NEDARIM_CONFIG.apiDataLoaded && NEDARIM_CONFIG.totalDonatedFromAPI != null && NEDARIM_CONFIG.totalDonatedFromAPI >= 0);
+            let totalCollected = fromApi ? NEDARIM_CONFIG.totalDonatedFromAPI : localSum;
+            if (fromApi && currentGoal > 0 && totalCollected > currentGoal * 1.5) {
+                console.warn('⚠️ [סטטיסטיקה] סכום מ-API לא סביר:', totalCollected, 'מעל יעד', currentGoal, '– משתמשים בסכום מקומי:', localSum);
+                totalCollected = localSum;
+            }
             
             const matchingPercentage = currentGoal > 0 ? (totalCollected / currentGoal) * 100 : 0;
             const totalDonors = donors.length;
@@ -14631,14 +14635,16 @@
                 .sort((a, b) => b.amount - a.amount)
                 .slice(0, 5);
             
-            // סכום כולל = מ-API אם נטען (מקור האמת מנדרים פלוס), אחרת סכום המתרימים
-            const fromApi = (NEDARIM_CONFIG.apiDataLoaded && NEDARIM_CONFIG.totalDonatedFromAPI != null && NEDARIM_CONFIG.totalDonatedFromAPI >= 0);
-            const totalCollected = fromApi ? NEDARIM_CONFIG.totalDonatedFromAPI : donors.reduce((sum, donor) => sum + Math.max(0, donor.amount || 0), 0);
+            // סכום כולל – מ-API אם סביר; אם גבוה פי 1.5 מהיעד, משתמשים בסכום מקומי
+            const localSum = donors.reduce((sum, donor) => sum + Math.max(0, donor.amount || 0), 0);
             const goal = (NEDARIM_CONFIG.apiDataLoaded && 
-                         NEDARIM_CONFIG.goalFromAPI !== null && 
+                         NEDARIM_CONFIG.goalFromAPI !== null &&
                          NEDARIM_CONFIG.goalFromAPI > 0)
-                ? NEDARIM_CONFIG.goalFromAPI 
+                ? NEDARIM_CONFIG.goalFromAPI
                 : Math.max(0, Math.round(parseFloat(matchingGoal) || 0));
+            const fromApi = (NEDARIM_CONFIG.apiDataLoaded && NEDARIM_CONFIG.totalDonatedFromAPI != null && NEDARIM_CONFIG.totalDonatedFromAPI >= 0);
+            let totalCollected = fromApi ? NEDARIM_CONFIG.totalDonatedFromAPI : localSum;
+            if (fromApi && goal > 0 && totalCollected > goal * 1.5) totalCollected = localSum;
             const percentage = goal > 0 ? (totalCollected / goal) * 100 : 0;
             const percentDisplay = percentage >= 100 ? Math.round(percentage) : Math.max(0, percentage).toFixed(1);
             
@@ -14764,14 +14770,16 @@
                 const text = overallContainer.querySelector('.leaders-overall-progress-text');
                 const note = overallContainer.querySelector('.leaders-overall-progress-note');
 
-                // סכום כולל = מ-API אם נטען (מקור האמת מנדרים פלוס), אחרת סכום המתרימים
-                const fromApi = (NEDARIM_CONFIG.apiDataLoaded && NEDARIM_CONFIG.totalDonatedFromAPI != null && NEDARIM_CONFIG.totalDonatedFromAPI >= 0);
-                const totalCollected = fromApi ? NEDARIM_CONFIG.totalDonatedFromAPI : donors.reduce((sum, donor) => sum + Math.max(0, donor.amount || 0), 0);
+                // סכום כולל – מ-API אם סביר; אם גבוה פי 1.5 מהיעד, משתמשים בסכום מקומי
+                const localSumT = donors.reduce((sum, donor) => sum + Math.max(0, donor.amount || 0), 0);
                 const goal = (NEDARIM_CONFIG.apiDataLoaded &&
                              NEDARIM_CONFIG.goalFromAPI !== null &&
                              NEDARIM_CONFIG.goalFromAPI > 0)
-                    ? NEDARIM_CONFIG.goalFromAPI 
+                    ? NEDARIM_CONFIG.goalFromAPI
                     : Math.max(0, Math.round(parseFloat(matchingGoal) || 0));
+                const fromApiT = (NEDARIM_CONFIG.apiDataLoaded && NEDARIM_CONFIG.totalDonatedFromAPI != null && NEDARIM_CONFIG.totalDonatedFromAPI >= 0);
+                let totalCollected = fromApiT ? NEDARIM_CONFIG.totalDonatedFromAPI : localSumT;
+                if (fromApiT && goal > 0 && totalCollected > goal * 1.5) totalCollected = localSumT;
 
                 if (goal > 0) {
                     const percentRaw = (totalCollected / goal) * 100;
@@ -18141,25 +18149,25 @@
                 
                 // יוצר מפה של סכומים מנדרים פלוס (לפי מספר מתרים) - הקישור העיקרי
                 const nedarimAmountsMap = new Map();
-                // יוצר מפה נוספת לפי שם - רק למתרים ללא מספר מתרים תקין
+                const namesCount = new Map();
+                matrimListForComparison.forEach(matrim => {
+                    const matrimId = matrim.Id || matrim.MatrimId || matrim.id || matrim.MatrimNumber || null;
+                    const matrimAmount = parseInt(matrim.Cumule) || parseInt(matrim.Amount) || 0;
+                    const matrimName = (matrim.Name || matrim.name || '').trim();
+                    if (matrimId !== null && matrimId !== undefined) {
+                        nedarimAmountsMap.set(String(matrimId), matrimAmount);
+                    }
+                    if (matrimName) namesCount.set(matrimName, (namesCount.get(matrimName) || 0) + 1);
+                });
                 const nedarimAmountsByNameMap = new Map();
                 const nedarimMatrimIdsByNameMap = new Map();
                 matrimListForComparison.forEach(matrim => {
                     const matrimId = matrim.Id || matrim.MatrimId || matrim.id || matrim.MatrimNumber || null;
                     const matrimAmount = parseInt(matrim.Cumule) || parseInt(matrim.Amount) || 0;
                     const matrimName = (matrim.Name || matrim.name || '').trim();
-                    
-                    // מפה לפי מספר מתרים (הקישור העיקרי)
-                    if (matrimId !== null && matrimId !== undefined) {
-                        nedarimAmountsMap.set(String(matrimId), matrimAmount);
-                    }
-                    
-                    // מפה לפי שם (רק למתרים ללא מספר מתרים תקין)
-                    if (matrimName) {
+                    if (matrimName && namesCount.get(matrimName) === 1) {
                         nedarimAmountsByNameMap.set(matrimName, matrimAmount);
-                        if (matrimId !== null && matrimId !== undefined) {
-                            nedarimMatrimIdsByNameMap.set(matrimName, String(matrimId).trim());
-                        }
+                        if (matrimId != null) nedarimMatrimIdsByNameMap.set(matrimName, String(matrimId).trim());
                     }
                 });
                 
@@ -18212,8 +18220,9 @@
                 
                 console.log(`📋 נמצאו ${donorsToUpdate.length} מתרימים לעדכון בנדרים פלוס`);
                 
-                // 🛡️ הגנה: בדיקה שהסנכרון לא יפחית את הסכום הכולל בנדרים פלוס בטעות
-                const SAFE_REDUCTION_LIMIT = 15000; // עד 15,000 ש"ח הפחתה – דורש אישור
+                // 🛡️ הגנה: בדיקה שהסנכרון לא יפחית/יעלה את הסכום הכולל בנדרים פלוס בטעות
+                const SAFE_REDUCTION_LIMIT = 15000;
+                const SAFE_INCREASE_LIMIT = 50000;
                 let sumOfDeltas = 0;
                 for (const d of donorsToUpdate) {
                     const mid = (d.nedarimMatrimId != null ? String(d.nedarimMatrimId).trim() : null);
@@ -18224,6 +18233,7 @@
                     else na = nedarimAmountsByNameMap.get((d.name || '').trim()) || 0;
                     sumOfDeltas += (d.amount || 0) - na;
                 }
+                const goalRef = Math.max(500000, matchingGoal || 0);
                 if (sumOfDeltas < -SAFE_REDUCTION_LIMIT) {
                     const reduction = Math.abs(sumOfDeltas).toLocaleString('he-IL');
                     const msg = `⚠️ הסנכרון יפחית את הסכום הכולל בנדרים פלוס בכ־${reduction} ש"ח. ייתכן שהנתונים המקומיים לא מעודכנים. מומלץ להריץ קודם "טען מתרימים מנדרים פלוס" או "בדוק סכום כולל מ-API".\n\nהאם בכל זאת להמשיך?`;
@@ -18233,6 +18243,23 @@
                             showNedarimStatus('הסנכרון בוטל – ייתכן שהנתונים המקומיים לא מעודכנים', 'error');
                             showNotification('הסנכרון בוטל. הרץ "טען מתרימים מנדרים פלוס" ואז נסה שוב.', 'warning');
                         }
+                        if (btn) { btn.disabled = false; btn.textContent = '🔄 סנכרון תרומות לנדרים פלוס'; }
+                        return;
+                    }
+                }
+                if (sumOfDeltas > SAFE_INCREASE_LIMIT) {
+                    const add = sumOfDeltas.toLocaleString('he-IL');
+                    const msg = `⚠️ הסנכרון יעלה את הסכום הכולל בנדרים פלוס בכ־${add} ש"ח. וודא שהנתונים המקומיים נכונים לפני שממשיכים.\n\nהאם להמשיך?`;
+                    if (!confirm(msg)) {
+                        if (!silent) showNedarimStatus('הסנכרון בוטל – עלייה גדולה מהסכום', 'error');
+                        if (btn) { btn.disabled = false; btn.textContent = '🔄 סנכרון תרומות לנדרים פלוס'; }
+                        return;
+                    }
+                }
+                if (sumLocal > goalRef * 1.5) {
+                    const msg = `⚠️ הסכום המקומי (${sumLocal.toLocaleString()} ש"ח) גבוה בהרבה מהיעד (${goalRef.toLocaleString()} ש"ח). ייתכן שיש באג בנתונים. מומלץ להריץ "טען מתרימים מנדרים פלוס" לפני סנכרון.\n\nהאם בכל זאת להמשיך?`;
+                    if (!confirm(msg)) {
+                        if (!silent) showNedarimStatus('הסנכרון בוטל – סכום מקומי חשוד', 'error');
                         if (btn) { btn.disabled = false; btn.textContent = '🔄 סנכרון תרומות לנדרים פלוס'; }
                         return;
                     }
