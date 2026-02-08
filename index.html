@@ -7458,6 +7458,7 @@
         };
         let nedarimSyncTimer = null;
         let syncWithNedarimPlusInProgress = false; // 🛡️ מנע סנכרונים מקבילים – כל סנכרון שולח דלתות; אם רץ פעמיים = כפילות!
+        let lastSyncEndTime = 0; // 🛡️ מונע סנכרונים תכופים מרובוט – מרווח מינימלי 3 דקות
         
         // הגדרת עדכון אוטומטי של נדרים פלוס (נשמרת ב-localStorage)
         let autoSyncNedarimEnabled = false; // ברירת מחדל: מושבת – מונע קפיצות 2000 ₪
@@ -18165,6 +18166,13 @@
                 console.warn('⚠️ [סנכרון] סנכרון כבר רץ – דילוג (מונע כפילות דלתות בנדרים פלוס)');
                 return;
             }
+            // מונע סנכרונים תכופים מרובוט – מרווח מינימלי 3 דקות אחרי סנכרון קודם
+            const SYNC_COOLDOWN_MS = 3 * 60 * 1000;
+            if (silent && lastSyncEndTime > 0 && (Date.now() - lastSyncEndTime) < SYNC_COOLDOWN_MS) {
+                const waitSec = Math.ceil((SYNC_COOLDOWN_MS - (Date.now() - lastSyncEndTime)) / 1000);
+                console.warn(`⚠️ [סנכרון] דילוג – סנכרון אחרון לפני פחות מ-3 דקות (המתן ${waitSec} שניות)`);
+                return;
+            }
             syncWithNedarimPlusInProgress = true;
             const btn = document.getElementById('nedarimSyncBtn');
             if (!silent && btn) {
@@ -18421,6 +18429,8 @@
                                     console.log(`ℹ️ עדכון נדלג: ${donor.name} - ${result.message || 'אין צורך בעדכון'}`);
                                 } else {
                                     updatedToNedarim++;
+                                    // מונע דריסה בשלב המשיכה – נדרים פלוס עלול להחזיר נתונים ישנים
+                                    recentlyUpdatedDonors.set(donor.id, Date.now() + 120000);
                                     console.log(`✅ עודכן בהצלחה: ${donor.name} (מספר מתרים: ${matrimIdForUpdate})`);
                                 }
                             } else {
@@ -18480,8 +18490,8 @@
                     console.log(`ℹ️ סיכום: ${updatedToNedarim} עודכנו, ${invalidMatrimIdCount} נדלגו (ללא מספר מתרים תקין), ${failedUpdates} נכשלו`);
                 }
                 
-                // ממתין קצת כדי שנדרים פלוס יעדכן את הנתונים
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                // ממתין כדי שנדרים פלוס יעדכן את הנתונים לפני המשיכה (מונע דריסה בסכומים)
+                await new Promise(resolve => setTimeout(resolve, 5000));
                 } // סוף else (לא blockPushToNedarim)
                 } // סוף if (!pullOnly) - סנכרון אוטומטי לא דוחף לנדרים!
 
@@ -18781,6 +18791,7 @@
                 }
             } finally {
                 syncWithNedarimPlusInProgress = false; // 🔓 משחרר מנעול – מונע סנכרונים מקבילים
+                lastSyncEndTime = Date.now(); // לצורך cooldown בסנכרון הבא
                 if (!silent && btn) {
                     btn.disabled = false;
                     btn.textContent = '🔄 סנכרון תרומות';
