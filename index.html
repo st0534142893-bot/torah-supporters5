@@ -17039,8 +17039,11 @@
                     if (foundAmount !== null) {
                         const totalFromDonors = donors.reduce((sum, d) => sum + (d.amount || 0), 0);
                         if (foundAmount === 0 && totalFromDonors > 0) {
-                            console.warn('⚠️ ה-API מחזיר 0 אבל יש סכום מהתרימים');
-                            return null;
+                            NEDARIM_CONFIG.totalDonatedFromAPI = totalFromDonors;
+                            NEDARIM_CONFIG.goalFromAPI = foundGoal || 0;
+                            NEDARIM_CONFIG.apiDataLoaded = true;
+                            console.log('ℹ️ ה-API החזיר 0 – משתמש בסכום מהתרימים:', totalFromDonors.toLocaleString(), 'ש"ח');
+                            return { Goal: NEDARIM_CONFIG.goalFromAPI, Donated: NEDARIM_CONFIG.totalDonatedFromAPI };
                         }
                         NEDARIM_CONFIG.totalDonatedFromAPI = foundAmount;
                         NEDARIM_CONFIG.goalFromAPI = foundGoal;
@@ -18903,9 +18906,14 @@
                         showNotification(`✅ הסכום כבר תואם: ${totalData.Donated.toLocaleString()} ש"ח`, 'success');
                     }
                 } else {
-                    console.error('❌ [בדיקה] ה-API מחזיר 0 או לא עובד');
-                    console.log('📊 [מקומי] נשתמש בסכום מהתרימים:', totalFromDonors.toLocaleString(), 'ש"ח');
-                    showNotification(`⚠️ ה-API מחזיר 0. נשתמש בסכום מהתרימים: ${totalFromDonors.toLocaleString()} ש"ח`);
+                    NEDARIM_CONFIG.totalDonatedFromAPI = totalFromDonors;
+                    NEDARIM_CONFIG.apiDataLoaded = true;
+                    updateHomeStats();
+                    updateLeadersList();
+                    updateLiveTargets();
+                    if (typeof updateLiveView === 'function') updateLiveView();
+                    console.log('ℹ️ [בדיקה] משתמש בסכום מהתרימים:', totalFromDonors.toLocaleString(), 'ש"ח');
+                    showNotification(`✅ הסכום המוצג: ${totalFromDonors.toLocaleString()} ש"ח (מהרשימה המקומית)`);
                 }
             } catch (error) {
                 const friendly = translateFetchError(error);
