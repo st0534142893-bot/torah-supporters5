@@ -6511,6 +6511,13 @@
                                     </div>
                                     </div>
                         
+                        <div class="nedarim-emergency-block" style="margin-bottom: 20px; padding: 12px 16px; background: #ffebee; border: 2px solid #c62828; border-radius: 10px;">
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600; color: #b71c1c;">
+                                <input type="checkbox" id="nedarimBlockPushCheckbox" onchange="toggleNedarimBlockPush(this.checked)" style="width: 20px; height: 20px;">
+                                <span>🛑 חסום דחיפה לנדרים פלוס (מצב חירום – מונע עליית סכומים)</span>
+                            </label>
+                            <p id="nedarimBlockPushStatus" style="margin: 6px 0 0 30px; font-size: 12px; color: #666;"></p>
+                        </div>
                         <div style="margin-bottom: 20px;">
                             <h4 style="margin-bottom: 15px;">פעולות עדכון ידניות</h4>
                             <div class="default-goal-controls" style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -7398,7 +7405,16 @@
             goalFromAPI: null,
             apiDataLoaded: false,
             // הגדרה לעבודה ישירה עם ה-API (לא דרך Apps Script)
-            useDirectAPI: true // ✅ קריאות ישירות ל-API (ללא הגבלת קוטה)
+            useDirectAPI: true, // ✅ קריאות ישירות ל-API (ללא הגבלת קוטה)
+            // 🛑 מצב חירום: חסימת דחיפה לנדרים – נשמר ב-localStorage, מונע אינפלציית סכומים
+            get blockPushToNedarim() {
+                return (typeof localStorage !== 'undefined' && localStorage.getItem('nedarimBlockPush') === 'true');
+            },
+            setBlockPushToNedarim(val) {
+                if (typeof localStorage !== 'undefined') {
+                    localStorage.setItem('nedarimBlockPush', val ? 'true' : 'false');
+                }
+            }
         };
         let nedarimSyncTimer = null;
         let syncWithNedarimPlusInProgress = false; // 🛡️ מנע סנכרונים מקבילים – כל סנכרון שולח דלתות; אם רץ פעמיים = כפילות!
@@ -12411,6 +12427,9 @@
                 } else if (tabName === 'robot') {
                     // רק מעדכן את ה-UI עם הערכים הנוכחיים, לא טוען מחדש מ-localStorage
                     if (typeof window.updateRobotUI === 'function') window.updateRobotUI();
+                } else if (tabName === 'sync') {
+                    if (typeof syncNedarimBlockPushCheckbox === 'function') syncNedarimBlockPushCheckbox();
+                    if (typeof updateNedarimFixCurrentSumLabel === 'function') updateNedarimFixCurrentSumLabel();
                 } else if (tabName === 'password') {
                     initPasswordSettingsUI();
                 } else if (tabName === 'calculator') {
@@ -15609,6 +15628,7 @@
             fillNedarimCorrectionDonorSelect();
             fillUpdateByApiDonorSelect();
             if (typeof updateNedarimFixCurrentSumLabel === 'function') updateNedarimFixCurrentSumLabel();
+            if (typeof syncNedarimBlockPushCheckbox === 'function') syncNedarimBlockPushCheckbox();
             // סנכרון ראשוני של הנתונים הקיימים
             syncAllDataToDatabase();
         }).catch(error => {
@@ -18127,6 +18147,10 @@
 
                 // ========== שלב 1: עדכון סכומים לנדרים פלוס (מדולג בסנכרון אוטומטי!) ==========
                 if (!pullOnly) {
+                if (NEDARIM_CONFIG.blockPushToNedarim) {
+                    console.warn('🛑 [חירום] דחיפה לנדרים חסומה – מדלגים על שלב 1 (לא שולחים עדכונים). רק מושכים נתונים.');
+                    if (!silent) showNedarimStatus('דחיפה חסומה – רק מושך נתונים מנדרים', 'warning');
+                } else {
                 if (!silent) {
                 showNedarimStatus('מעדכן סכומים לנדרים פלוס...', 'loading');
                 }
@@ -18417,6 +18441,7 @@
                 
                 // ממתין קצת כדי שנדרים פלוס יעדכן את הנתונים
                 await new Promise(resolve => setTimeout(resolve, 2000));
+                } // סוף else (לא blockPushToNedarim)
                 } // סוף if (!pullOnly) - סנכרון אוטומטי לא דוחף לנדרים!
 
                 // ========== שלב 2: משיכת נתונים מנדרים פלוס ==========
@@ -20902,6 +20927,10 @@
          * משתמש רק בפרמטרים בסיסיים ללא MatchingId
          */
         async function updateNedarimAmountViaSheets(donor, delta, note = '') {
+            if (NEDARIM_CONFIG.blockPushToNedarim) {
+                console.warn('🛑 [חירום] דחיפה לנדרים חסומה – לא נשלח עדכון (מתרים:', (donor.name || '').substring(0, 20) + '..., דלתה:', delta + ')');
+                return { success: true, skipped: true, message: 'דחיפה לנדרים חסומה (מצב חירום)' };
+            }
             try {
                 const url = googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || DEFAULT_GOOGLE_SHEETS_URL || '';
                 
@@ -21143,6 +21172,28 @@
             }
         }
         
+        // 🛑 מצב חירום: חסימת דחיפה לנדרים – מונע אינפלציית סכומים
+        function toggleNedarimBlockPush(checked) {
+            NEDARIM_CONFIG.setBlockPushToNedarim(checked);
+            const statusEl = document.getElementById('nedarimBlockPushStatus');
+            if (statusEl) {
+                statusEl.textContent = checked
+                    ? 'דחיפה חסומה – לא יישלחו עדכונים לנדרים פלוס. אפשר להמשיך למשוך נתונים.'
+                    : 'דחיפה פעילה – עדכונים יישלחו לנדרים פלוס.';
+            }
+        }
+        function syncNedarimBlockPushCheckbox() {
+            const cb = document.getElementById('nedarimBlockPushCheckbox');
+            const statusEl = document.getElementById('nedarimBlockPushStatus');
+            if (!cb) return;
+            cb.checked = NEDARIM_CONFIG.blockPushToNedarim;
+            if (statusEl) {
+                statusEl.textContent = cb.checked
+                    ? 'דחיפה חסומה – לא יישלחו עדכונים לנדרים פלוס.'
+                    : 'דחיפה פעילה – עדכונים יישלחו לנדרים פלוס.';
+            }
+        }
+
         // מעדכן את התצוגה "סה"כ נוכחי בתוכנה" בתיקון הסכום האמיתי
         function updateNedarimFixCurrentSumLabel() {
             const el = document.getElementById('nedarimFixCurrentSumLabel');
