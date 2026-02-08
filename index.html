@@ -16921,15 +16921,12 @@
                 return [];
             }
             try {
-                const apiUrl = `${url}?action=searchNedarimRecruiters&search=${encodeURIComponent(searchTerm)}`;
-                const response = await fetch(apiUrl);
-                if (!response.ok) throw new Error(`שגיאת שרת: ${response.status} ${response.statusText}`);
-                const result = await response.json();
+                const result = await fetchAppsScript(url, { action: 'searchNedarimRecruiters', search: searchTerm, _: Date.now() });
                 if (result.success && result.recruiters) return result.recruiters;
                 return [];
             } catch (error) {
                 console.error('❌ שגיאה במשיכת מתרימים:', error);
-                showNotification('⚠️ שגיאה במשיכת מתרימים: ' + error.message, 'error');
+                showNotification('⚠️ שגיאה במשיכת מתרימים: ' + translateFetchError(error), 'error');
                 return [];
             }
         }
@@ -16945,45 +16942,41 @@
             try {
                 console.log('🚀 מושך את כל המתרימים מנדרים פלוס (MatchPlus)...');
                 
-                // ניסיון 1: getAllNedarimRecruiters
-                let apiUrl = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'action=getAllNedarimRecruiters&_=' + Date.now();
-                let response = await fetch(apiUrl);
-                let result = null;
+                // ניסיון 1: getAllNedarimRecruiters (קודם light=1 – חוסך קוטה)
+                let result = await fetchAppsScript(url, { action: 'getAllNedarimRecruiters', light: '1', _: Date.now() }, { retries: 2 });
                 
-                if (response.ok) {
-                    result = await response.json();
-                    // בדיקה אם יש שגיאה של פעולה לא מוכרת
-                    if (result.error && result.error.includes('פעולה לא מוכרת')) {
-                        console.warn('⚠️ הפעולה getAllNedarimRecruiters לא מוכרת. מנסה פעולות חלופיות...');
-                        result = null;
-                    } else if (result.success && result.recruiters) {
-                        if (result.recruiters.length > 0) {
-                            console.log(`✅ נטענו ${result.recruiters.length} מתרימים מנדרים פלוס (כולל מספר מתרים)`);
-                            if (result.recruiters[0]) console.log('📋 דוגמה:', result.recruiters[0]);
-                            return result.recruiters;
-                        }
-                        return [];
+                if (result.error && result.error.includes('פעולה לא מוכרת')) {
+                    console.warn('⚠️ הפעולה getAllNedarimRecruiters לא מוכרת. מנסה פעולות חלופיות...');
+                    result = null;
+                } else if (result.success && result.recruiters) {
+                    if (result.recruiters.length > 0) {
+                        console.log(`✅ נטענו ${result.recruiters.length} מתרימים מנדרים פלוס`);
+                        return result.recruiters;
                     }
+                    // light החזיר 0 – ננסה גרסה מלאה (א-ת)
+                    console.log('🔄 light החזיר 0 מתרימים, מנסה גרסה מלאה...');
+                    result = await fetchAppsScript(url, { action: 'getAllNedarimRecruiters', _: Date.now() }, { retries: 1 });
+                    if (result.success && result.recruiters && result.recruiters.length > 0) {
+                        console.log(`✅ נטענו ${result.recruiters.length} מתרימים (גרסה מלאה)`);
+                        return result.recruiters;
+                    }
+                    return [];
                 }
                 
-                // ניסיון 2: searchNedarimRecruiters (חיפוש ריק + א-ת) – גיבוי אם getAllNedarimRecruiters לא פרוס
-                if (!result || (result.error && result.error.includes('פעולה לא מוכרת'))) {
+                // ניסיון 2: searchNedarimRecruiters (חיפוש ריק + א-ת) – גיבוי
+                if (!result || (result && result.error && result.error.includes('פעולה לא מוכרת'))) {
                     console.log('🔄 מנסה פעולה חלופית: searchNedarimRecruiters');
                     const letters = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט', 'י', 'כ', 'ל', 'מ', 'נ', 'ס', 'ע', 'פ', 'צ', 'ק', 'ר', 'ש', 'ת'];
                     const allMap = {};
                     for (let i = 0; i < letters.length; i++) {
                         const term = letters[i];
-                        apiUrl = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'action=searchNedarimRecruiters&search=' + encodeURIComponent(term) + '&_=' + Date.now();
-                        response = await fetch(apiUrl);
-                        if (response.ok) {
-                            result = await response.json();
-                            if (result.success && result.recruiters && result.recruiters.length > 0) {
-                                result.recruiters.forEach((r, idx) => {
-                                    const id = r.Id ?? r.MatrimId ?? r.id ?? r.MatrimNumber;
-                                    const key = (id !== undefined && id !== null && String(id).trim() !== '') ? String(id).trim() : ('n_' + i + '_' + idx + '_' + (r.Name || r.name || '').trim());
-                                    allMap[key] = r;
-                                });
-                            }
+                        result = await fetchAppsScript(url, { action: 'searchNedarimRecruiters', search: term, _: Date.now() }, { retries: 1 });
+                        if (result.success && result.recruiters && result.recruiters.length > 0) {
+                            result.recruiters.forEach((r, idx) => {
+                                const id = r.Id ?? r.MatrimId ?? r.id ?? r.MatrimNumber;
+                                const key = (id !== undefined && id !== null && String(id).trim() !== '') ? String(id).trim() : ('n_' + i + '_' + idx + '_' + (r.Name || r.name || '').trim());
+                                allMap[key] = r;
+                            });
                         }
                         if (i < letters.length - 1) await new Promise(r => setTimeout(r, 200));
                     }
@@ -16994,11 +16987,8 @@
                     }
                 }
                 
-                // אם הגענו לכאן, כל הניסיונות נכשלו
-                if (result && result.error) {
-                    throw new Error(result.error);
-                }
-                throw new Error('לא התקבלו מתרימים מנדרים פלוס. אנא וודא ש-Google Apps Script כולל את הפעולות getAllNedarimRecruiters או searchNedarimRecruiters – ועדכן פריסה (Deploy → גרסה חדשה).');
+                if (result && result.error) throw new Error(result.error);
+                throw new Error('לא התקבלו מתרימים מנדרים פלוס. וודא ש-Apps Script כולל getAllNedarimRecruiters – ועדכן פריסה (Deploy → גרסה חדשה).');
             } catch (error) {
                 console.error('❌ שגיאה במשיכת מתרימים מנדרים פלוס:', error);
                 throw error;
@@ -17039,38 +17029,22 @@
             }
             
             try {
-                console.log('═══════════════════════════════════════════════════════');
                 console.log('🚀 מושך סכום כולל דרך Google Sheets Apps Script');
-                const apiUrl = `${url}?action=getNedarimTotal`;
-                console.log('🔗 URL:', apiUrl);
-                
-                const response = await fetch(apiUrl);
-                console.log('📡 תגובת ה-API:', response.status, response.statusText);
-                
-                if (response.ok) {
-                    const result = await response.json();
-                    console.log('📦 נתונים מ-Google Sheets:', JSON.stringify(result, null, 2));
-                    
-                    if (result.success && result.totalDonated !== undefined) {
-                        const foundAmount = parseNumericValue(result.totalDonated);
-                        const foundGoal = parseNumericValue(result.goal) || 0;
-                        
-                        if (foundAmount !== null) {
-                            const totalFromDonors = donors.reduce((sum, d) => sum + (d.amount || 0), 0);
-                            
-                            // אם ה-API מחזיר 0 אבל יש סכום מהתרימים, נשתמש בסכום מהתרימים
-                            if (foundAmount === 0 && totalFromDonors > 0) {
-                                console.warn('⚠️ ה-API מחזיר 0 אבל יש סכום מהתרימים');
-                                return null;
-                            }
-                            
-                            NEDARIM_CONFIG.totalDonatedFromAPI = foundAmount;
-                            NEDARIM_CONFIG.goalFromAPI = foundGoal;
-                            NEDARIM_CONFIG.apiDataLoaded = true;
-                            console.log(`✅ ✅ ✅ עדכנו דרך Google Sheets: יעד=${NEDARIM_CONFIG.goalFromAPI.toLocaleString()}, נאסף=${NEDARIM_CONFIG.totalDonatedFromAPI.toLocaleString()}`);
-                            
-                            return { Goal: NEDARIM_CONFIG.goalFromAPI, Donated: NEDARIM_CONFIG.totalDonatedFromAPI };
+                const result = await fetchAppsScript(url, { action: 'getNedarimTotal', _: Date.now() });
+                if (result.success && result.totalDonated !== undefined) {
+                    const foundAmount = parseNumericValue(result.totalDonated);
+                    const foundGoal = parseNumericValue(result.goal) || 0;
+                    if (foundAmount !== null) {
+                        const totalFromDonors = donors.reduce((sum, d) => sum + (d.amount || 0), 0);
+                        if (foundAmount === 0 && totalFromDonors > 0) {
+                            console.warn('⚠️ ה-API מחזיר 0 אבל יש סכום מהתרימים');
+                            return null;
                         }
+                        NEDARIM_CONFIG.totalDonatedFromAPI = foundAmount;
+                        NEDARIM_CONFIG.goalFromAPI = foundGoal;
+                        NEDARIM_CONFIG.apiDataLoaded = true;
+                        console.log(`✅ עדכנו דרך Google Sheets: יעד=${NEDARIM_CONFIG.goalFromAPI.toLocaleString()}, נאסף=${NEDARIM_CONFIG.totalDonatedFromAPI.toLocaleString()}`);
+                        return { Goal: NEDARIM_CONFIG.goalFromAPI, Donated: NEDARIM_CONFIG.totalDonatedFromAPI };
                     }
                 }
             } catch (error) {
@@ -18184,6 +18158,13 @@
                     }
                 });
                 
+                // בדיקה מוקדמת: אם הסכום המקומי נמוך בהרבה מהסכום בנדרים – ייתכן שיש נתונים ישנים
+                const sumNedarimFromList = [...nedarimAmountsMap.values()].reduce((a, b) => a + b, 0);
+                const sumLocal = donors.reduce((s, d) => s + (d.amount || 0), 0);
+                if (sumNedarimFromList > 0 && sumLocal < sumNedarimFromList - 30000) {
+                    console.warn(`⚠️ [סנכרון] סכום מקומי (${sumLocal.toLocaleString()}) נמוך מהסכום בנדרים (${sumNedarimFromList.toLocaleString()}). ייתכן שנתונים מקומיים ישנים.`);
+                }
+                
                 // מוצא מתרימים שיש להם nedarimMatrimId והסכום שלהם שונה מנדרים פלוס
                 const donorsToUpdate = donors.filter(donor => {
                     const donorMatrimId = donor.nedarimMatrimId;
@@ -18225,6 +18206,32 @@
                 });
                 
                 console.log(`📋 נמצאו ${donorsToUpdate.length} מתרימים לעדכון בנדרים פלוס`);
+                
+                // 🛡️ הגנה: בדיקה שהסנכרון לא יפחית את הסכום הכולל בנדרים פלוס בטעות
+                const SAFE_REDUCTION_LIMIT = 15000; // עד 15,000 ש"ח הפחתה – דורש אישור
+                let sumOfDeltas = 0;
+                for (const d of donorsToUpdate) {
+                    const mid = (d.nedarimMatrimId != null ? String(d.nedarimMatrimId).trim() : null);
+                    const isDate = mid && (/^\d{4}-\d{2}-\d{2}T/.test(mid) || mid.includes('T') || mid.includes('Z'));
+                    const hasValid = mid && !isDate && /^\d+$/.test(mid);
+                    let na = 0;
+                    if (hasValid) na = nedarimAmountsMap.get(mid) || 0;
+                    else na = nedarimAmountsByNameMap.get((d.name || '').trim()) || 0;
+                    sumOfDeltas += (d.amount || 0) - na;
+                }
+                if (sumOfDeltas < -SAFE_REDUCTION_LIMIT) {
+                    const reduction = Math.abs(sumOfDeltas).toLocaleString('he-IL');
+                    const msg = `⚠️ הסנכרון יפחית את הסכום הכולל בנדרים פלוס בכ־${reduction} ש"ח. ייתכן שהנתונים המקומיים לא מעודכנים. מומלץ להריץ קודם "טען מתרימים מנדרים פלוס" או "בדוק סכום כולל מ-API".\n\nהאם בכל זאת להמשיך?`;
+                    if (!confirm(msg)) {
+                        console.warn('🛡️ המשתמש ביטל את הסנכרון – הייתה הפחתה גדולה מהסכום');
+                        if (!silent) {
+                            showNedarimStatus('הסנכרון בוטל – ייתכן שהנתונים המקומיים לא מעודכנים', 'error');
+                            showNotification('הסנכרון בוטל. הרץ "טען מתרימים מנדרים פלוס" ואז נסה שוב.', 'warning');
+                        }
+                        if (btn) { btn.disabled = false; btn.textContent = '🔄 סנכרון תרומות לנדרים פלוס'; }
+                        return;
+                    }
+                }
                 
                 // בדיקה אם המתרים שלמה כהן 118 נמצא ברשימה
                 const shlomoCohen = donorsToUpdate.find(d => d.name && d.name.includes('שלמה כהן') && String(d.nedarimMatrimId).trim() === '118');
@@ -19990,10 +19997,51 @@
             if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('ERR_NAME_NOT_RESOLVED') || msg.includes('ERR_INTERNET_DISCONNECTED')) {
                 return 'לא ניתן להתחבר לשרת. בדוק: 1) כתובת ה-Web App נכונה 2) חיבור לאינטרנט פעיל 3) פריסת Apps Script קיימת (Deploy → גרסה חדשה)';
             }
-            if (msg.includes('CORS') || msg.includes('cross-origin')) {
-                return 'שגיאת CORS – וודא שהפריסה מוגדרת ל-"כל אחד" (Anyone)';
+            if (msg.includes('CORS') || msg.includes('cross-origin') || msg.includes('Access-Control')) {
+                return 'שגיאת CORS – וודא: Deploy → Test deployments → Edit → Who has access: "Anyone" (כל אחד). עדכן פריסה אם שינית קוד.';
+            }
+            if (msg.includes('urlfetch') || msg.includes('Service invoked too many times')) {
+                return 'נגמרה מכסת הבקשות היומית. נסה שוב מחר או הפחת תדירות הסנכרון.';
             }
             return msg;
+        }
+
+        /** עוזר מרכזי ל-fetch ל-Apps Script – עם ניסיונות חוזרים ושגיאות ברורות */
+        async function fetchAppsScript(baseUrl, params = {}, options = {}) {
+            const method = options.method || 'GET';
+            const body = options.body;
+            const retries = options.retries !== undefined ? options.retries : 2;
+            let url = (baseUrl || '').trim();
+            if (method === 'GET' && params && Object.keys(params).length > 0) {
+                const sep = url.indexOf('?') >= 0 ? '&' : '?';
+                const qs = new URLSearchParams(params).toString();
+                if (qs) url = url + sep + qs;
+            }
+            const fetchOpts = {
+                method,
+                redirect: 'follow',
+                credentials: 'omit',
+                mode: 'cors',
+                headers: method === 'POST' && body ? { 'Content-Type': 'application/json' } : {}
+            };
+            if (body && method === 'POST') fetchOpts.body = typeof body === 'string' ? body : JSON.stringify(body);
+            let lastError;
+            for (let attempt = 0; attempt <= retries; attempt++) {
+                try {
+                    const res = await fetch(url, fetchOpts);
+                    const text = await res.text();
+                    if (!res.ok) throw new Error(`שגיאת שרת: ${res.status} ${res.statusText}`);
+                    try {
+                        return JSON.parse(text || '{}');
+                    } catch (e) {
+                        throw new Error('תגובה לא תקינה מ-Apps Script');
+                    }
+                } catch (err) {
+                    lastError = err;
+                    if (attempt < retries) await new Promise(r => setTimeout(r, 800 + attempt * 500));
+                }
+            }
+            throw lastError;
         }
 
         // הצגת סטטוס Google Sheets
@@ -20041,12 +20089,7 @@
             showGoogleSheetsStatus('🔄 בודק חיבור...', 'info');
             
             try {
-                const response = await fetch(url + '?action=ping', {
-                    method: 'GET',
-                    redirect: 'follow'
-                });
-                
-                const result = await response.json();
+                const result = await fetchAppsScript(url, { action: 'ping', _: Date.now() });
                 
                 if (result.success) {
                     showNotification('✅ החיבור ל-Google Sheets תקין!', 'success');
@@ -20746,13 +20789,7 @@
             showGoogleSheetsStatus('📋 טוען מגיליון פשוט (שם + קבוצה)...', 'info');
             
             try {
-                const response = await fetch(url + '?action=getSimpleData', {
-                    method: 'GET',
-                    redirect: 'follow'
-                });
-                
-                const result = await response.json();
-                
+                const result = await fetchAppsScript(url, { action: 'getSimpleData', _: Date.now() });
                 if (!result.success && result.error) {
                     throw new Error(result.error);
                 }
