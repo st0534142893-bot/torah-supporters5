@@ -12472,15 +12472,9 @@
                 ? NEDARIM_CONFIG.goalFromAPI 
                 : matchingGoal;
             const localSum = donors.reduce((sum, d) => sum + (d.amount || 0), 0);
-            // סכום שנאסף – מ-API אם נטען. רק אם הסכום מ-API קיצוני (פי 50+ מהיעד או רחוק מאוד מהמקומי) נשתמש במקומי
+            // סכום שנאסף – תמיד מנדרים (מ-API) כשיש נתון, כדי שהתצוגה תתאים למה שמופיע בנדרים פלוס
             const fromApi = (NEDARIM_CONFIG.apiDataLoaded && NEDARIM_CONFIG.totalDonatedFromAPI != null && NEDARIM_CONFIG.totalDonatedFromAPI >= 0);
-            let totalCollected = fromApi ? NEDARIM_CONFIG.totalDonatedFromAPI : localSum;
-            const apiExtremeVsGoal = currentGoal > 0 && totalCollected > currentGoal * 50;
-            const apiFarFromLocal = localSum > 0 && totalCollected > localSum * 5;
-            if (fromApi && (apiExtremeVsGoal || apiFarFromLocal)) {
-                console.warn('⚠️ [סטטיסטיקה] סכום מ-API לא סביר:', totalCollected, '– משתמשים בסכום מקומי:', localSum);
-                totalCollected = localSum;
-            }
+            const totalCollected = fromApi ? NEDARIM_CONFIG.totalDonatedFromAPI : localSum;
             
             const matchingPercentage = currentGoal > 0 ? (totalCollected / currentGoal) * 100 : 0;
             const totalDonors = donors.length;
