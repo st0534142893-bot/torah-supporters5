@@ -6322,6 +6322,18 @@
                             </p>
                         </div>
 
+                        <div style="margin-bottom: 25px; padding: 20px; background: #e3f2fd; border: 2px solid #1976d2; border-radius: 12px;">
+                            <h4 style="margin: 0 0 10px 0; color: #0d47a1;">הגדר את כל המתרים לסכום אחד וסנכרן לנדרים</h4>
+                            <p style="margin: 0 0 14px 0; font-size: 13px; color: #333;">לא משנה איזה סכום יש כרגע לכל מתרים – כולם יוגדרו לסכום שהזנת (למשל 0 ₪ או כל מספר אחר), והעדכון יישלח לנדרים פלוס.</p>
+                            <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+                                <input type="number" id="setAllRecruitersToAmountInput" step="1" placeholder="סכום לכל המתרים (₪)" style="width: 200px; padding: 10px 14px; border: 2px solid #1976d2; border-radius: 8px; font-size: 16px;">
+                                <button type="button" class="btn btn-primary" onclick="setAllRecruitersToAmountAndSync()" id="setAllRecruitersToAmountBtn" style="background: #1976d2; color: white; padding: 10px 20px; font-size: 15px;">
+                                    הגדר לכולם וסנכרן לנדרים
+                                </button>
+                            </div>
+                            <p id="setAllRecruitersToAmountResult" style="margin: 12px 0 0 0; font-size: 13px; min-height: 20px; color: #0d47a1;"></p>
+                        </div>
+
                         <h3>כלי פיתוח – נדרים פלוס וסכומים</h3>
                         <div style="margin-bottom: 20px;">
                             <div style="margin-bottom: 12px;">
@@ -20297,6 +20309,64 @@
                 resultEl.style.color = '#880e4f';
             }
             showNotification('הופחתו ' + amountToReduce.toLocaleString('he-IL') + ' ₪ מכל המתרים. הרץ סנכרון תרומות לנדרים.');
+        }
+        
+        // הגדר את כל המתרים לסכום אחד וסנכרן לנדרים – פעולה פשוטה (0 או כל ערך)
+        async function setAllRecruitersToAmountAndSync() {
+            var inputEl = document.getElementById('setAllRecruitersToAmountInput');
+            var resultEl = document.getElementById('setAllRecruitersToAmountResult');
+            var btn = document.getElementById('setAllRecruitersToAmountBtn');
+            var targetAmount = inputEl ? Math.round(parseFloat(inputEl.value) || 0) : 0;
+            if (inputEl && inputEl.value.trim() === '') {
+                if (resultEl) { resultEl.textContent = 'נא להזין סכום (למשל 0).'; resultEl.style.color = '#c62828'; }
+                return;
+            }
+            var withMatrimId = (donors || []).filter(function(d) {
+                var id = d.nedarimMatrimId ? String(d.nedarimMatrimId).trim() : '';
+                return id && /^\d+$/.test(id) && !/^\d{4}-\d{2}-\d{2}T/.test(id);
+            });
+            if (withMatrimId.length === 0) {
+                if (resultEl) { resultEl.textContent = 'אין מתרים עם מספר מתרים תקין. הרץ "סנכרון תרומות" או קשר מתרים לנדרים.'; resultEl.style.color = '#c62828'; }
+                return;
+            }
+            if (!confirm('מגדיר את כל ' + withMatrimId.length + ' המתרים ל־' + targetAmount.toLocaleString('he-IL') + ' ₪ ומסנכרן לנדרים. להמשיך?')) return;
+            if (btn) { btn.disabled = true; btn.textContent = 'מעדכן...'; }
+            if (resultEl) { resultEl.textContent = 'מעדכן ' + withMatrimId.length + ' מתרים וסנכרון לנדרים...'; resultEl.style.color = '#0d47a1'; }
+            var ok = 0, err = 0;
+            for (var i = 0; i < withMatrimId.length; i++) {
+                var d = withMatrimId[i];
+                var current = d.amount || 0;
+                var delta = targetAmount - current;
+                d.amount = targetAmount;
+                if (delta === 0) {
+                    ok++;
+                    continue;
+                }
+                try {
+                    var res = await updateNedarimAmountViaSheets(d, delta, delta > 0 ? 'תרומות' : 'עדכון סכום');
+                    if (res && res.success && !res.skipped) ok++; else err++;
+                } catch (e) {
+                    d.amount = current;
+                    err++;
+                    console.warn('שגיאה בעדכון מתרים ' + (d.displayName || d.name), e);
+                }
+                if (resultEl && (i + 1) % 5 === 0) resultEl.textContent = 'מעדכן... ' + (i + 1) + '/' + withMatrimId.length;
+            }
+            ensureDonorsNormalized();
+            saveData();
+            updateDonorsList();
+            updateGroupsDisplay();
+            updateHomeStats();
+            if (typeof updateLiveView === 'function') updateLiveView();
+            if (typeof updateLeadersList === 'function') updateLeadersList();
+            if (typeof updateNedarimFixCurrentSumLabel === 'function') updateNedarimFixCurrentSumLabel();
+            if (typeof updateNedarimGlobalReductionCurrentSum === 'function') updateNedarimGlobalReductionCurrentSum();
+            if (resultEl) {
+                resultEl.textContent = '✅ הוגדר: כל ' + ok + ' המתרים על ' + targetAmount.toLocaleString('he-IL') + ' ₪ וסונכרן לנדרים.' + (err > 0 ? ' (' + err + ' נכשלו)' : '');
+                resultEl.style.color = '#0d47a1';
+            }
+            showNotification('כל המתרים הוגדרו ל־' + targetAmount.toLocaleString('he-IL') + ' ₪ וסונכרן לנדרים.');
+            if (btn) { btn.disabled = false; btn.textContent = 'הגדר לכולם וסנכרן לנדרים'; }
         }
         
         // הענק לכל המתרים סכום זהה: מגדיר את הסכום של כל מתרים לערך שהזין – בנדרים ובתוכנה (בלי כתוב "בדיקה")
