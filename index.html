@@ -20519,14 +20519,26 @@
             let updatedCount = 0;
             let skippedCount = 0;
             let failedCount = 0;
+            let totalSentToNedarim = 0;
             
-            for (const donor of donors) {
-                const oldAmount = oldAmounts.get(donor.id) || 0;
-                const newAmount = donor.amount || 0;
-                const localDelta = newAmount - oldAmount;
+            // מסנן מתרימים שיש להם מספר מתרים תקין או שיש להם סכום חדש
+            const donorsToUpdate = donors.filter(d => {
+                const newAmount = d.amount || 0;
+                if (newAmount <= 0) return false; // מדלג על מתרימים עם סכום 0
                 
-                // אם אין שינוי מקומי, לא צריך לעדכן בנדרים
-                if (localDelta === 0) continue;
+                const matrimIdStr = d.nedarimMatrimId ? String(d.nedarimMatrimId).trim() : null;
+                if (!matrimIdStr || !/^\d+$/.test(matrimIdStr)) {
+                    // אין מספר מתרים תקין - לא יכול לעדכן בנדרים
+                    return false;
+                }
+                
+                return true;
+            });
+            
+            console.log(`📋 נמצאו ${donorsToUpdate.length} מתרימים לעדכון בנדרים פלוס (מתוך ${donors.length} סה"כ)`);
+            
+            for (const donor of donorsToUpdate) {
+                const newAmount = donor.amount || 0;
                 
                 // מחפש את הסכום הנוכחי בנדרים פלוס
                 const matrimIdStr = donor.nedarimMatrimId ? String(donor.nedarimMatrimId).trim() : null;
@@ -20542,15 +20554,19 @@
                 // אם אין שינוי (הסכום החדש בתוכנה שווה לסכום בנדרים), לא צריך לשלוח
                 if (deltaToSend === 0) {
                     skippedCount++;
+                    console.log(`ℹ️ נדלג על ${donor.name || 'ללא שם'} - הסכום כבר תואם בנדרים פלוס (${newAmount.toLocaleString()} ₪)`);
                     continue;
                 }
                 
                 // שולח את העדכון לנדרים פלוס
                 try {
+                    console.log(`🔄 מעדכן בנדרים פלוס: ${donor.name || 'ללא שם'} (מס' ${matrimIdStr}) - ${nedarimAmount.toLocaleString()} → ${newAmount.toLocaleString()} (דלתה: ${deltaToSend > 0 ? '+' : ''}${deltaToSend.toLocaleString()} ₪)`);
+                    
                     const result = await updateNedarimAmountViaSheets(donor, deltaToSend, 'התאמה לסכום האמיתי');
                     if (result && result.success && !result.skipped) {
                         updatedCount++;
-                        console.log(`✅ עודכן בנדרים פלוס: ${donor.name || 'ללא שם'} - דלתה: ${deltaToSend > 0 ? '+' : ''}${deltaToSend.toLocaleString()} ₪`);
+                        totalSentToNedarim += deltaToSend;
+                        console.log(`✅ עודכן בהצלחה בנדרים פלוס: ${donor.name || 'ללא שם'} - דלתה: ${deltaToSend > 0 ? '+' : ''}${deltaToSend.toLocaleString()} ₪`);
                     } else if (result && result.skipped) {
                         skippedCount++;
                         console.log(`ℹ️ נדלג על עדכון: ${donor.name || 'ללא שם'} - ${result.message || 'אין צורך בעדכון'}`);
@@ -20567,9 +20583,30 @@
                 await new Promise(resolve => setTimeout(resolve, 300));
             }
             
+            // בודק את הסכום הכולל בנדרים פלוס אחרי העדכון
+            let finalNedarimTotal = 0;
+            try {
+                const totalData = await fetchTotalFromMatchPlus();
+                if (totalData && totalData.Donated > 0) {
+                    finalNedarimTotal = totalData.Donated;
+                    console.log(`📊 סכום כולל בנדרים פלוס אחרי העדכון: ${finalNedarimTotal.toLocaleString()} ₪`);
+                }
+            } catch (error) {
+                console.warn('⚠️ לא הצלחתי לבדוק את הסכום הכולל בנדרים פלוס אחרי העדכון:', error);
+            }
+            
             // הודעת הצלחה
             let message = `✅ הסכומים עודכנו בהצלחה!`;
             message += `\n📊 בתוכנה: ${realTotal.toLocaleString('he-IL')} ₪`;
+            if (finalNedarimTotal > 0) {
+                message += `\n📊 בנדרים פלוס: ${finalNedarimTotal.toLocaleString('he-IL')} ₪`;
+                const diff = Math.abs(finalNedarimTotal - realTotal);
+                if (diff <= 1) {
+                    message += `\n✅ הסכומים תואמים!`;
+                } else {
+                    message += `\n⚠️ הבדל: ${diff.toLocaleString('he-IL')} ₪`;
+                }
+            }
             if (updatedCount > 0) {
                 message += `\n✅ עודכנו ${updatedCount} מתרימים בנדרים פלוס`;
             }
@@ -20586,7 +20623,16 @@
             }
             
             if (updatedCount > 0) {
-                showNotification(`✅ הסכומים עודכנו בהצלחה! עודכנו ${updatedCount} מתרימים בנדרים פלוס.`, 'success');
+                if (finalNedarimTotal > 0) {
+                    const diff = Math.abs(finalNedarimTotal - realTotal);
+                    if (diff <= 1) {
+                        showNotification(`✅ הסכומים עודכנו בהצלחה! בתוכנה: ${realTotal.toLocaleString()} ₪, בנדרים פלוס: ${finalNedarimTotal.toLocaleString()} ₪ - הסכומים תואמים!`, 'success');
+                    } else {
+                        showNotification(`✅ עודכנו ${updatedCount} מתרימים בנדרים פלוס. בתוכנה: ${realTotal.toLocaleString()} ₪, בנדרים: ${finalNedarimTotal.toLocaleString()} ₪ (הבדל: ${diff.toLocaleString()} ₪)`, 'success');
+                    }
+                } else {
+                    showNotification(`✅ הסכומים עודכנו בהצלחה! עודכנו ${updatedCount} מתרימים בנדרים פלוס.`, 'success');
+                }
             } else if (failedCount > 0) {
                 showNotification(`⚠️ הסכומים בתוכנה עודכנו, אך ${failedCount} מתרימים נכשלו בעדכון בנדרים פלוס.`, 'warning');
             } else {
