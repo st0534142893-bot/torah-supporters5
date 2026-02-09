@@ -6186,15 +6186,18 @@
                         </div>
 
                         <div class="nedarim-fix-real-amount-box" style="margin-top: 15px; padding: 15px; background: #e3f2fd; border: 2px solid #1976d2; border-radius: 10px;">
-                            <h4 style="margin-bottom: 10px; color: #0d47a1;">📌 התאמה לסכום האמיתי (תיקון 2,040,947 וכו')</h4>
-                            <p style="margin-bottom: 10px; font-size: 13px; color: #333;">כדי שבתוכנה <strong>וגם</strong> בנדרים פלוס יופיע רק הסכום האמיתי:</p>
+                            <h4 style="margin-bottom: 10px; color: #0d47a1;">📌 התאמה לסכום האמיתי – להעלות/להוריד את מה שמופיע בנדרים פלוס למה שצריך</h4>
+                            <p style="margin-bottom: 10px; font-size: 13px; color: #333;">התוכנה תחשב לבד את הסיכום מהמתרים, תעדכן את הסכומים בתוכנה ליעד שבחרת, ואז "סנכרון תרומות" ישלח את ההפרש לנדרים (כולל סליקות באשראי) כך שגם שם יופיע הסכום האמיתי.</p>
+                            <div style="margin-bottom: 12px; padding: 10px; background: rgba(255,255,255,0.7); border-radius: 8px; border: 1px solid #1976d2;">
+                                <div style="margin-bottom: 6px;"><strong>סה"כ בתוכנה</strong> (מסכומי כל המתרים): <span id="nedarimFixCurrentSumLabel" style="font-weight: 700;">—</span></div>
+                                <div><strong>סכום מוצג בנדרים פלוס</strong> (מ-API, כולל סליקות ללא שם מתרים): <span id="nedarimFixNedarimSumLabel" style="font-weight: 700;">—</span> <button type="button" class="btn btn-small" onclick="refreshNedarimRealTotalDisplay(); updateNedarimFixCurrentSumLabel();" style="padding: 2px 8px; font-size: 11px;">רענן</button></div>
+                            </div>
                             <ol style="margin: 0 0 12px 1.2em; padding: 0; font-size: 13px; color: #333; line-height: 1.7;">
-                                <li>הזן למטה את <strong>הסכום האמיתי</strong> (הנכון) – מה שבאמת נאסף.</li>
-                                <li>לחץ "התאם סכומים בתוכנה" – הסכום של כל מתרים יתעדכן יחסית כך שהסיכום יהיה הסכום האמיתי.</li>
-                                <li>לחץ <strong>"סנכרון תרומות לנדרים פלוס"</strong> (הכפתור הירוק למעלה) – יישלחו הפחתות לנדרים והסכום שם יתעדכן להתאמה.</li>
+                                <li>הזן את <strong>הסכום האמיתי</strong> (מה שצריך להיות – בתוכנה ובנדרים).</li>
+                                <li>לחץ "התאם סכומים בתוכנה" – הסיכום בתוכנה יהיה הסכום הזה (יחסית בין המתרים).</li>
+                                <li>לחץ <strong>"סנכרון תרומות לנדרים פלוס"</strong> (הכפתור הירוק למעלה) – יישלחו עדכונים לנדרים והסכום שם יתאם.</li>
                             </ol>
                             <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 8px;">
-                                <span id="nedarimFixCurrentSumLabel" style="font-weight: 600;">סה"כ נוכחי בתוכנה: —</span>
                                 <input type="number" id="nedarimFixRealAmountInput" min="0" step="1" placeholder="הסכום האמיתי (₪)" style="width: 160px; padding: 8px 12px; border: 2px solid #1976d2; border-radius: 6px; font-size: 14px;">
                                 <button type="button" class="btn btn-primary" onclick="applyRealAmountFix()" style="background: #1976d2;">
                                     התאם סכומים בתוכנה
@@ -20119,65 +20122,77 @@
         // מעדכן את התצוגה "סה"כ נוכחי בתוכנה" בתיקון הסכום האמיתי
         function updateNedarimFixCurrentSumLabel() {
             const el = document.getElementById('nedarimFixCurrentSumLabel');
-            if (!el) return;
-            const sum = (donors || []).reduce((s, d) => s + (d.amount || 0), 0);
-            el.textContent = 'סה"כ נוכחי בתוכנה: ' + sum.toLocaleString('he-IL') + ' ₪';
+            if (el) {
+                const sum = (donors || []).reduce((s, d) => s + (d.amount || 0), 0);
+                el.textContent = sum.toLocaleString('he-IL') + ' ₪';
+            }
+            const ndEl = document.getElementById('nedarimFixNedarimSumLabel');
+            if (ndEl) {
+                if (NEDARIM_CONFIG.apiDataLoaded && NEDARIM_CONFIG.totalDonatedFromAPI != null && isFinite(NEDARIM_CONFIG.totalDonatedFromAPI)) {
+                    ndEl.textContent = NEDARIM_CONFIG.totalDonatedFromAPI.toLocaleString('he-IL') + ' ₪';
+                } else {
+                    ndEl.textContent = '— (לחץ רענן או "בדוק סכום כולל מ-API")';
+                }
+            }
             updateNedarimGlobalReductionCurrentSum();
         }
         
-        // התאמת כל הסכומים בתוכנה לסכום האמיתי (יחסית בין המתרימים), ואז סנכרון לנדרים ישלח הפחתות
+        // התאמת כל הסכומים בתוכנה לסכום האמיתי (יחסית בין המתרימים). סנכרון לנדרים ישלח את ההפרש.
         function applyRealAmountFix() {
             const inputEl = document.getElementById('nedarimFixRealAmountInput');
             const resultEl = document.getElementById('nedarimFixResult');
-            const labelEl = document.getElementById('nedarimFixCurrentSumLabel');
             const currentSum = (donors || []).reduce((s, d) => s + (d.amount || 0), 0);
-            if (labelEl) labelEl.textContent = 'סה"כ נוכחי בתוכנה: ' + currentSum.toLocaleString('he-IL') + ' ₪';
-            
             const realTotal = inputEl ? Math.round(parseFloat(inputEl.value) || 0) : 0;
-            if (realTotal <= 0) {
-                if (resultEl) {
-                    resultEl.textContent = 'נא להזין את הסכום האמיתי (הנכון) במספר שלם חיובי.';
-                    resultEl.style.color = '#c62828';
-                }
+            if (realTotal < 0) {
+                if (resultEl) { resultEl.textContent = 'נא להזין סכום אי-שלילי (0 או יותר).'; resultEl.style.color = '#c62828'; }
                 return;
             }
             if (!donors || donors.length === 0) {
                 if (resultEl) { resultEl.textContent = 'אין מתרימים במערכת.'; resultEl.style.color = '#c62828'; }
                 return;
             }
+            if (realTotal === 0) {
+                donors.forEach(d => { d.amount = 0; });
+                ensureDonorsNormalized();
+                saveData();
+                updateDonorsList();
+                updateGroupsDisplay();
+                updateHomeStats();
+                if (typeof updateLiveView === 'function') updateLiveView();
+                if (typeof updateLeadersList === 'function') updateLeadersList();
+                updateNedarimFixCurrentSumLabel();
+                if (resultEl) {
+                    resultEl.textContent = '✅ כל הסכומים בתוכנה אופסו (0 ₪). הרץ "סנכרון תרומות לנדרים פלוס" כדי לעדכן גם את נדרים.';
+                    resultEl.style.color = '#0d47a1';
+                }
+                showNotification('הסכומים אופסו. הרץ "סנכרון תרומות לנדרים פלוס".');
+                return;
+            }
             if (currentSum <= 0) {
-                if (resultEl) { resultEl.textContent = 'סה"כ נוכחי הוא 0 – לא ניתן לחלק יחסית. עדכן סכומים ידנית.'; resultEl.style.color = '#c62828'; }
+                if (resultEl) { resultEl.textContent = 'סה"כ נוכחי הוא 0 – לא ניתן לחלק יחסית. הזן 0 לאיפוס או עדכן סכומים ידנית.'; resultEl.style.color = '#c62828'; }
                 return;
             }
             const factor = realTotal / currentSum;
-            let adjusted = 0;
             donors.forEach(d => {
                 const prev = d.amount || 0;
-                if (prev > 0) {
-                    d.amount = Math.max(0, Math.round(prev * factor));
-                    adjusted++;
-                }
+                if (prev > 0) d.amount = Math.max(0, Math.round(prev * factor));
             });
-            // תיקון עיגול: אם הסכום החדש לא בדיוק realTotal, מתקן על מתרים ראשון עם סכום
             const newSum = donors.reduce((s, d) => s + (d.amount || 0), 0);
             const diff = realTotal - newSum;
             if (diff !== 0) {
                 const firstWithAmount = donors.find(d => (d.amount || 0) > 0);
-                if (firstWithAmount) {
-                    firstWithAmount.amount = Math.max(0, (firstWithAmount.amount || 0) + diff);
-                }
+                if (firstWithAmount) firstWithAmount.amount = Math.max(0, (firstWithAmount.amount || 0) + diff);
             }
             ensureDonorsNormalized();
             saveData();
             updateDonorsList();
             updateGroupsDisplay();
             updateHomeStats();
-            updateLiveView();
-            updateLeadersList();
-            updateLiveTargets();
+            if (typeof updateLiveView === 'function') updateLiveView();
+            if (typeof updateLeadersList === 'function') updateLeadersList();
             updateNedarimFixCurrentSumLabel();
             if (resultEl) {
-                resultEl.textContent = '✅ הסכומים בתוכנה עודכנו ל־' + realTotal.toLocaleString('he-IL') + ' ₪. כעת לחץ על "סנכרון תרומות לנדרים פלוס" (הירוק למעלה) כדי לעדכן גם את נדרים פלוס.';
+                resultEl.textContent = '✅ הסכומים בתוכנה עודכנו ל־' + realTotal.toLocaleString('he-IL') + ' ₪. כעת לחץ על "סנכרון תרומות לנדרים פלוס" (הירוק למעלה) כדי לעדכן גם את נדרים.';
                 resultEl.style.color = '#0d47a1';
             }
             showNotification('הסכומים בתוכנה עודכנו. הרץ "סנכרון תרומות לנדרים פלוס" כדי לעדכן את נדרים.');
