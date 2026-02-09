@@ -15574,12 +15574,9 @@
             function initRobot() {
             if (window.__robotInited) return;
             window.__robotInited = true;
-            const ROBOT_ACTION_IDS = ['sync', 'loadMatrim', 'checkTotal', 'loadSheet', 'saveSheet', 'syncGoogleSheets'];
+            const ROBOT_ACTION_IDS = ['sync', 'saveSheet', 'syncGoogleSheets'];
             const robotActionsConfig = {
                 sync: { id: 'sync', name: 'סנכרון תרומות לנדרים פלוס', func: () => syncWithNedarimPlus(true) },
-                loadMatrim: { id: 'loadMatrim', name: 'טען מתרימים מנדרים פלוס', func: () => loadMatrimFromNedarim(true) },
-                checkTotal: { id: 'checkTotal', name: 'בדוק סכום כולל מ-API', func: () => checkTotalAmountFromAPI(true) },
-                loadSheet: { id: 'loadSheet', name: 'טען מהגליון', func: () => loadFromGoogleSheets(true) },
                 saveSheet: { id: 'saveSheet', name: 'שמור לגליון', func: () => saveToGoogleSheets() },
                 syncGoogleSheets: { id: 'syncGoogleSheets', name: 'סנכרון דו-כיווני גליון', func: () => syncWithGoogleSheets(true) }
             };
@@ -15600,6 +15597,7 @@
             function startRobot() { saveRobotSettings(true); if (robotTimer) { clearInterval(robotTimer); robotTimer = null; } robotContinuousRunning = false; robotEnabled = true; robotSettings.enabled = true; storageSetItem('robotSettings', robotSettings); const isContinuous = robotSettings.continuous === true; if (isContinuous) { robotContinuousRunning = true; const intervalSec = Math.max(15, robotSettings.continuousIntervalSeconds || 60); const runC = async () => { if (!robotEnabled || !robotSettings.continuous || !robotContinuousRunning) return; await runRobotActions(); setTimeout(runC, intervalSec * 1000); }; runC(); addRobotHistory('הרובוט הופעל - עדכונים שוטפים', 'success'); } else { runRobotActions(); const iv = robotSettings.interval || 10; const ms = robotSettings.unit === 'hours' ? iv * 60 * 60 * 1000 : iv * 60 * 1000; updateRobotNextRun(); robotNextRunTime = Date.now() + ms; robotTimer = setInterval(() => { if (!robotEnabled) { clearInterval(robotTimer); robotTimer = null; return; } runRobotActions(); updateRobotNextRun(); robotNextRunTime = Date.now() + ms; }, ms); addRobotHistory('הרובוט הופעל - כל ' + iv + (robotSettings.unit === 'hours' ? ' שעות' : ' דקות'), 'success'); } updateRobotUI(); }
             function stopRobot() { if (robotTimer) { clearInterval(robotTimer); robotTimer = null; } robotEnabled = false; robotSettings.enabled = false; robotContinuousRunning = false; robotNextRunTime = null; storageSetItem('robotSettings', robotSettings); addRobotHistory('הרובוט הופסק', 'info'); updateRobotUI(); }
             window.startRobot = startRobot; window.stopRobot = stopRobot; window.saveRobotSettings = saveRobotSettings; window.updateRobotUI = updateRobotUI; window.toggleContinuousMode = toggleContinuousMode; window.updateRobotIntervalDisplay = updateRobotIntervalDisplay;
+            window.isRobotActive = () => robotEnabled; // חושף למניעת טעינה מהגליון כשהרובוט פעיל
             setInterval(() => { if (robotEnabled) updateRobotUI(); }, 1000);
             loadRobotSettings();
             console.log('🤖 [רובוט] אותחל');
@@ -18574,10 +18572,10 @@
                     console.log('🤖 [רובוט] מדלג על משיכת מתרים מנדרים – הגליון והתוכנה מקור האמת');
                     const totalData = await fetchTotalFromMatchPlus();
                     if (totalData && totalData.Donated > 0) {
+                        NEDARIM_CONFIG.totalDonatedFromAPI = totalData.Donated;
+                        NEDARIM_CONFIG.goalFromAPI = totalData.Goal || 0;
+                        NEDARIM_CONFIG.apiDataLoaded = true;
                         updateHomeStats();
-                        updateLeadersList();
-                        updateLiveTargets();
-                        if (typeof updateLiveView === 'function') updateLiveView(false);
                     }
                 } else {
                 console.log('📥 שלב 2: מושך נתונים מנדרים פלוס...');
@@ -19575,7 +19573,8 @@
         
         // טעינת נתונים מ-Google Sheets
         // silent: true = ללא הודעות (לסנכרון אוטומטי בתצוגת לייב)
-        async function loadFromGoogleSheets(silent = false) {
+        // skipDonorOverwrite: true = טוען קבוצות והגדרות בלבד, לא דורס מתרימים (הגנה כשהרובוט פעיל)
+        async function loadFromGoogleSheets(silent = false, skipDonorOverwrite = false) {
             const urlInput = document.getElementById('googleSheetsWebAppUrl');
             const savedUrl = localStorage.getItem('googleSheetsWebAppUrl') || '';
             const url = urlInput ? urlInput.value.trim() : savedUrl || DEFAULT_GOOGLE_SHEETS_URL || '';
@@ -19586,6 +19585,10 @@
                     showGoogleSheetsStatus('❌ נא להגדיר את כתובת ה-Web App', 'error');
                 }
                 return { success: false };
+            }
+            // 🛡️ כשהרובוט פעיל – לעולם לא לדרוס מתרימים מהגליון (הגנה מוחלטת)
+            if (typeof window.isRobotActive === 'function' && window.isRobotActive()) {
+                skipDonorOverwrite = true;
             }
             
             if (!silent) {
@@ -19656,8 +19659,11 @@
                     if (!silent) console.log('📥 [Google Sheets] קבוצות נטענו:', groups.map(g => ({ id: g.id, name: g.name })));
                 }
                 
-                // טעינת מתרימים - merge חכם במקום החלפה מלאה
-                if (result.donors && Array.isArray(result.donors) && result.donors.length > 0) {
+                // טעינת מתרימים - merge חכם במקום החלפה מלאה (מדולג כשהרובוט פעיל – מונע דריסת תיקונים)
+                if (skipDonorOverwrite) {
+                    if (!silent) console.log('🛡️ [Google Sheets] דילוג על עדכון מתרימים – הרובוט פעיל / הגנה');
+                    else console.log('🛡️ [Google Sheets] דילוג על עדכון מתרימים – הגנה');
+                } else if (result.donors && Array.isArray(result.donors) && result.donors.length > 0) {
                     // בדיקה כמה מתרים יש להם מספר מתרים תקין מהגליון
                     const donorsWithMatrimId = result.donors.filter(d => {
                         if (!d.nedarimMatrimId) return false;
@@ -19974,7 +19980,8 @@
                 console.log(`⏸️ [סנכרון] עדכון לנדרים/גליון בתהליך - מדלג על טעינה מהגליון`);
                 return { success: true, skipped: true, reason: 'עדכון לנדרים בתהליך' };
             }
-            const r = await loadFromGoogleSheets(true);
+            const skipDonors = typeof window.isRobotActive === 'function' && window.isRobotActive();
+            const r = await loadFromGoogleSheets(true, skipDonors);
             if (r && r.success && typeof notifyDataChanged === 'function') {
                 notifyDataChanged();
             }
@@ -19998,7 +20005,8 @@
                         if (isUpdatingDonorForNedarim) {
                             console.log(`⏸️ [סנכרון] עדכון לנדרים/גליון בתהליך - מדלג על טעינה`);
                         } else {
-                            const r = await loadFromGoogleSheets(true);
+                            const skipDonors = typeof window.isRobotActive === 'function' && window.isRobotActive();
+                            const r = await loadFromGoogleSheets(true, skipDonors);
                             if (r && r.success) {
                                 if (typeof refreshAllScreensFromData === 'function') refreshAllScreensFromData();
                                 if (typeof notifyDataChanged === 'function') notifyDataChanged();
@@ -20017,7 +20025,8 @@
                 }
             }
             if (sheetSyncLoadEnabled) {
-                loadFromGoogleSheets(true).then(r => {
+                const skipDonorsFirst = typeof window.isRobotActive === 'function' && window.isRobotActive();
+                loadFromGoogleSheets(true, skipDonorsFirst).then(r => {
                     if (r && r.success) console.log('🔄 [סנכרון] טעינה ראשונה מהגליון הושלמה');
                     if (r && r.success && typeof notifyDataChanged === 'function') notifyDataChanged();
                 }).catch(err => console.warn('⚠️ [סנכרון] שגיאה בטעינה ראשונה:', err));
