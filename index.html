@@ -11893,7 +11893,7 @@
         }
         function updateHomeStats() {
             // סכום שנאסף = מ-API אם נטען (מקור האמת מנדרים פלוס), אחרת סכום המתרימים במערכת
-            const fromApi = (NEDARIM_CONFIG.apiDataLoaded && NEDARIM_CONFIG.totalDonatedFromAPI != null && NEDARIM_CONFIG.totalDonatedFromAPI >= 0);
+            const fromApi = (NEDARIM_CONFIG.apiDataLoaded && NEDARIM_CONFIG.totalDonatedFromAPI != null && typeof NEDARIM_CONFIG.totalDonatedFromAPI === 'number' && isFinite(NEDARIM_CONFIG.totalDonatedFromAPI));
             const totalCollected = fromApi ? NEDARIM_CONFIG.totalDonatedFromAPI : donors.reduce((sum, d) => sum + (d.amount || 0), 0);
             
             // יעד המצינג – מ-API אם נטען וערכו סביר, אחרת מהיעד המקומי
@@ -13925,7 +13925,7 @@
                 .slice(0, 5);
             
             // סכום כולל = מ-API אם נטען (מקור האמת מנדרים פלוס), אחרת סכום המתרימים
-            const fromApi = (NEDARIM_CONFIG.apiDataLoaded && NEDARIM_CONFIG.totalDonatedFromAPI != null && NEDARIM_CONFIG.totalDonatedFromAPI >= 0);
+            const fromApi = (NEDARIM_CONFIG.apiDataLoaded && NEDARIM_CONFIG.totalDonatedFromAPI != null && typeof NEDARIM_CONFIG.totalDonatedFromAPI === 'number' && isFinite(NEDARIM_CONFIG.totalDonatedFromAPI));
             const totalCollected = fromApi ? NEDARIM_CONFIG.totalDonatedFromAPI : donors.reduce((sum, donor) => sum + Math.max(0, donor.amount || 0), 0);
             const goal = (NEDARIM_CONFIG.apiDataLoaded && 
                          NEDARIM_CONFIG.goalFromAPI !== null && 
@@ -14058,7 +14058,7 @@
                 const note = overallContainer.querySelector('.leaders-overall-progress-note');
 
                 // סכום כולל = מ-API אם נטען (מקור האמת מנדרים פלוס), אחרת סכום המתרימים
-                const fromApi = (NEDARIM_CONFIG.apiDataLoaded && NEDARIM_CONFIG.totalDonatedFromAPI != null && NEDARIM_CONFIG.totalDonatedFromAPI >= 0);
+                const fromApi = (NEDARIM_CONFIG.apiDataLoaded && NEDARIM_CONFIG.totalDonatedFromAPI != null && typeof NEDARIM_CONFIG.totalDonatedFromAPI === 'number' && isFinite(NEDARIM_CONFIG.totalDonatedFromAPI));
                 const totalCollected = fromApi ? NEDARIM_CONFIG.totalDonatedFromAPI : donors.reduce((sum, donor) => sum + Math.max(0, donor.amount || 0), 0);
                 const goal = (NEDARIM_CONFIG.apiDataLoaded &&
                              NEDARIM_CONFIG.goalFromAPI !== null &&
