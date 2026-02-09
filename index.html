@@ -13710,7 +13710,7 @@
             });
         }
 
-        function bulkSubtractAmountFromNedarimDonors() {
+        async function bulkSubtractAmountFromNedarimDonors() {
             const input = document.getElementById('bulkAmountInput');
             const resultEl = document.getElementById('bulkAmountResult');
             const amount = parseInt(input && input.value ? String(input.value).trim() : '', 10);
@@ -13725,29 +13725,91 @@
                 showNotification('אין מתרים שמופיעים בנדרים', 'info');
                 return;
             }
+            
+            // אימות לפני ביצוע
+            const confirmMsg = `האם להפחית ${amount.toLocaleString()} ש"ח מ־${inNedarim.length} מתרים שמופיעים בנדרים?\n\nפעולה זו תעדכן גם את הסכום בנדרים פלוס עצמו.`;
+            if (!confirm(confirmMsg)) {
+                return;
+            }
+            
             ensureDonorsNormalized();
             let changed = 0;
-            inNedarim.forEach(d => {
+            let updatedInNedarim = 0;
+            let failedInNedarim = 0;
+            
+            if (resultEl) { resultEl.textContent = 'מעדכן...'; resultEl.style.color = '#555'; }
+            showNedarimStatus('מעדכן סכומים בנדרים פלוס...', 'loading');
+            
+            // מעדכן את הסכום המקומי ואת הסכום בנדרים פלוס
+            for (const d of inNedarim) {
                 const prev = Number(d.amount) || 0;
                 const next = Math.max(0, prev - amount);
-                if (next !== prev) {
+                const deltaToSend = next - prev; // שלילי או 0
+                
+                if (deltaToSend < 0) {
+                    // מעדכן את הסכום המקומי
                     d.amount = next;
                     d.updatedAt = new Date().toISOString();
                     changed++;
+                    
+                    // מעדכן את הסכום בנדרים פלוס דרך API
+                    try {
+                        const result = await updateNedarimAmountViaSheets(d, deltaToSend, `הורדה גלובלית: ${amount.toLocaleString()} ש"ח`);
+                        if (result && result.success && !result.skipped) {
+                            updatedInNedarim++;
+                            console.log(`✅ הופחת בנדרים פלוס: ${d.name || 'ללא שם'} - ${amount.toLocaleString()} ש"ח`);
+                        } else if (result && result.skipped) {
+                            console.log(`ℹ️ נדלג על עדכון בנדרים: ${d.name || 'ללא שם'} - ${result.message || 'אין צורך בעדכון'}`);
+                        } else {
+                            failedInNedarim++;
+                            console.warn(`⚠️ נכשל בעדכון בנדרים: ${d.name || 'ללא שם'} - ${result?.error || result?.message || 'שגיאה לא ידועה'}`);
+                        }
+                    } catch (error) {
+                        failedInNedarim++;
+                        console.error(`❌ שגיאה בעדכון בנדרים ${d.name || 'ללא שם'}:`, error);
+                    }
+                    
+                    // ממתין קצת בין עדכונים כדי לא להעמיס על השרת
+                    await new Promise(resolve => setTimeout(resolve, 200));
                 }
-            });
+            }
+            
             saveData();
             updateDonorsList();
             updateHomeStats();
             updateLeadersList();
             updateLiveTargets();
             updateLiveView();
-            const msg = `הופחתו ${amount.toLocaleString()} ש"ח מ־${changed} מתרים (מתוך ${inNedarim.length} שמופיעים בנדרים).`;
+            
+            // מעדכן את הסכום הכולל מ-API אחרי העדכונים
+            try {
+                const totalData = await fetchTotalFromMatchPlus();
+                if (totalData && totalData.Donated > 0) {
+                    NEDARIM_CONFIG.totalDonatedFromAPI = totalData.Donated;
+                    NEDARIM_CONFIG.goalFromAPI = totalData.Goal || 0;
+                    NEDARIM_CONFIG.apiDataLoaded = true;
+                    updateHomeStats();
+                    updateLeadersList();
+                    updateLiveTargets();
+                }
+            } catch (error) {
+                console.warn('⚠️ לא הצלחתי לעדכן את הסכום הכולל מ-API:', error);
+            }
+            
+            let msg = `הופחתו ${amount.toLocaleString()} ש"ח מ־${changed} מתרים (מתוך ${inNedarim.length} שמופיעים בנדרים).`;
+            if (updatedInNedarim > 0) {
+                msg += ` עודכנו ${updatedInNedarim} מתרים בנדרים פלוס.`;
+            }
+            if (failedInNedarim > 0) {
+                msg += ` ${failedInNedarim} מתרים נכשלו בעדכון בנדרים.`;
+            }
+            
             if (resultEl) { resultEl.textContent = msg; resultEl.style.color = '#2e7d32'; }
+            showNedarimStatus(msg, 'success');
             showNotification(msg, 'success');
         }
 
-        function bulkAddAmountToNedarimDonors() {
+        async function bulkAddAmountToNedarimDonors() {
             const input = document.getElementById('bulkAmountInput');
             const resultEl = document.getElementById('bulkAmountResult');
             const amount = parseInt(input && input.value ? String(input.value).trim() : '', 10);
@@ -13762,20 +13824,82 @@
                 showNotification('אין מתרים שמופיעים בנדרים', 'info');
                 return;
             }
+            
+            // אימות לפני ביצוע
+            const confirmMsg = `האם להוסיף ${amount.toLocaleString()} ש"ח ל־${inNedarim.length} מתרים שמופיעים בנדרים?\n\nפעולה זו תעדכן גם את הסכום בנדרים פלוס עצמו.`;
+            if (!confirm(confirmMsg)) {
+                return;
+            }
+            
             ensureDonorsNormalized();
-            inNedarim.forEach(d => {
+            let updatedInNedarim = 0;
+            let failedInNedarim = 0;
+            
+            if (resultEl) { resultEl.textContent = 'מעדכן...'; resultEl.style.color = '#555'; }
+            showNedarimStatus('מעדכן סכומים בנדרים פלוס...', 'loading');
+            
+            // מעדכן את הסכום המקומי ואת הסכום בנדרים פלוס
+            for (const d of inNedarim) {
                 const prev = Number(d.amount) || 0;
-                d.amount = prev + amount;
+                const next = prev + amount;
+                
+                // מעדכן את הסכום המקומי
+                d.amount = next;
                 d.updatedAt = new Date().toISOString();
-            });
+                
+                // מעדכן את הסכום בנדרים פלוס דרך API (דלתה חיובית)
+                try {
+                    const result = await updateNedarimAmountViaSheets(d, amount, `הוספה גלובלית: ${amount.toLocaleString()} ש"ח`);
+                    if (result && result.success && !result.skipped) {
+                        updatedInNedarim++;
+                        console.log(`✅ נוסף בנדרים פלוס: ${d.name || 'ללא שם'} - ${amount.toLocaleString()} ש"ח`);
+                    } else if (result && result.skipped) {
+                        console.log(`ℹ️ נדלג על עדכון בנדרים: ${d.name || 'ללא שם'} - ${result.message || 'אין צורך בעדכון'}`);
+                    } else {
+                        failedInNedarim++;
+                        console.warn(`⚠️ נכשל בעדכון בנדרים: ${d.name || 'ללא שם'} - ${result?.error || result?.message || 'שגיאה לא ידועה'}`);
+                    }
+                } catch (error) {
+                    failedInNedarim++;
+                    console.error(`❌ שגיאה בעדכון בנדרים ${d.name || 'ללא שם'}:`, error);
+                }
+                
+                // ממתין קצת בין עדכונים כדי לא להעמיס על השרת
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+            
             saveData();
             updateDonorsList();
             updateHomeStats();
             updateLeadersList();
             updateLiveTargets();
             updateLiveView();
-            const msg = `נוספו ${amount.toLocaleString()} ש"ח ל־${inNedarim.length} מתרים שמופיעים בנדרים.`;
+            
+            // מעדכן את הסכום הכולל מ-API אחרי העדכונים
+            try {
+                const totalData = await fetchTotalFromMatchPlus();
+                if (totalData && totalData.Donated > 0) {
+                    NEDARIM_CONFIG.totalDonatedFromAPI = totalData.Donated;
+                    NEDARIM_CONFIG.goalFromAPI = totalData.Goal || 0;
+                    NEDARIM_CONFIG.apiDataLoaded = true;
+                    updateHomeStats();
+                    updateLeadersList();
+                    updateLiveTargets();
+                }
+            } catch (error) {
+                console.warn('⚠️ לא הצלחתי לעדכן את הסכום הכולל מ-API:', error);
+            }
+            
+            let msg = `נוספו ${amount.toLocaleString()} ש"ח ל־${inNedarim.length} מתרים שמופיעים בנדרים.`;
+            if (updatedInNedarim > 0) {
+                msg += ` עודכנו ${updatedInNedarim} מתרים בנדרים פלוס.`;
+            }
+            if (failedInNedarim > 0) {
+                msg += ` ${failedInNedarim} מתרים נכשלו בעדכון בנדרים.`;
+            }
+            
             if (resultEl) { resultEl.textContent = msg; resultEl.style.color = '#2e7d32'; }
+            showNedarimStatus(msg, 'success');
             showNotification(msg, 'success');
         }
 
