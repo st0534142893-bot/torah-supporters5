@@ -5910,6 +5910,17 @@
                                 </div>
                                 <p id="bulkRemoveTextResult" style="margin: 8px 0 0 0; font-size: 12px; min-height: 18px;"></p>
                             </div>
+                            <div class="donors-bulk-amount-panel" id="donorsBulkAmountPanel" style="margin-top: 12px; padding: 15px; background: #e8f5e9; border-radius: 8px; border: 1px solid #81c784;">
+                                <h4 style="margin: 0 0 10px 0; font-size: 14px; color: #2e7d32;">💰 הורדה / הוספת סכום לכל המתרים שמופיעים בנדרים</h4>
+                                <p style="margin: 0 0 12px 0; font-size: 12px; color: #555;">פעולה על כל מתרים שיש לו מספר מתרים בנדרים פלוס (nedarimMatrimId).</p>
+                                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px;">
+                                    <label for="bulkAmountInput" style="font-weight: 600;">סכום (ש"ח):</label>
+                                    <input type="number" id="bulkAmountInput" min="1" step="1" placeholder="למשל 100" style="width: 100px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;">
+                                    <button type="button" class="btn btn-small" onclick="bulkSubtractAmountFromNedarimDonors()" style="background: #d32f2f; color: white;">הורד סכום מכל המתרים (בנדרים)</button>
+                                    <button type="button" class="btn btn-small" onclick="bulkAddAmountToNedarimDonors()" style="background: #2e7d32; color: white;">הוסף סכום לכל המתרים (בנדרים)</button>
+                                </div>
+                                <p id="bulkAmountResult" style="margin: 8px 0 0 0; font-size: 12px; min-height: 18px;"></p>
+                            </div>
                             <div class="donors-search-meta" id="donorsSearchMeta"></div>
                         </div>
                         <div class="donors-list" id="donorsListContainer">
@@ -13687,6 +13698,85 @@
             }
             showNotification(changedCount > 0 ? msg : 'לא נמצאה התאמה להסרה.', changedCount > 0 ? 'success' : 'info');
             if (input && changedCount > 0) input.value = '';
+        }
+
+        // מתרים שמופיעים בנדרים = יש להם nedarimMatrimId תקין (ספרות בלבד)
+        function getDonorsInNedarim() {
+            return (donors || []).filter(d => {
+                const id = d.nedarimMatrimId;
+                if (id === undefined || id === null) return false;
+                const str = String(id).trim();
+                return str !== '' && /^\d+$/.test(str);
+            });
+        }
+
+        function bulkSubtractAmountFromNedarimDonors() {
+            const input = document.getElementById('bulkAmountInput');
+            const resultEl = document.getElementById('bulkAmountResult');
+            const amount = parseInt(input && input.value ? String(input.value).trim() : '', 10);
+            if (!Number.isFinite(amount) || amount <= 0) {
+                if (resultEl) { resultEl.textContent = 'נא להזין סכום חיובי (ש"ח) להפחתה.'; resultEl.style.color = '#c62828'; }
+                showNotification('נא להזין סכום להפחתה (מספר חיובי)', 'warning');
+                return;
+            }
+            const inNedarim = getDonorsInNedarim();
+            if (inNedarim.length === 0) {
+                if (resultEl) { resultEl.textContent = 'אין מתרים עם מספר מתרים בנדרים.'; resultEl.style.color = '#555'; }
+                showNotification('אין מתרים שמופיעים בנדרים', 'info');
+                return;
+            }
+            ensureDonorsNormalized();
+            let changed = 0;
+            inNedarim.forEach(d => {
+                const prev = Number(d.amount) || 0;
+                const next = Math.max(0, prev - amount);
+                if (next !== prev) {
+                    d.amount = next;
+                    d.updatedAt = new Date().toISOString();
+                    changed++;
+                }
+            });
+            saveData();
+            updateDonorsList();
+            updateHomeStats();
+            updateLeadersList();
+            updateLiveTargets();
+            updateLiveView();
+            const msg = `הופחתו ${amount.toLocaleString()} ש"ח מ־${changed} מתרים (מתוך ${inNedarim.length} שמופיעים בנדרים).`;
+            if (resultEl) { resultEl.textContent = msg; resultEl.style.color = '#2e7d32'; }
+            showNotification(msg, 'success');
+        }
+
+        function bulkAddAmountToNedarimDonors() {
+            const input = document.getElementById('bulkAmountInput');
+            const resultEl = document.getElementById('bulkAmountResult');
+            const amount = parseInt(input && input.value ? String(input.value).trim() : '', 10);
+            if (!Number.isFinite(amount) || amount <= 0) {
+                if (resultEl) { resultEl.textContent = 'נא להזין סכום חיובי (ש"ח) להוספה.'; resultEl.style.color = '#c62828'; }
+                showNotification('נא להזין סכום להוספה (מספר חיובי)', 'warning');
+                return;
+            }
+            const inNedarim = getDonorsInNedarim();
+            if (inNedarim.length === 0) {
+                if (resultEl) { resultEl.textContent = 'אין מתרים עם מספר מתרים בנדרים.'; resultEl.style.color = '#555'; }
+                showNotification('אין מתרים שמופיעים בנדרים', 'info');
+                return;
+            }
+            ensureDonorsNormalized();
+            inNedarim.forEach(d => {
+                const prev = Number(d.amount) || 0;
+                d.amount = prev + amount;
+                d.updatedAt = new Date().toISOString();
+            });
+            saveData();
+            updateDonorsList();
+            updateHomeStats();
+            updateLeadersList();
+            updateLiveTargets();
+            updateLiveView();
+            const msg = `נוספו ${amount.toLocaleString()} ש"ח ל־${inNedarim.length} מתרים שמופיעים בנדרים.`;
+            if (resultEl) { resultEl.textContent = msg; resultEl.style.color = '#2e7d32'; }
+            showNotification(msg, 'success');
         }
 
         // מחיקת מתרים (מקומית בלבד - לא מוחק מנדרים פלוס)
