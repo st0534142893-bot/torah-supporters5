@@ -20420,7 +20420,7 @@
         }
         
         // התאמת כל הסכומים בתוכנה לסכום האמיתי (יחסית בין המתרימים), ואז סנכרון לנדרים ישלח הפחתות
-        function applyRealAmountFix() {
+        async function applyRealAmountFix() {
             const inputEl = document.getElementById('nedarimFixRealAmountInput');
             const resultEl = document.getElementById('nedarimFixResult');
             const labelEl = document.getElementById('nedarimFixCurrentSumLabel');
@@ -20443,6 +20443,13 @@
                 if (resultEl) { resultEl.textContent = 'סה"כ נוכחי הוא 0 – לא ניתן לחלק יחסית. עדכן סכומים ידנית.'; resultEl.style.color = '#c62828'; }
                 return;
             }
+            
+            // שומר את הסכומים הישנים לפני העדכון
+            const oldAmounts = new Map();
+            donors.forEach(d => {
+                oldAmounts.set(d.id, d.amount || 0);
+            });
+            
             const factor = realTotal / currentSum;
             let adjusted = 0;
             donors.forEach(d => {
@@ -20474,11 +20481,117 @@
             updateLeadersList();
             updateLiveTargets();
             updateNedarimFixCurrentSumLabel();
+            
             if (resultEl) {
-                resultEl.textContent = '✅ הסכומים בתוכנה עודכנו ל־' + realTotal.toLocaleString('he-IL') + ' ₪. כעת לחץ על "סנכרון תרומות לנדרים פלוס" (הירוק למעלה) כדי לעדכן גם את נדרים פלוס.';
+                resultEl.textContent = '⏳ מעדכן את הסכומים בתוכנה...';
                 resultEl.style.color = '#0d47a1';
             }
-            showNotification('הסכומים בתוכנה עודכנו. הרץ "סנכרון תרומות לנדרים פלוס" כדי לעדכן את נדרים.');
+            
+            // מושך את הסכומים הנוכחיים מנדרים פלוס כדי לחשב דלתות
+            let nedarimAmountsMap = new Map();
+            try {
+                if (resultEl) {
+                    resultEl.textContent = '⏳ מושך נתונים מנדרים פלוס...';
+                }
+                const matrimList = await fetchMatrimFromMatchPlus();
+                matrimList.forEach(matrim => {
+                    const matrimId = matrim.Id || matrim.MatrimId || matrim.id || matrim.MatrimNumber || null;
+                    const matrimAmount = parseInt(matrim.Cumule) || parseInt(matrim.Amount) || 0;
+                    if (matrimId !== null && matrimId !== undefined) {
+                        nedarimAmountsMap.set(String(matrimId), matrimAmount);
+                    }
+                });
+            } catch (error) {
+                console.warn('⚠️ לא הצלחתי למשוך נתונים מנדרים פלוס:', error);
+                if (resultEl) {
+                    resultEl.textContent = '⚠️ לא הצלחתי למשוך נתונים מנדרים פלוס. הסכומים בתוכנה עודכנו, אך לא עודכנו בנדרים פלוס. נסה להריץ "סנכרון תרומות" ידנית.';
+                    resultEl.style.color = '#c62828';
+                }
+                showNotification('הסכומים בתוכנה עודכנו, אך לא עודכנו בנדרים פלוס. נסה להריץ "סנכרון תרומות" ידנית.');
+                return;
+            }
+            
+            // שולח את כל הדלתות לנדרים פלוס
+            if (resultEl) {
+                resultEl.textContent = '⏳ שולח עדכונים לנדרים פלוס...';
+            }
+            
+            let updatedCount = 0;
+            let skippedCount = 0;
+            let failedCount = 0;
+            
+            for (const donor of donors) {
+                const oldAmount = oldAmounts.get(donor.id) || 0;
+                const newAmount = donor.amount || 0;
+                const localDelta = newAmount - oldAmount;
+                
+                // אם אין שינוי מקומי, לא צריך לעדכן בנדרים
+                if (localDelta === 0) continue;
+                
+                // מחפש את הסכום הנוכחי בנדרים פלוס
+                const matrimIdStr = donor.nedarimMatrimId ? String(donor.nedarimMatrimId).trim() : null;
+                let nedarimAmount = 0;
+                
+                if (matrimIdStr && /^\d+$/.test(matrimIdStr)) {
+                    nedarimAmount = nedarimAmountsMap.get(matrimIdStr) || 0;
+                }
+                
+                // מחשב את הדלתה שצריך לשלוח לנדרים (הסכום החדש בתוכנה פחות הסכום הנוכחי בנדרים)
+                const deltaToSend = newAmount - nedarimAmount;
+                
+                // אם אין שינוי (הסכום החדש בתוכנה שווה לסכום בנדרים), לא צריך לשלוח
+                if (deltaToSend === 0) {
+                    skippedCount++;
+                    continue;
+                }
+                
+                // שולח את העדכון לנדרים פלוס
+                try {
+                    const result = await updateNedarimAmountViaSheets(donor, deltaToSend, 'התאמה לסכום האמיתי');
+                    if (result && result.success && !result.skipped) {
+                        updatedCount++;
+                        console.log(`✅ עודכן בנדרים פלוס: ${donor.name || 'ללא שם'} - דלתה: ${deltaToSend > 0 ? '+' : ''}${deltaToSend.toLocaleString()} ₪`);
+                    } else if (result && result.skipped) {
+                        skippedCount++;
+                        console.log(`ℹ️ נדלג על עדכון: ${donor.name || 'ללא שם'} - ${result.message || 'אין צורך בעדכון'}`);
+                    } else {
+                        failedCount++;
+                        console.warn(`⚠️ נכשל עדכון: ${donor.name || 'ללא שם'} - ${result?.error || result?.message || 'שגיאה לא ידועה'}`);
+                    }
+                } catch (error) {
+                    failedCount++;
+                    console.error(`❌ שגיאה בעדכון ${donor.name || 'ללא שם'}:`, error);
+                }
+                
+                // ממתין קצת בין עדכונים כדי לא להעמיס על השרת
+                await new Promise(resolve => setTimeout(resolve, 300));
+            }
+            
+            // הודעת הצלחה
+            let message = `✅ הסכומים עודכנו בהצלחה!`;
+            message += `\n📊 בתוכנה: ${realTotal.toLocaleString('he-IL')} ₪`;
+            if (updatedCount > 0) {
+                message += `\n✅ עודכנו ${updatedCount} מתרימים בנדרים פלוס`;
+            }
+            if (skippedCount > 0) {
+                message += `\nℹ️ ${skippedCount} מתרימים נדלגו (אין צורך בעדכון)`;
+            }
+            if (failedCount > 0) {
+                message += `\n⚠️ ${failedCount} מתרימים נכשלו בעדכון`;
+            }
+            
+            if (resultEl) {
+                resultEl.textContent = message;
+                resultEl.style.color = failedCount > 0 ? '#c62828' : '#0d47a1';
+            }
+            
+            if (updatedCount > 0) {
+                showNotification(`✅ הסכומים עודכנו בהצלחה! עודכנו ${updatedCount} מתרימים בנדרים פלוס.`, 'success');
+            } else if (failedCount > 0) {
+                showNotification(`⚠️ הסכומים בתוכנה עודכנו, אך ${failedCount} מתרימים נכשלו בעדכון בנדרים פלוס.`, 'warning');
+            } else {
+                showNotification(`✅ הסכומים עודכנו בהצלחה!`, 'success');
+            }
         }
         
         // ממלא את רשימת המתרימים בתיבת תיקון ההפחתה (מתרים עם מספר מתרים תקין)
