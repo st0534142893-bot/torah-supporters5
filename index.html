@@ -5492,6 +5492,7 @@
                         מחשבון
                     </button>
                     <button class="management-tab" data-tab="sync">עדכונים</button>
+                    <button class="management-tab" data-tab="dev">פיתוח</button>
                     <button class="management-tab" data-tab="history">📜 היסטוריה</button>
                     <button class="management-tab" data-tab="reset">אפשרויות איפוס</button>
                     <button class="management-tab" data-tab="password">הגדרת סיסמה</button>
@@ -6167,12 +6168,6 @@
                                 <button class="btn btn-primary" onclick="loadMatrimFromNedarim()" id="nedarimLoadMatrimBtn">
                                     📥 טען מתרימים מנדרים פלוס
                                 </button>
-                                <button class="btn btn-warning" onclick="cleanupAndReloadDonorsWithInvalidMatrimId()" id="cleanupDonorsBtn" style="background: #ffc107; color: #000;">
-                                    🧹 נקה וטען מחדש מתרים ללא מספר מתרים תקין
-                                </button>
-                                <button class="btn btn-secondary" onclick="loadMatrimIdsByNameFromNedarim()" id="loadMatrimIdsBtn" style="background: #6c757d; color: white;">
-                                    🔗 טען מספרי מתרים לפי שם (עמודה B)
-                                </button>
                                 <button class="btn btn-info" onclick="checkTotalAmountFromAPI()" id="checkTotalBtn" style="background: #17a2b8; color: white;">
                                     🔍 בדוק סכום כולל מ-API
                                 </button>
@@ -6183,131 +6178,6 @@
                                 <button type="button" class="btn btn-small" onclick="refreshNedarimRealTotalDisplay()" style="padding: 4px 10px; font-size: 12px;">רענן</button>
                                 <span style="font-size: 12px; color: #666; margin-right: 10px;">מה שבאמת מופיע בנדרים פלוס (כולל סליקות ללא שם מתרים)</span>
                             </div>
-                        </div>
-
-                        <div class="nedarim-fix-real-amount-box" style="margin-top: 15px; padding: 15px; background: #e3f2fd; border: 2px solid #1976d2; border-radius: 10px;">
-                            <h4 style="margin-bottom: 10px; color: #0d47a1;">📌 התאמה לסכום האמיתי – להעלות/להוריד את מה שמופיע בנדרים פלוס למה שצריך</h4>
-                            <p style="margin-bottom: 10px; font-size: 13px; color: #333;">התוכנה תחשב לבד את הסיכום מהמתרים, תעדכן את הסכומים בתוכנה ליעד שבחרת, ואז "סנכרון תרומות" ישלח את ההפרש לנדרים (כולל סליקות באשראי) כך שגם שם יופיע הסכום האמיתי.</p>
-                            <div style="margin-bottom: 12px; padding: 10px; background: rgba(255,255,255,0.7); border-radius: 8px; border: 1px solid #1976d2;">
-                                <div style="margin-bottom: 6px;"><strong>סה"כ בתוכנה</strong> (מסכומי כל המתרים): <span id="nedarimFixCurrentSumLabel" style="font-weight: 700;">—</span></div>
-                                <div><strong>סכום מוצג בנדרים פלוס</strong> (מ-API, כולל סליקות ללא שם מתרים): <span id="nedarimFixNedarimSumLabel" style="font-weight: 700;">—</span> <button type="button" class="btn btn-small" onclick="refreshNedarimRealTotalDisplay(); updateNedarimFixCurrentSumLabel();" style="padding: 2px 8px; font-size: 11px;">רענן</button></div>
-                            </div>
-                            <ol style="margin: 0 0 12px 1.2em; padding: 0; font-size: 13px; color: #333; line-height: 1.7;">
-                                <li>הזן את <strong>הסכום האמיתי</strong> (מה שצריך להיות – בתוכנה ובנדרים).</li>
-                                <li>לחץ "התאם סכומים בתוכנה" – הסיכום בתוכנה יהיה הסכום הזה (יחסית בין המתרים).</li>
-                                <li>לחץ <strong>"סנכרון תרומות לנדרים פלוס"</strong> (הכפתור הירוק למעלה) – יישלחו עדכונים לנדרים והסכום שם יתאם.</li>
-                            </ol>
-                            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 8px;">
-                                <input type="number" id="nedarimFixRealAmountInput" min="0" step="1" placeholder="הסכום האמיתי (₪)" style="width: 160px; padding: 8px 12px; border: 2px solid #1976d2; border-radius: 6px; font-size: 14px;">
-                                <button type="button" class="btn btn-primary" onclick="applyRealAmountFix()" style="background: #1976d2;">
-                                    התאם סכומים בתוכנה
-                                </button>
-                            </div>
-                            <p id="nedarimFixResult" style="margin: 0; font-size: 12px; min-height: 18px; color: #0d47a1;"></p>
-                        </div>
-
-                        <div class="nedarim-global-reduction-box" style="margin-top: 15px; padding: 15px; background: #fce4ec; border: 2px solid #c2185b; border-radius: 10px;">
-                            <h4 style="margin-bottom: 10px; color: #880e4f;">📉 הורדה גלובלית מכל המתרים</h4>
-                            <p style="margin-bottom: 10px; font-size: 13px; color: #333;">מפחית סכום כולל מכל המתרים (ביחס לסכום של כל אחד). למשל אם בנדרים מוצג מיליון וחצי אבל הסכום האמיתי מהמתרים הוא אחר – הזן כאן כמה להפחית (למשל 300,000) כדי שהסיכום בתוכנה ובנדרים יתאים למציאות.</p>
-                            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 8px;">
-                                <span id="nedarimGlobalReductionCurrentSum" style="font-weight: 600;">סה"כ נוכחי בתוכנה: —</span>
-                                <input type="number" id="nedarimGlobalReductionInput" min="0" step="1" placeholder="סכום להפחתה (₪)" style="width: 160px; padding: 8px 12px; border: 2px solid #c2185b; border-radius: 6px; font-size: 14px;">
-                                <button type="button" class="btn" onclick="applyGlobalReduction()" style="background: #c2185b; color: white;">
-                                    הורד סכום זה מכל המתרים (יחסי)
-                                </button>
-                            </div>
-                            <p id="nedarimGlobalReductionResult" style="margin: 0; font-size: 12px; min-height: 18px; color: #880e4f;"></p>
-                        </div>
-
-                        <div class="nedarim-global-addition-test-box" style="margin-top: 15px; padding: 15px; background: #e8eaf6; border: 2px solid #3f51b5; border-radius: 10px;">
-                            <h4 style="margin-bottom: 10px; color: #1a237e;">הענק לכל המתרים סכום זהה</h4>
-                            <p style="margin-bottom: 10px; font-size: 13px; color: #333;">מגדיר את הסכום שנאסף <strong>לכל</strong> המתרים לערך שהזנת – גם בנדרים פלוס וגם בתוכנה. למשל 2,000 ₪ לכל מתרים.</p>
-                            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 8px;">
-                                <input type="number" id="nedarimGlobalAdditionInput" min="0" step="1" placeholder="סכום לכל מתרים (₪)" style="width: 200px; padding: 8px 12px; border: 2px solid #3f51b5; border-radius: 6px; font-size: 14px;">
-                                <button type="button" class="btn" onclick="applyGlobalAdditionForTesting()" id="nedarimGlobalAdditionBtn" style="background: #3f51b5; color: white;">
-                                    הגדר סכום זה לכל המתרים
-                                </button>
-                            </div>
-                            <p id="nedarimGlobalAdditionResult" style="margin: 0; font-size: 12px; min-height: 18px; color: #1a237e;"></p>
-                        </div>
-
-                        <div class="nedarim-correction-box" style="margin-top: 15px; padding: 15px; background: #fff8e1; border: 2px solid #ff9800; border-radius: 10px;">
-                            <h4 style="margin-bottom: 10px; color: #e65100;">⚠️ תיקון סכום: הפחתה מנדרים פלוס (הפחתה ידנית)</h4>
-                            <p style="margin-bottom: 12px; font-size: 13px; color: #555;">אם נוסף סכום בטעות לנדרים (למשל בגלל באג סנכרון), אפשר להפחית כאן. ההפחתה תישלח לנדרים פלוס בלבד – לא תשנה את הסכום בתוכנה.</p>
-                            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;">
-                                <div>
-                                    <label style="display: block; margin-bottom: 4px; font-size: 12px;">מתרים (לפי רשימה או מספר מתרים):</label>
-                                    <select id="nedarimCorrectionDonorSelect" style="min-width: 220px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;">
-                                        <option value="">-- בחר מתרים --</option>
-                                    </select>
-                                    <input type="text" id="nedarimCorrectionMatrimIdManual" placeholder="או הזן מספר מתרים" style="margin-top: 6px; width: 120px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px;">
-                                </div>
-                                <div>
-                                    <label style="display: block; margin-bottom: 4px; font-size: 12px;">סכום להפחתה (₪):</label>
-                                    <input type="number" id="nedarimCorrectionAmount" min="1" step="1" placeholder="למשל 200000" style="width: 120px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;">
-                                </div>
-                                <button type="button" class="btn btn-warning" onclick="applyNedarimCorrectionSubtraction()" style="background: #ff9800; color: white;">
-                                    ➖ הפחת סכום מנדרים פלוס
-                                </button>
-                            </div>
-                            <p id="nedarimCorrectionResult" style="margin-top: 10px; font-size: 12px; min-height: 20px;"></p>
-                        </div>
-
-                        <div class="nedarim-reset-to-zero-box" style="margin-top: 15px; padding: 15px; background: #fff3e0; border: 2px solid #e65100; border-radius: 10px;">
-                            <h4 style="margin-bottom: 10px; color: #bf360c;">🔄 איפוס הסכום המוצג בנדרים ל־0 ₪</h4>
-                            <p style="margin-bottom: 10px; font-size: 13px; color: #333;">אם בנדרים מוצג מינוס ורוצים לאפס את התצוגה ל־0 – התוכנה תשלח תיקון טכני לנדרים (חובה לייחס למתרים אחד ב-API). <strong>בתוכנה לא מתווסף הסכום לאף מתרים</strong> – רק התצוגה עוברת ל־0. בסנכרון תרומות הבא נדרים יתעדכן לפי הסכומים האמיתיים של המתרים.</p>
-                            <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
-                                <span id="nedarimResetCurrentDisplay" style="font-weight: 700;">הסכום בנדרים כעת: —</span>
-                                <button type="button" class="btn" onclick="resetNedarimDisplayToZero()" id="resetNedarimToZeroBtn" style="background: #e65100; color: white;">
-                                    אפס את הסכום המוצג בנדרים ל־0 ₪
-                                </button>
-                            </div>
-                            <p id="nedarimResetToZeroResult" style="margin-top: 10px; font-size: 12px; min-height: 20px; color: #bf360c;"></p>
-                        </div>
-
-                        <div class="nedarim-add-direct-box" style="margin-top: 15px; padding: 15px; background: #e0f7fa; border: 2px solid #0097a7; border-radius: 10px;">
-                            <h4 style="margin-bottom: 10px; color: #006064;">➕ הוספת סכום לנדרים (מתעדכן מיד, בלי סנכרון)</h4>
-                            <p style="margin-bottom: 12px; font-size: 13px; color: #333;">פשוט מזינים סכום – הוא יעלה מיד בנדרים ובתוכנה. בנדרים הסכום ייוחס ל"מתרים לתוספות כלליות" (נבחר למטה פעם אחת).</p>
-                            <div style="margin-bottom: 10px;">
-                                <label style="display: block; margin-bottom: 4px; font-size: 12px;">מתרים לתוספות כלליות (למי לייחס בנדרים – נבחר פעם אחת):</label>
-                                <select id="addToNedarimDonorSelect" style="min-width: 280px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;" onchange="saveGenericAddDonorId()">
-                                    <option value="">-- בחר מתרים --</option>
-                                </select>
-                            </div>
-                            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
-                                <input type="number" id="addToNedarimAmount" min="1" step="1" placeholder="סכום להוספה (₪)" style="width: 140px; padding: 8px 12px; border: 2px solid #0097a7; border-radius: 6px;">
-                                <input type="text" id="addToNedarimComments" placeholder="הערה (אופציונלי)" style="width: 160px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;">
-                                <button type="button" class="btn" onclick="addAmountToNedarimImmediate()" id="addToNedarimBtn" style="background: #0097a7; color: white;">
-                                    ➕ הוסף סכום
-                                </button>
-                            </div>
-                            <p id="addToNedarimResult" style="margin-top: 10px; font-size: 12px; min-height: 20px;"></p>
-                        </div>
-
-                        <div class="nedarim-update-by-api-box" style="margin-top: 15px; padding: 15px; background: #e8f5e9; border: 2px solid #2e7d32; border-radius: 10px;">
-                            <h4 style="margin-bottom: 10px; color: #1b5e20;">📤 עדכון סכום לפי API (תוספת או הפחתה)</h4>
-                            <p style="margin-bottom: 12px; font-size: 13px; color: #333;">שליחת עדכון תרומה ישירות לנדרים פלוס. סכום חיובי = תוספת, סכום שלילי = הפחתה. מתעדכן גם בתוכנה.</p>
-                            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;">
-                                <div>
-                                    <label style="display: block; margin-bottom: 4px; font-size: 12px;">מתרים:</label>
-                                    <select id="updateByApiDonorSelect" style="min-width: 220px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;">
-                                        <option value="">-- בחר מתרים --</option>
-                                    </select>
-                                    <input type="text" id="updateByApiMatrimIdManual" placeholder="או הזן מספר מתרים" style="margin-top: 6px; width: 120px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px;">
-                                </div>
-                                <div>
-                                    <label style="display: block; margin-bottom: 4px; font-size: 12px;">סכום (₪, חיובי=תוספת, שלילי=הפחתה):</label>
-                                    <input type="number" id="updateByApiAmount" step="1" placeholder="למשל 500 או -200" style="width: 140px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;">
-                                </div>
-                                <div>
-                                    <label style="display: block; margin-bottom: 4px; font-size: 12px;">הערה (אופציונלי):</label>
-                                    <input type="text" id="updateByApiComments" placeholder="הערה" style="width: 160px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;">
-                                </div>
-                                <button type="button" class="btn btn-success" onclick="updateAmountByAPI()" id="updateByApiBtn" style="background: #2e7d32; color: white;">
-                                    📤 עדכן סכום ב-API
-                                </button>
-                            </div>
-                            <p id="updateByApiResult" style="margin-top: 10px; font-size: 12px; min-height: 20px;"></p>
                         </div>
 
                         <div class="auto-sync-control" style="margin-top: 15px; padding: 15px; background: rgba(255, 255, 255, 0.6); border-radius: 10px; border: 1px solid var(--border);">
@@ -6435,6 +6305,143 @@
                                     לאחר הגדרת ה-URL, הגליון יהיה זמין דרך הסנכרון.
                                 </p>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- פיתוח – מיועד למפתח בלבד -->
+                <div class="management-content" id="devContent">
+                    <div class="sync-settings-panel">
+                        <div style="background: #ffebee; border: 3px solid #c62828; border-radius: 12px; padding: 20px; margin-bottom: 25px;">
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                                <span style="font-size: 32px;">⚠️</span>
+                                <strong style="color: #b71c1c; font-size: 18px;">מדור פיתוח – מיועד למפתח בלבד</strong>
+                            </div>
+                            <p style="color: #b71c1c; margin: 0; line-height: 1.7; font-size: 15px;">
+                                <strong>אין לשנות כלום בדור זה ללא הכרת המערכת.</strong> כלי הנמצאים כאן משמשים לתיקונים טכניים, סנכרון נתונים ובדיקות. שימוש לא נכון עלול לפגוע בנתונים.
+                            </p>
+                        </div>
+
+                        <h3>כלי פיתוח – נדרים פלוס וסכומים</h3>
+                        <div style="margin-bottom: 20px;">
+                            <div style="margin-bottom: 12px;">
+                                <strong>סכום מוצג בנדרים פלוס (מקור API):</strong>
+                                <span id="nedarimRealTotalInDev" style="font-weight: 700; margin-right: 8px;">—</span>
+                                <button type="button" class="btn btn-small" onclick="refreshNedarimRealTotalDisplay(); if(typeof updateNedarimResetCurrentDisplay==='function') updateNedarimResetCurrentDisplay();" style="padding: 4px 10px; font-size: 12px;">רענן</button>
+                            </div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 12px;">
+                                <button class="btn btn-warning" onclick="cleanupAndReloadDonorsWithInvalidMatrimId()" id="cleanupDonorsBtn" style="background: #ffc107; color: #000;">
+                                    🧹 נקה וטען מחדש מתרים ללא מספר מתרים תקין
+                                </button>
+                                <button class="btn btn-secondary" onclick="loadMatrimIdsByNameFromNedarim()" id="loadMatrimIdsBtn" style="background: #6c757d; color: white;">
+                                    🔗 טען מספרי מתרים לפי שם (עמודה B)
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="nedarim-fix-real-amount-box" style="margin-top: 15px; padding: 15px; background: #e3f2fd; border: 2px solid #1976d2; border-radius: 10px;">
+                            <h4 style="margin-bottom: 10px; color: #0d47a1;">📌 התאמה לסכום האמיתי – להעלות/להוריד את מה שמופיע בנדרים פלוס למה שצריך</h4>
+                            <p style="margin-bottom: 10px; font-size: 13px; color: #333;">התוכנה תחשב לבד את הסיכום מהמתרים, תעדכן את הסכומים בתוכנה ליעד שבחרת, ואז "סנכרון תרומות" ישלח את ההפרש לנדרים (כולל סליקות באשראי) כך שגם שם יופיע הסכום האמיתי.</p>
+                            <div style="margin-bottom: 12px; padding: 10px; background: rgba(255,255,255,0.7); border-radius: 8px; border: 1px solid #1976d2;">
+                                <div style="margin-bottom: 6px;"><strong>סה"כ בתוכנה</strong> (מסכומי כל המתרים): <span id="nedarimFixCurrentSumLabel" style="font-weight: 700;">—</span></div>
+                                <div><strong>סכום מוצג בנדרים פלוס</strong> (מ-API, כולל סליקות ללא שם מתרים): <span id="nedarimFixNedarimSumLabel" style="font-weight: 700;">—</span> <button type="button" class="btn btn-small" onclick="refreshNedarimRealTotalDisplay(); if(typeof updateNedarimFixCurrentSumLabel==='function') updateNedarimFixCurrentSumLabel();" style="padding: 2px 8px; font-size: 11px;">רענן</button></div>
+                            </div>
+                            <ol style="margin: 0 0 12px 1.2em; padding: 0; font-size: 13px; color: #333; line-height: 1.7;">
+                                <li>הזן את <strong>הסכום האמיתי</strong> (מה שצריך להיות – בתוכנה ובנדרים).</li>
+                                <li>לחץ "התאם סכומים בתוכנה" – הסיכום בתוכנה יהיה הסכום הזה (יחסית בין המתרים).</li>
+                                <li>לחץ <strong>"סנכרון תרומות לנדרים פלוס"</strong> (בטאב עדכונים) – יישלחו עדכונים לנדרים והסכום שם יתאם.</li>
+                            </ol>
+                            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 8px;">
+                                <input type="number" id="nedarimFixRealAmountInput" min="0" step="1" placeholder="הסכום האמיתי (₪)" style="width: 160px; padding: 8px 12px; border: 2px solid #1976d2; border-radius: 6px; font-size: 14px;">
+                                <button type="button" class="btn btn-primary" onclick="applyRealAmountFix()" style="background: #1976d2;">התאם סכומים בתוכנה</button>
+                            </div>
+                            <p id="nedarimFixResult" style="margin: 0; font-size: 12px; min-height: 18px; color: #0d47a1;"></p>
+                        </div>
+
+                        <div class="nedarim-global-reduction-box" style="margin-top: 15px; padding: 15px; background: #fce4ec; border: 2px solid #c2185b; border-radius: 10px;">
+                            <h4 style="margin-bottom: 10px; color: #880e4f;">📉 הורדה גלובלית מכל המתרים</h4>
+                            <p style="margin-bottom: 10px; font-size: 13px; color: #333;">מפחית סכום כולל מכל המתרים (ביחס לסכום של כל אחד).</p>
+                            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 8px;">
+                                <span id="nedarimGlobalReductionCurrentSum" style="font-weight: 600;">סה"כ נוכחי בתוכנה: —</span>
+                                <input type="number" id="nedarimGlobalReductionInput" min="0" step="1" placeholder="סכום להפחתה (₪)" style="width: 160px; padding: 8px 12px; border: 2px solid #c2185b; border-radius: 6px; font-size: 14px;">
+                                <button type="button" class="btn" onclick="applyGlobalReduction()" style="background: #c2185b; color: white;">הורד סכום זה מכל המתרים (יחסי)</button>
+                            </div>
+                            <p id="nedarimGlobalReductionResult" style="margin: 0; font-size: 12px; min-height: 18px; color: #880e4f;"></p>
+                        </div>
+
+                        <div class="nedarim-global-addition-test-box" style="margin-top: 15px; padding: 15px; background: #e8eaf6; border: 2px solid #3f51b5; border-radius: 10px;">
+                            <h4 style="margin-bottom: 10px; color: #1a237e;">הענק לכל המתרים סכום זהה</h4>
+                            <p style="margin-bottom: 10px; font-size: 13px; color: #333;">מגדיר את הסכום שנאסף <strong>לכל</strong> המתרים לערך שהזנת – גם בנדרים פלוס וגם בתוכנה.</p>
+                            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 8px;">
+                                <input type="number" id="nedarimGlobalAdditionInput" min="0" step="1" placeholder="סכום לכל מתרים (₪)" style="width: 200px; padding: 8px 12px; border: 2px solid #3f51b5; border-radius: 6px; font-size: 14px;">
+                                <button type="button" class="btn" onclick="applyGlobalAdditionForTesting()" id="nedarimGlobalAdditionBtn" style="background: #3f51b5; color: white;">הגדר סכום זה לכל המתרים</button>
+                            </div>
+                            <p id="nedarimGlobalAdditionResult" style="margin: 0; font-size: 12px; min-height: 18px; color: #1a237e;"></p>
+                        </div>
+
+                        <div class="nedarim-correction-box" style="margin-top: 15px; padding: 15px; background: #fff8e1; border: 2px solid #ff9800; border-radius: 10px;">
+                            <h4 style="margin-bottom: 10px; color: #e65100;">⚠️ תיקון סכום: הפחתה מנדרים פלוס (הפחתה ידנית)</h4>
+                            <p style="margin-bottom: 12px; font-size: 13px; color: #555;">אם נוסף סכום בטעות לנדרים, אפשר להפחית כאן. ההפחתה תישלח לנדרים פלוס בלבד.</p>
+                            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;">
+                                <div>
+                                    <label style="display: block; margin-bottom: 4px; font-size: 12px;">מתרים (לפי רשימה או מספר מתרים):</label>
+                                    <select id="nedarimCorrectionDonorSelect" style="min-width: 220px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;"><option value="">-- בחר מתרים --</option></select>
+                                    <input type="text" id="nedarimCorrectionMatrimIdManual" placeholder="או הזן מספר מתרים" style="margin-top: 6px; width: 120px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px;">
+                                </div>
+                                <div>
+                                    <label style="display: block; margin-bottom: 4px; font-size: 12px;">סכום להפחתה (₪):</label>
+                                    <input type="number" id="nedarimCorrectionAmount" min="1" step="1" placeholder="למשל 200000" style="width: 120px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;">
+                                </div>
+                                <button type="button" class="btn btn-warning" onclick="applyNedarimCorrectionSubtraction()" style="background: #ff9800; color: white;">➖ הפחת סכום מנדרים פלוס</button>
+                            </div>
+                            <p id="nedarimCorrectionResult" style="margin-top: 10px; font-size: 12px; min-height: 20px;"></p>
+                        </div>
+
+                        <div class="nedarim-reset-to-zero-box" style="margin-top: 15px; padding: 15px; background: #fff3e0; border: 2px solid #e65100; border-radius: 10px;">
+                            <h4 style="margin-bottom: 10px; color: #bf360c;">🔄 איפוס הסכום המוצג בנדרים ל־0 ₪</h4>
+                            <p style="margin-bottom: 10px; font-size: 13px; color: #333;">אם בנדרים מוצג מינוס ורוצים לאפס את התצוגה ל־0 – התוכנה תשלח תיקון טכני לנדרים.</p>
+                            <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+                                <span id="nedarimResetCurrentDisplay" style="font-weight: 700;">הסכום בנדרים כעת: —</span>
+                                <button type="button" class="btn" onclick="resetNedarimDisplayToZero()" id="resetNedarimToZeroBtn" style="background: #e65100; color: white;">אפס את הסכום המוצג בנדרים ל־0 ₪</button>
+                            </div>
+                            <p id="nedarimResetToZeroResult" style="margin-top: 10px; font-size: 12px; min-height: 20px; color: #bf360c;"></p>
+                        </div>
+
+                        <div class="nedarim-add-direct-box" style="margin-top: 15px; padding: 15px; background: #e0f7fa; border: 2px solid #0097a7; border-radius: 10px;">
+                            <h4 style="margin-bottom: 10px; color: #006064;">➕ הוספת סכום לנדרים (מתעדכן מיד, בלי סנכרון)</h4>
+                            <p style="margin-bottom: 12px; font-size: 13px; color: #333;">פשוט מזינים סכום – הוא יעלה מיד בנדרים ובתוכנה.</p>
+                            <div style="margin-bottom: 10px;">
+                                <label style="display: block; margin-bottom: 4px; font-size: 12px;">מתרים לתוספות כלליות:</label>
+                                <select id="addToNedarimDonorSelect" style="min-width: 280px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;" onchange="saveGenericAddDonorId()"><option value="">-- בחר מתרים --</option></select>
+                            </div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                                <input type="number" id="addToNedarimAmount" min="1" step="1" placeholder="סכום להוספה (₪)" style="width: 140px; padding: 8px 12px; border: 2px solid #0097a7; border-radius: 6px;">
+                                <input type="text" id="addToNedarimComments" placeholder="הערה (אופציונלי)" style="width: 160px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;">
+                                <button type="button" class="btn" onclick="addAmountToNedarimImmediate()" id="addToNedarimBtn" style="background: #0097a7; color: white;">➕ הוסף סכום</button>
+                            </div>
+                            <p id="addToNedarimResult" style="margin-top: 10px; font-size: 12px; min-height: 20px;"></p>
+                        </div>
+
+                        <div class="nedarim-update-by-api-box" style="margin-top: 15px; padding: 15px; background: #e8f5e9; border: 2px solid #2e7d32; border-radius: 10px;">
+                            <h4 style="margin-bottom: 10px; color: #1b5e20;">📤 עדכון סכום לפי API (תוספת או הפחתה)</h4>
+                            <p style="margin-bottom: 12px; font-size: 13px; color: #333;">שליחת עדכון תרומה ישירות לנדרים פלוס. סכום חיובי = תוספת, סכום שלילי = הפחתה.</p>
+                            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;">
+                                <div>
+                                    <label style="display: block; margin-bottom: 4px; font-size: 12px;">מתרים:</label>
+                                    <select id="updateByApiDonorSelect" style="min-width: 220px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;"><option value="">-- בחר מתרים --</option></select>
+                                    <input type="text" id="updateByApiMatrimIdManual" placeholder="או הזן מספר מתרים" style="margin-top: 6px; width: 120px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px;">
+                                </div>
+                                <div>
+                                    <label style="display: block; margin-bottom: 4px; font-size: 12px;">סכום (₪, חיובי=תוספת, שלילי=הפחתה):</label>
+                                    <input type="number" id="updateByApiAmount" step="1" placeholder="למשל 500 או -200" style="width: 140px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;">
+                                </div>
+                                <div>
+                                    <label style="display: block; margin-bottom: 4px; font-size: 12px;">הערה (אופציונלי):</label>
+                                    <input type="text" id="updateByApiComments" placeholder="הערה" style="width: 160px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;">
+                                </div>
+                                <button type="button" class="btn btn-success" onclick="updateAmountByAPI()" id="updateByApiBtn" style="background: #2e7d32; color: white;">📤 עדכן סכום ב-API</button>
+                            </div>
+                            <p id="updateByApiResult" style="margin-top: 10px; font-size: 12px; min-height: 20px;"></p>
                         </div>
                     </div>
                 </div>
@@ -6992,6 +6999,7 @@
             { id: 'management-donors', label: 'ניהול → ניהול מתרימים' },
             { id: 'management-liveview', label: 'ניהול → הגדרות תצוגת לייב' },
             { id: 'management-sync', label: 'ניהול → עדכונים' },
+            { id: 'management-dev', label: 'ניהול → פיתוח (מפתח בלבד)' },
             { id: 'management-reset', label: 'ניהול → אפשרויות איפוס' },
             { id: 'management-password', label: 'ניהול → הגדרת סיסמה' },
             { id: 'liveview', label: 'תצוגה בלייב' },
@@ -11930,6 +11938,11 @@
                 } else if (tabName === 'sync') {
                     var ndEl = document.getElementById('nedarimRealTotalInSync');
                     if (ndEl && NEDARIM_CONFIG.apiDataLoaded && NEDARIM_CONFIG.totalDonatedFromAPI != null && isFinite(NEDARIM_CONFIG.totalDonatedFromAPI)) ndEl.textContent = NEDARIM_CONFIG.totalDonatedFromAPI.toLocaleString('he-IL') + ' ₪';
+                    updateNedarimFixCurrentSumLabel();
+                    if (typeof updateNedarimGlobalReductionCurrentSum === 'function') updateNedarimGlobalReductionCurrentSum();
+                } else if (tabName === 'dev') {
+                    var devTotalEl = document.getElementById('nedarimRealTotalInDev');
+                    if (devTotalEl && NEDARIM_CONFIG.apiDataLoaded && NEDARIM_CONFIG.totalDonatedFromAPI != null && isFinite(NEDARIM_CONFIG.totalDonatedFromAPI)) devTotalEl.textContent = NEDARIM_CONFIG.totalDonatedFromAPI.toLocaleString('he-IL') + ' ₪';
                     updateNedarimFixCurrentSumLabel();
                     if (typeof updateNedarimGlobalReductionCurrentSum === 'function') updateNedarimGlobalReductionCurrentSum();
                     fillNedarimCorrectionDonorSelect();
@@ -20185,11 +20198,15 @@
         // מרענן את התצוגה "סכום מוצג בנדרים פלוס" (משיכה מ-API ועדכון התצוגה והמערכת)
         async function refreshNedarimRealTotalDisplay() {
             var el = document.getElementById('nedarimRealTotalInSync');
+            var elDev = document.getElementById('nedarimRealTotalInDev');
             if (el) el.textContent = '… טוען';
+            if (elDev) elDev.textContent = '… טוען';
             try {
                 var totalData = await fetchTotalFromMatchPlus();
                 if (totalData && totalData.Donated != null && isFinite(totalData.Donated)) {
-                    if (el) el.textContent = totalData.Donated.toLocaleString('he-IL') + ' ₪';
+                    var txt = totalData.Donated.toLocaleString('he-IL') + ' ₪';
+                    if (el) el.textContent = txt;
+                    if (elDev) elDev.textContent = txt;
                     NEDARIM_CONFIG.totalDonatedFromAPI = totalData.Donated;
                     NEDARIM_CONFIG.goalFromAPI = totalData.Goal != null ? totalData.Goal : NEDARIM_CONFIG.goalFromAPI;
                     NEDARIM_CONFIG.apiDataLoaded = true;
@@ -20200,10 +20217,12 @@
                     showNotification('סכום נדרים פלוס עודכן: ' + totalData.Donated.toLocaleString('he-IL') + ' ₪', 'success');
                 } else {
                     if (el) el.textContent = '—';
+                    if (elDev) elDev.textContent = '—';
                     showNotification('לא התקבל סכום מ-API', 'warning');
                 }
             } catch (err) {
                 if (el) el.textContent = '—';
+                if (elDev) elDev.textContent = '—';
                 showNotification('שגיאה: ' + (err.message || err), 'error');
             }
         }
