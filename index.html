@@ -16161,73 +16161,64 @@
                     });
                 }
                 
-                // ✅ שליחה דרך Netlify Function מאובטחת
+                // ✅ שליחה: קודם Netlify proxy, אם נכשל (404 וכו') – fallback ל-Google Sheets
+                const netlifyProxyUrl = '/.netlify/functions/nedarim-proxy';
+                const mosadIdToSend = NEDARIM_CONFIG.mosadId || '1000642';
+                const requestBody = {
+                    matrimId: finalMatrimId,
+                    clientName: (clientName || 'תורם אנונימי').trim(),
+                    amount: validAmount,
+                    comments: (comments || '').trim(),
+                    mosadId: mosadIdToSend
+                };
+
                 try {
-                    const proxyUrl = '/.netlify/functions/nedarim-proxy';
-                    const mosadIdToSend = NEDARIM_CONFIG.mosadId || '1000642'; // ברירת מחדל
-                    const requestBody = {
-                        matrimId: finalMatrimId,
-                        clientName: (clientName || 'תורם אנונימי').trim(),
-                        amount: validAmount,
-                        comments: (comments || '').trim(),
-                        mosadId: mosadIdToSend
-                    };
-
-                    console.log('📤 שולח ל-proxy:', {
-                        url: proxyUrl,
-                        body: requestBody
-                    });
-
-                    const response = await fetch(proxyUrl, {
+                    console.log('📤 שולח ל-Netlify proxy:', { url: netlifyProxyUrl, body: requestBody });
+                    const response = await fetch(netlifyProxyUrl, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(requestBody)
                     });
-
-                    console.log('📥 תגובה מ-proxy:', {
-                        status: response.status,
-                        statusText: response.statusText,
-                        ok: response.ok
-                    });
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        console.error('❌ שגיאה ב-proxy:', errorText);
-                        throw new Error(`Proxy error: ${response.status} - ${errorText.substring(0, 200)}`);
+                    console.log('📥 תגובה מ-proxy:', response.status, response.statusText);
+                    if (response.ok) {
+                        const responseData = await response.json();
+                        if (responseData && responseData.success) {
+                            console.log('✅ העלאה הצליחה דרך Netlify proxy');
+                            return { success: true, message: responseData.message || 'התרומה הועלתה בהצלחה' };
+                        }
+                        throw new Error(responseData.error || responseData.message || 'שגיאה מהשרת');
                     }
-
-                    const responseData = await response.json();
-                    
-                    console.log('📦 תגובה משרת Proxy:', {
-                        status: response.status,
-                        success: responseData.success,
-                        message: responseData.message || responseData.error,
-                        fullResponse: responseData
-                    });
-
-                    if (responseData.success) {
-                        console.log('✅ העלאה הצליחה דרך Proxy:', responseData);
-                        return { success: true, message: responseData.message || 'התרומה הועלתה בהצלחה' };
-                    } else {
-                        throw new Error(responseData.error || 'שגיאה לא ידועה מה-proxy');
-                    }
+                    throw new Error('Proxy ' + response.status);
                 } catch (proxyError) {
-                    console.error('❌ שגיאה ב-proxy:', proxyError);
-                    console.error('❌ פרטי השגיאה:', {
-                        message: proxyError.message,
-                        stack: proxyError.stack,
-                        url: proxyUrl,
-                        body: requestBody
-                    });
-                    // הודעה ברורה – רק דרך proxy, בלי שליחה ישירה (אבטחה)
-                    if (proxyError.message && (proxyError.message.includes('Failed to fetch') || 
-                        proxyError.message.includes('NetworkError') || 
-                        proxyError.message.includes('CORS'))) {
-                        throw new Error('לא ניתן להתחבר לשרת. ודא שהאתר פרוס ב-Netlify או שהפונקציה nedarim-proxy פעילה.');
+                    console.warn('⚠️ Netlify proxy נכשל:', proxyError.message, '– מנסה דרך Google Sheets');
+                    const sheetsUrl = googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || DEFAULT_GOOGLE_SHEETS_URL || '';
+                    if (sheetsUrl.trim()) {
+                        try {
+                            const sheetsBody = {
+                                action: 'updateNedarimAmount',
+                                matrimId: finalMatrimId,
+                                amount: validAmount,
+                                clientName: (clientName || 'תורם אנונימי').trim(),
+                                comments: (comments || '').trim()
+                            };
+                            const res = await fetch(sheetsUrl, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(sheetsBody)
+                            });
+                            if (!res.ok) throw new Error('Sheets ' + res.status);
+                            const data = await res.json();
+                            if (data && data.success) {
+                                console.log('✅ העלאה הצליחה דרך Google Sheets');
+                                return { success: true, message: data.message || 'התרומה הועלתה בהצלחה' };
+                            }
+                            throw new Error(data.error || data.message || 'שגיאה מ-Google Sheets');
+                        } catch (sheetsErr) {
+                            console.error('❌ גם Google Sheets נכשל:', sheetsErr.message);
+                            throw new Error('שליחה לנדרים נכשלה (proxy: ' + (proxyError.message || '') + '; Sheets: ' + (sheetsErr.message || '') + '). ודא שיש כתובת Google Sheets תקינה בלשונית עדכונים.');
+                        }
                     }
-                    throw proxyError;
+                    throw new Error('Netlify proxy לא זמין (404) ואין כתובת Google Sheets. הזן כתובת Google Sheets בלשונית "עדכונים".');
                 }
             } catch (error) {
                 console.error('❌ שגיאה בהעלאת תרומה לנדרים פלוס:', error);
