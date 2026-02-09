@@ -16161,65 +16161,33 @@
                     });
                 }
                 
-                // ✅ שליחה: קודם Netlify proxy, אם נכשל (404 וכו') – fallback ל-Google Sheets
-                const netlifyProxyUrl = '/.netlify/functions/nedarim-proxy';
-                const mosadIdToSend = NEDARIM_CONFIG.mosadId || '1000642';
-                const requestBody = {
-                    matrimId: finalMatrimId,
-                    clientName: (clientName || 'תורם אנונימי').trim(),
-                    amount: validAmount,
-                    comments: (comments || '').trim(),
-                    mosadId: mosadIdToSend
-                };
-
-                try {
-                    console.log('📤 שולח ל-Netlify proxy:', { url: netlifyProxyUrl, body: requestBody });
-                    const response = await fetch(netlifyProxyUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(requestBody)
-                    });
-                    console.log('📥 תגובה מ-proxy:', response.status, response.statusText);
-                    if (response.ok) {
-                        const responseData = await response.json();
-                        if (responseData && responseData.success) {
-                            console.log('✅ העלאה הצליחה דרך Netlify proxy');
-                            return { success: true, message: responseData.message || 'התרומה הועלתה בהצלחה' };
-                        }
-                        throw new Error(responseData.error || responseData.message || 'שגיאה מהשרת');
-                    }
-                    throw new Error('Proxy ' + response.status);
-                } catch (proxyError) {
-                    console.warn('⚠️ Netlify proxy נכשל:', proxyError.message, '– מנסה דרך Google Sheets');
-                    const sheetsUrl = googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || DEFAULT_GOOGLE_SHEETS_URL || '';
-                    if (sheetsUrl.trim()) {
-                        try {
-                            const sheetsBody = {
-                                action: 'updateNedarimAmount',
-                                matrimId: finalMatrimId,
-                                amount: validAmount,
-                                clientName: (clientName || 'תורם אנונימי').trim(),
-                                comments: (comments || '').trim()
-                            };
-                            const res = await fetch(sheetsUrl, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(sheetsBody)
-                            });
-                            if (!res.ok) throw new Error('Sheets ' + res.status);
-                            const data = await res.json();
-                            if (data && data.success) {
-                                console.log('✅ העלאה הצליחה דרך Google Sheets');
-                                return { success: true, message: data.message || 'התרומה הועלתה בהצלחה' };
-                            }
-                            throw new Error(data.error || data.message || 'שגיאה מ-Google Sheets');
-                        } catch (sheetsErr) {
-                            console.error('❌ גם Google Sheets נכשל:', sheetsErr.message);
-                            throw new Error('שליחה לנדרים נכשלה (proxy: ' + (proxyError.message || '') + '; Sheets: ' + (sheetsErr.message || '') + '). ודא שיש כתובת Google Sheets תקינה בלשונית עדכונים.');
-                        }
-                    }
-                    throw new Error('Netlify proxy לא זמין (404) ואין כתובת Google Sheets. הזן כתובת Google Sheets בלשונית "עדכונים".');
+                // ✅ שליחה דרך Google Sheets (Apps Script) – בלי תלות ב-Netlify, בלי 404
+                const sheetsUrl = (googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || DEFAULT_GOOGLE_SHEETS_URL || '').trim();
+                if (!sheetsUrl) {
+                    throw new Error('אין כתובת Google Sheets. הזן כתובת בלשונית "עדכונים" → סנכרון דרך Google Sheets.');
                 }
+                const sheetsBody = {
+                    action: 'updateNedarimAmount',
+                    matrimId: finalMatrimId,
+                    amount: validAmount,
+                    clientName: (clientName || 'תורם אנונימי').trim(),
+                    comments: (comments || '').trim()
+                };
+                console.log('📤 שולח עדכון לנדרים דרך Google Sheets');
+                const res = await fetch(sheetsUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(sheetsBody)
+                });
+                if (!res.ok) {
+                    throw new Error('שגיאת שרת: ' + res.status + '. ודא שכתובת Google Sheets נכונה והסקריפט פרוס.');
+                }
+                const data = await res.json();
+                if (data && data.success) {
+                    console.log('✅ העלאה הצליחה דרך Google Sheets');
+                    return { success: true, message: data.message || 'התרומה הועלתה בהצלחה' };
+                }
+                throw new Error(data.error || data.message || 'שגיאה מתגובת השרת');
             } catch (error) {
                 console.error('❌ שגיאה בהעלאת תרומה לנדרים פלוס:', error);
                 console.error('❌ פרטי השגיאה:', {
