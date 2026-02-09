@@ -17333,16 +17333,39 @@
                 matrimList = [...byMatrimIdLoad.values()];
                 if (matrimList.length < origCountLoad) console.log(`📋 [טעינת מתרימים] הוסרו ${origCountLoad - matrimList.length} כפילויות`);
 
-                // מעדכן רק מתרימים קיימים במערכת (לא מוסיף מתרים חדשים)
+                // מעדכן מתרים קיימים ומוסיף מתרים חדשים מנדרים פלוס
+                let newMatrim = 0;
                 let updatedMatrim = 0;
 
-                // מחפש קבוצה "נדרים פלוס" (אם קיימת)
+                // בדיקה לפי מספר מתרים: האם יש בנדרים פלוס מתרים שאין בתוכנה
+                const existingMatrimIds = new Set();
+                donors.forEach(d => {
+                    const mid = d.nedarimMatrimId != null ? String(d.nedarimMatrimId).trim() : '';
+                    if (/^\d+$/.test(mid)) existingMatrimIds.add(mid);
+                });
+                const hasNewByMatrimId = matrimList.some(m => {
+                    const id = m.Id ?? m.MatrimId ?? m.id ?? m.MatrimNumber;
+                    if (id == null || id === '') return false;
+                    const idStr = String(id).trim();
+                    return /^\d+$/.test(idStr) && !existingMatrimIds.has(idStr);
+                });
+
+                // מחפש קבוצה "נדרים פלוס" – נוצרת רק אם יש מתרים בנדרים שאין בתוכנה (לפי מספר מתרים)
                 let nedarimGroup = groups.find(g => {
                     const gName = (g.name || '').trim().toLowerCase();
                     return gName === 'נדרים פלוס' || 
                            gName.includes('נדרים') || 
                            gName.includes('nedarim');
                 });
+                if (!nedarimGroup && hasNewByMatrimId) {
+                    nedarimGroup = {
+                        id: Date.now(),
+                        name: 'נדרים פלוס',
+                        goal: defaultGroupGoal || 100000
+                    };
+                    groups.push(nedarimGroup);
+                    console.log('✅ [טעינת מתרימים] נוצרה קבוצת "נדרים פלוס" – יש מתרים בנדרים שאין בתוכנה (לפי מספר מתרים)');
+                }
                 const targetGroup = nedarimGroup || (groups.length > 0 ? groups[0] : null);
                 if (nedarimGroup) {
                     console.log('ℹ️ [טעינת מתרימים] קבוצה נדרים פלוס:', nedarimGroup.name);
@@ -17399,8 +17422,28 @@
                         existingDonor.fromNedarimPlus = true;
                         updatedMatrim++;
                     } else {
-                        // 🛡️ מתרים לא קיים – לא מוסיפים אוטומטית! רק מתרים קיימים מתעדכנים. מונע הוספת מתרים לא רצויים.
-                        console.log(`ℹ️ [טעינת מתרימים] מתרים "${matrimName}" (מס' ${matrimIdStr}) לא קיים בתוכנה – לא נוסף (רק מתרים קיימים מתעדכנים)`);
+                        // מתרים לא קיים – מוסיפים אותו (רק בפונקציה "טען מתרימים מנדרים פלוס")
+                        if (matrimAmount > MAX_REASONABLE_AMOUNT_LOAD) {
+                            console.warn(`⚠️ [טעינת מתרימים] דילוג על הוספת "${matrimName}" (מס' ${matrimIdStr}): סכום ${matrimAmount.toLocaleString()} חריג`);
+                            return;
+                        }
+                        const newDonor = {
+                            id: Date.now() + Math.random(),
+                            name: matrimName,
+                            displayName: '',
+                            groupId: targetGroup ? targetGroup.id : null,
+                            amount: matrimAmount,
+                            personalGoal: matrimGoal || defaultDonorGoal || 0,
+                            source: 'nedarim_plus',
+                            nedarimMatrimId: matrimIdStr,
+                            fromNedarimPlus: true,
+                            history: [],
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                        };
+                        donors.push(newDonor);
+                        newMatrim++;
+                        console.log('➕ נוסף מנדרים פלוס:', matrimName, '(מס\' מתרים:', matrimIdStr + ', סכום:', matrimAmount + ')');
                     }
                 });
 
@@ -17420,10 +17463,10 @@
 
                 saveData();
                 const url = googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || DEFAULT_GOOGLE_SHEETS_URL || '';
-                if (url && updatedMatrim > 0) {
+                if (url && (newMatrim > 0 || updatedMatrim > 0)) {
                     try {
                         await saveToGoogleSheets();
-                        console.log('💾 נשמר לגיליון – מתרימים עודכנו');
+                        console.log('💾 נשמר לגיליון – מתרימים חדשים ומספרי מתרים');
                     } catch (e) {
                         console.warn('⚠️ שמירה לגיליון נכשלה:', e);
                     }
@@ -17434,7 +17477,7 @@
                 if (typeof updateStats === 'function') updateStats();
                 if (typeof updateLiveView === 'function') updateLiveView(true);
 
-                let message = `טעינה הושלמה! ${updatedMatrim} מתרימים קיימים עודכנו מנדרים פלוס`;
+                let message = `טעינה הושלמה! ${newMatrim} מתרימים חדשים | ${updatedMatrim} מתרימים קיימים עודכנו`;
                 if (movedToGroup > 0) {
                     message += ` | ${movedToGroup} מתרימים הועברו לקבוצה "${targetGroup ? targetGroup.name : ''}"`;
                 }
@@ -18353,6 +18396,11 @@
                     }
                 });
                 
+                // 🛡️ בדיקה: מתרים עם סכומים חריגים או מתרים שלא קיימים בנדרים פלוס
+                const MAX_REASONABLE_AMOUNT_SYNC = 500000;
+                let skippedLargeAmounts = 0;
+                let skippedNotInNedarim = 0;
+                
                 // בדיקה מוקדמת: אם הסכום המקומי נמוך בהרבה מהסכום בנדרים – ייתכן שיש נתונים ישנים
                 const sumNedarimFromList = [...nedarimAmountsMap.values()].reduce((a, b) => a + b, 0);
                 const sumLocal = donors.reduce((s, d) => s + (d.amount || 0), 0);
@@ -18361,6 +18409,7 @@
                 }
                 
                 // מוצא מתרימים שיש להם nedarimMatrimId והסכום שלהם שונה מנדרים פלוס
+                // 🛡️ מדלג על מתרים עם סכומים חריגים או מתרים שלא קיימים בנדרים פלוס
                 const donorsToUpdate = donors.filter(donor => {
                     const donorMatrimId = donor.nedarimMatrimId;
                     const matrimIdStr = donorMatrimId !== null && donorMatrimId !== undefined ? String(donorMatrimId).trim() : null;
@@ -18373,6 +18422,17 @@
                     let localAmount = donor.amount || 0;
                     let nedarimAmount = 0;
                     
+                    // 🛡️ מדלג על מתרים עם סכומים חריגים (אבל לא אחרי "התאם סכומים בתוכנה")
+                    const isAfterRealAmountFix = window.lastRealAmountFixTime && (Date.now() - window.lastRealAmountFixTime) < 60000; // דקה אחרי תיקון
+                    if (localAmount > MAX_REASONABLE_AMOUNT_SYNC && !isAfterRealAmountFix) {
+                        skippedLargeAmounts++;
+                        console.warn(`⚠️ [סנכרון] מדלג על מתרים "${donor.name}" - סכום חריג: ${localAmount.toLocaleString()} ש"ח`);
+                        return false;
+                    }
+                    if (localAmount > MAX_REASONABLE_AMOUNT_SYNC && isAfterRealAmountFix) {
+                        console.log(`ℹ️ [סנכרון] מתרים "${donor.name}" עם סכום חריג (${localAmount.toLocaleString()} ש"ח) - יישלח כי זה תיקון סכום`);
+                    }
+                    
                     if (hasValidMatrimId) {
                         // יש מספר מתרים תקין - משתמש בו
                         nedarimAmount = nedarimAmountsMap.get(matrimIdStr) || 0;
@@ -18384,7 +18444,33 @@
                         }
                     }
                     
+                    // 🛡️ אם המתרים לא קיים בנדרים פלוס - מדלג (מונע הוספת מתרים חדשים דרך דחיפה)
+                    // אבל לא מדלג אם זה אחרי "התאם סכומים בתוכנה" (תיקון סכום)
+                    // (isAfterRealAmountFix כבר הוגדר למעלה)
+                    if (nedarimAmount === 0 && localAmount > 0 && !isAfterRealAmountFix) {
+                        skippedNotInNedarim++;
+                        console.log(`ℹ️ [סנכרון] מדלג על מתרים "${donor.name}" - לא קיים בנדרים פלוס (השתמש ב"טען מתרימים מנדרים פלוס" להוספה)`);
+                        return false;
+                    }
+                    if (nedarimAmount === 0 && localAmount > 0 && isAfterRealAmountFix) {
+                        console.log(`ℹ️ [סנכרון] מתרים "${donor.name}" לא קיים בנדרים פלוס - יישלח כסכום מלא (תיקון סכום)`);
+                        // במקרה של תיקון סכום, נשלח את הסכום המלא (לא דלתה)
+                        // אבל רק אם יש מספר מתרים תקין
+                    }
+                    
                     const delta = localAmount - nedarimAmount;
+                    
+                    // 🛡️ מדלג על דלתות גדולות מדי (מעל 50,000) - מונע עלייה גדולה
+                    // אבל לא מדלג אם זה אחרי "התאם סכומים בתוכנה" (תיקון סכום)
+                    const isAfterRealAmountFix = window.lastRealAmountFixTime && (Date.now() - window.lastRealAmountFixTime) < 60000; // דקה אחרי תיקון
+                    if (delta > 50000 && !isAfterRealAmountFix) {
+                        skippedLargeAmounts++;
+                        console.warn(`⚠️ [סנכרון] מדלג על מתרים "${donor.name}" - דלתה גדולה מדי: ${delta.toLocaleString()} ש"ח (מקומי: ${localAmount.toLocaleString()}, נדרים: ${nedarimAmount.toLocaleString()})`);
+                        return false;
+                    }
+                    if (delta > 50000 && isAfterRealAmountFix) {
+                        console.log(`ℹ️ [סנכרון] דלתה גדולה למתרים "${donor.name}" (${delta.toLocaleString()} ש"ח) - נשלחת כי זה תיקון סכום`);
+                    }
                     
                     // לוגים מפורטים למתרים ספציפי (שלמה כהן)
                     if (donor.name && donor.name.includes('שלמה כהן')) {
@@ -18400,11 +18486,13 @@
                     return Math.abs(delta) > 0; // יש שינוי
                 });
                 
+                if (skippedLargeAmounts > 0 || skippedNotInNedarim > 0) {
+                    console.log(`🛡️ [סנכרון] נדלגו ${skippedLargeAmounts} מתרים עם סכומים חריגים, ${skippedNotInNedarim} מתרים שלא קיימים בנדרים פלוס`);
+                }
+                
                 console.log(`📋 נמצאו ${donorsToUpdate.length} מתרימים לעדכון בנדרים פלוס`);
                 
-                // 🛡️ הגנה: בדיקה שהסנכרון לא יפחית/יעלה את הסכום הכולל בנדרים פלוס בטעות
-                const SAFE_REDUCTION_LIMIT = 15000;
-                const SAFE_INCREASE_LIMIT = 50000;
+                // חישוב סיכום הדלתות (רק לוגים, בלי הודעות מפריעות)
                 let sumOfDeltas = 0;
                 for (const d of donorsToUpdate) {
                     const mid = (d.nedarimMatrimId != null ? String(d.nedarimMatrimId).trim() : null);
@@ -18415,36 +18503,12 @@
                     else na = nedarimAmountsByNameMap.get((d.name || '').trim()) || 0;
                     sumOfDeltas += (d.amount || 0) - na;
                 }
-                const goalRef = Math.max(500000, matchingGoal || 0);
-                if (sumOfDeltas < -SAFE_REDUCTION_LIMIT) {
-                    const reduction = Math.abs(sumOfDeltas).toLocaleString('he-IL');
-                    const msg = `⚠️ הסנכרון יפחית את הסכום הכולל בנדרים פלוס בכ־${reduction} ש"ח. ייתכן שהנתונים המקומיים לא מעודכנים. מומלץ להריץ קודם "טען מתרימים מנדרים פלוס" או "בדוק סכום כולל מ-API".\n\nהאם בכל זאת להמשיך?`;
-                    if (!silent && !confirm(msg)) {
-                        console.warn('🛡️ המשתמש ביטל את הסנכרון – הייתה הפחתה גדולה מהסכום');
-                        if (!silent) {
-                            showNedarimStatus('הסנכרון בוטל – ייתכן שהנתונים המקומיים לא מעודכנים', 'error');
-                            showNotification('הסנכרון בוטל. הרץ "טען מתרימים מנדרים פלוס" ואז נסה שוב.', 'warning');
-                        }
-                        if (btn) { btn.disabled = false; btn.textContent = '🔄 סנכרון תרומות לנדרים פלוס'; }
-                        return;
-                    }
-                }
-                if (sumOfDeltas > SAFE_INCREASE_LIMIT) {
-                    const add = sumOfDeltas.toLocaleString('he-IL');
-                    const msg = `⚠️ הסנכרון יעלה את הסכום הכולל בנדרים פלוס בכ־${add} ש"ח. וודא שהנתונים המקומיים נכונים לפני שממשיכים.\n\nהאם להמשיך?`;
-                    if (!silent && !confirm(msg)) {
-                        if (!silent) showNedarimStatus('הסנכרון בוטל – עלייה גדולה מהסכום', 'error');
-                        if (btn) { btn.disabled = false; btn.textContent = '🔄 סנכרון תרומות לנדרים פלוס'; }
-                        return;
-                    }
-                }
-                if (sumLocal > goalRef * 1.5) {
-                    const msg = `⚠️ הסכום המקומי (${sumLocal.toLocaleString()} ש"ח) גבוה בהרבה מהיעד (${goalRef.toLocaleString()} ש"ח). ייתכן שיש באג בנתונים. מומלץ להריץ "טען מתרימים מנדרים פלוס" לפני סנכרון.\n\nהאם בכל זאת להמשיך?`;
-                    if (!silent && !confirm(msg)) {
-                        if (!silent) showNedarimStatus('הסנכרון בוטל – סכום מקומי חשוד', 'error');
-                        if (btn) { btn.disabled = false; btn.textContent = '🔄 סנכרון תרומות לנדרים פלוס'; }
-                        return;
-                    }
+                
+                // לוגים בלבד - לא מפריע למשתמש
+                if (sumOfDeltas > 0) {
+                    console.log(`ℹ️ [סנכרון] סכום כולל יעלה ב-${sumOfDeltas.toLocaleString()} ש"ח`);
+                } else if (sumOfDeltas < 0) {
+                    console.log(`ℹ️ [סנכרון] סכום כולל יקטן ב-${Math.abs(sumOfDeltas).toLocaleString()} ש"ח`);
                 }
                 
                 // בדיקה אם המתרים שלמה כהן 118 נמצא ברשימה
@@ -20786,6 +20850,10 @@
             }
             ensureDonorsNormalized();
             saveData();
+            
+            // 🏷️ מסמן שהסנכרון הבא הוא תיקון סכום - לא לדלג על דלתות גדולות
+            window.lastRealAmountFixTime = Date.now();
+            
             updateDonorsList();
             updateGroupsDisplay();
             updateHomeStats();
