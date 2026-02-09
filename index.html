@@ -16206,6 +16206,7 @@
         }
 
         // משיכת כל המתרימים מנדרים פלוס (MatchPlus) – חיפוש ריק + א-ת דרך Google Apps Script
+        // כשהאתר על Netlify יש CORS – משתמשים ב-proxy (Netlify או corsproxy.io)
         async function fetchMatrimFromMatchPlus() {
             const url = googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || DEFAULT_GOOGLE_SHEETS_URL || '';
             if (!url) {
@@ -16213,16 +16214,8 @@
                 showNotification('⚠️ נא להגדיר כתובת Google Sheets', 'warning');
                 return [];
             }
-            try {
-                console.log('🚀 מושך את כל המתרימים מנדרים פלוס (MatchPlus)...');
-                // POST עם action בגוף – יציב יותר מ-GET (לא נאבד ב-redirect/encoding)
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'getAllNedarimRecruiters', light: true })
-                });
-                if (!response.ok) throw new Error(`שגיאת שרת: ${response.status}`);
-                const result = await response.json();
+            const getTargetUrl = () => url + (url.indexOf('?') >= 0 ? '&' : '?') + 'action=getAllNedarimRecruiters&light=true&_=' + Date.now();
+            const parseResult = (result) => {
                 if (result.success && result.recruiters && result.recruiters.length > 0) {
                     console.log(`✅ נטענו ${result.recruiters.length} מתרימים מנדרים פלוס (כולל מספר מתרים)`);
                     if (result.recruiters[0]) console.log('📋 דוגמה:', result.recruiters[0]);
@@ -16230,9 +16223,45 @@
                 }
                 if (result.success && result.recruiters) return [];
                 throw new Error(result.error || 'לא התקבלו מתרימים');
-            } catch (error) {
-                console.error('❌ שגיאה במשיכת מתרימים מנדרים פלוס:', error);
-                throw error;
+            };
+            console.log('🚀 מושך את כל המתרימים מנדרים פלוס (MatchPlus)...');
+            const isNetlify = typeof window !== 'undefined' && window.location && window.location.hostname && window.location.hostname.includes('netlify.app');
+            // 1. על Netlify – נסה קודם דרך proxy (אותו origin, בלי CORS)
+            if (isNetlify) {
+                try {
+                    const proxyUrl = '/.netlify/functions/sheets-proxy?url=' + encodeURIComponent(url) + '&action=getAllNedarimRecruiters&light=true&_=' + Date.now();
+                    const res = await fetch(proxyUrl, { method: 'GET', redirect: 'follow' });
+                    if (res.ok) {
+                        const result = await res.json();
+                        return parseResult(result);
+                    }
+                } catch (proxyErr) {
+                    console.warn('⚠️ Proxy Netlify נכשל, מנסה proxy חיצוני:', proxyErr.message);
+                }
+            }
+            // 2. קריאה ישירה (GET – בלי preflight CORS). עובד כשרצים מקובץ/דומיין זהה
+            try {
+                const response = await fetch(getTargetUrl(), { method: 'GET', redirect: 'follow' });
+                if (response.ok) {
+                    const result = await response.json();
+                    return parseResult(result);
+                }
+                throw new Error('שגיאת שרת: ' + response.status);
+            } catch (directErr) {
+                const isCorsOrNetwork = !directErr.message || directErr.message.includes('Failed to fetch') || directErr.message.includes('NetworkError') || directErr.message.includes('CORS') || directErr.message.includes('Load failed');
+                if (!isCorsOrNetwork) throw directErr;
+                // 3. CORS/רשת – עוקף דרך proxy ציבורי (GET)
+                try {
+                    const corsProxy = 'https://corsproxy.io/?';
+                    const proxyUrl = corsProxy + encodeURIComponent(getTargetUrl());
+                    const response = await fetch(proxyUrl, { method: 'GET' });
+                    if (!response.ok) throw new Error('שגיאת proxy: ' + response.status);
+                    const result = await response.json();
+                    return parseResult(result);
+                } catch (proxyErr) {
+                    console.error('❌ שגיאה במשיכת מתרימים מנדרים פלוס:', proxyErr);
+                    throw proxyErr;
+                }
             }
         }
 
