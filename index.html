@@ -18252,9 +18252,9 @@
                 console.log(pullOnly ? '🔄 מתחיל משיכה מנדרים פלוס (ללא דחיפה לנדרים)...' : '🔄 מתחיל סנכרון דו-כיווני עם נדרים פלוס...');
                 console.log('═══════════════════════════════════════════════════════');
 
-                // טעינה מהגליון לפני סנכרון – הגליון הוא מקור האמת, מונע קפיצות ודריסות
+                // טעינה מהגליון לפני סנכרון – רק כשלא הרובוט! כשהרובוט רץ – התוכנה המקומית היא מקור האמת, לא הגליון (מונע דריסת תיקונים)
                 const urlForSync = googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || DEFAULT_GOOGLE_SHEETS_URL || '';
-                if (!pullOnly && urlForSync && typeof loadFromGoogleSheets === 'function' && !editingDonorId) {
+                if (!pullOnly && !silent && urlForSync && typeof loadFromGoogleSheets === 'function' && !editingDonorId) {
                     try {
                         const loadResult = await loadFromGoogleSheets(true);
                         if (loadResult && loadResult.success) {
@@ -18263,6 +18263,8 @@
                     } catch (e) {
                         console.warn('⚠️ [סנכרון] שגיאה בטעינה מהגליון לפני סנכרון:', e.message || e);
                     }
+                } else if (silent) {
+                    console.log('🤖 [רובוט] מדלג על טעינה מהגליון – התוכנה המקומית היא מקור האמת');
                 }
 
                 // ========== שלב 1: דחיפה לנדרים (סנכרון דו-כיווני) ==========
