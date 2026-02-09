@@ -6241,9 +6241,35 @@
                             <p id="nedarimCorrectionResult" style="margin-top: 10px; font-size: 12px; min-height: 20px;"></p>
                         </div>
 
+                        <div class="nedarim-add-direct-box" style="margin-top: 15px; padding: 15px; background: #e0f7fa; border: 2px solid #0097a7; border-radius: 10px;">
+                            <h4 style="margin-bottom: 10px; color: #006064;">➕ הוספת סכום ישירה לנדרים פלוס (מתעדכן מיד)</h4>
+                            <p style="margin-bottom: 12px; font-size: 13px; color: #333;">הסכום יעלה מיד בנדרים פלוס <strong>וגם</strong> בתוכנה – <strong>אין צורך בריצת "סנכרון תרומות"</strong>.</p>
+                            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;">
+                                <div>
+                                    <label style="display: block; margin-bottom: 4px; font-size: 12px;">מתרים (שיקבל את התוספת):</label>
+                                    <select id="addToNedarimDonorSelect" style="min-width: 220px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;">
+                                        <option value="">-- בחר מתרים --</option>
+                                    </select>
+                                    <input type="text" id="addToNedarimMatrimIdManual" placeholder="או הזן מספר מתרים" style="margin-top: 6px; width: 120px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px;">
+                                </div>
+                                <div>
+                                    <label style="display: block; margin-bottom: 4px; font-size: 12px;">סכום להוספה (₪):</label>
+                                    <input type="number" id="addToNedarimAmount" min="1" step="1" placeholder="למשל 500" style="width: 120px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;">
+                                </div>
+                                <div>
+                                    <label style="display: block; margin-bottom: 4px; font-size: 12px;">הערה (אופציונלי):</label>
+                                    <input type="text" id="addToNedarimComments" placeholder="למשל: סליקה באשראי" style="width: 140px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;">
+                                </div>
+                                <button type="button" class="btn" onclick="addAmountToNedarimImmediate()" id="addToNedarimBtn" style="background: #0097a7; color: white;">
+                                    ➕ הוסף סכום לנדרים (מיד)
+                                </button>
+                            </div>
+                            <p id="addToNedarimResult" style="margin-top: 10px; font-size: 12px; min-height: 20px;"></p>
+                        </div>
+
                         <div class="nedarim-update-by-api-box" style="margin-top: 15px; padding: 15px; background: #e8f5e9; border: 2px solid #2e7d32; border-radius: 10px;">
-                            <h4 style="margin-bottom: 10px; color: #1b5e20;">📤 עדכן סכום לפי API (שליחה מאובטחת לנדרים פלוס)</h4>
-                            <p style="margin-bottom: 12px; font-size: 13px; color: #333;">שליחת עדכון תרומה ישירות לנדרים פלוס דרך השרת המאובטח. סכום חיובי = תוספת, סכום שלילי = הפחתה.</p>
+                            <h4 style="margin-bottom: 10px; color: #1b5e20;">📤 עדכון סכום לפי API (תוספת או הפחתה)</h4>
+                            <p style="margin-bottom: 12px; font-size: 13px; color: #333;">שליחת עדכון תרומה ישירות לנדרים פלוס. סכום חיובי = תוספת, סכום שלילי = הפחתה. מתעדכן גם בתוכנה.</p>
                             <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;">
                                 <div>
                                     <label style="display: block; margin-bottom: 4px; font-size: 12px;">מתרים:</label>
@@ -11890,6 +11916,8 @@
                     updateNedarimFixCurrentSumLabel();
                     if (typeof updateNedarimGlobalReductionCurrentSum === 'function') updateNedarimGlobalReductionCurrentSum();
                     fillNedarimCorrectionDonorSelect();
+                    fillUpdateByApiDonorSelect();
+                    fillAddToNedarimDonorSelect();
                 }
             });
         });
@@ -20329,6 +20357,98 @@
                 sel.appendChild(opt);
             });
             if (currentValue) sel.value = currentValue;
+        }
+        
+        // ממלא את רשימת המתרימים בתיבת "הוספת סכום ישירה לנדרים"
+        function fillAddToNedarimDonorSelect() {
+            const sel = document.getElementById('addToNedarimDonorSelect');
+            if (!sel) return;
+            const currentValue = sel.value;
+            sel.innerHTML = '<option value="">-- בחר מתרים --</option>';
+            (donors || []).filter(d => {
+                const id = d.nedarimMatrimId ? String(d.nedarimMatrimId).trim() : '';
+                return id && /^\d+$/.test(id) && !/^\d{4}-\d{2}-\d{2}T/.test(id);
+            }).forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d.id;
+                opt.textContent = (d.displayName || d.name || '') + ' (מס\' מתרים ' + d.nedarimMatrimId + ')';
+                sel.appendChild(opt);
+            });
+            if (currentValue) sel.value = currentValue;
+        }
+        
+        // הוספת סכום ישירה לנדרים – מתעדכן מיד בנדרים ובתוכנה, בלי סנכרון מתרים
+        async function addAmountToNedarimImmediate() {
+            const resultEl = document.getElementById('addToNedarimResult');
+            const btn = document.getElementById('addToNedarimBtn');
+            const setResult = (msg, isError) => {
+                if (resultEl) { resultEl.textContent = msg; resultEl.style.color = isError ? '#c62828' : '#006064'; }
+            };
+            const donorSelect = document.getElementById('addToNedarimDonorSelect');
+            const manualIdInput = document.getElementById('addToNedarimMatrimIdManual');
+            const amountInput = document.getElementById('addToNedarimAmount');
+            const commentsInput = document.getElementById('addToNedarimComments');
+            const amount = Math.round(parseFloat(amountInput && amountInput.value) || 0);
+            if (amount <= 0) {
+                setResult('נא להזין סכום להוספה (מספר חיובי).', true);
+                return;
+            }
+            let donor = null;
+            const selectedId = donorSelect && donorSelect.value;
+            const manualId = manualIdInput && manualIdInput.value ? String(manualIdInput.value).trim() : '';
+            if (selectedId) {
+                donor = (donors || []).find(d => d.id === selectedId || String(d.id) === String(selectedId));
+                if (!donor || !donor.nedarimMatrimId || !/^\d+$/.test(String(donor.nedarimMatrimId).trim())) {
+                    setResult('נא לבחור מתרים עם מספר מתרים תקין.', true);
+                    return;
+                }
+            } else if (manualId && /^\d+$/.test(manualId)) {
+                donor = { nedarimMatrimId: manualId, name: 'תוספת ידנית (מס\' ' + manualId + ')' };
+            } else {
+                setResult('נא לבחור מתרים מהרשימה או להזין מספר מתרים.', true);
+                return;
+            }
+            const matrimId = String(donor.nedarimMatrimId).trim();
+            const donorName = (donor.displayName || donor.name || donor).toString().trim();
+            const comments = (commentsInput && commentsInput.value) ? String(commentsInput.value).trim() : 'הוספה מהמערכת';
+            if (btn) { btn.disabled = true; btn.textContent = '⏳ שולח...'; }
+            setResult('שולח לנדרים פלוס...', false);
+            try {
+                await uploadOfflineDonation(donorName, 'תורם מהמערכת', amount, comments, '', matrimId);
+                setResult('✅ הסכום נוסף בנדרים פלוס ובתוכנה. אין צורך בסנכרון מתרים.', false);
+                if (amountInput) amountInput.value = '';
+                if (commentsInput) commentsInput.value = '';
+                if (selectedId && donor && typeof donor.id !== 'undefined') {
+                    const d = (donors || []).find(x => x.id === donor.id || String(x.id) === String(donor.id));
+                    if (d) {
+                        d.amount = Math.max(0, (d.amount || 0) + amount);
+                        d.updatedAt = new Date().toISOString();
+                        saveData();
+                        try { await saveToGoogleSheets(); } catch (e) { console.warn('שמירה לגליון:', e); }
+                        updateDonorsList();
+                        updateGroupsDisplay();
+                        updateHomeStats();
+                        updateLeadersList();
+                        updateLiveTargets();
+                        if (typeof updateLiveView === 'function') updateLiveView();
+                        updateNedarimFixCurrentSumLabel();
+                        if (typeof updateNedarimGlobalReductionCurrentSum === 'function') updateNedarimGlobalReductionCurrentSum();
+                    }
+                }
+                var totalData = await fetchTotalFromMatchPlus();
+                if (totalData && totalData.Donated != null && isFinite(totalData.Donated)) {
+                    NEDARIM_CONFIG.totalDonatedFromAPI = totalData.Donated;
+                    NEDARIM_CONFIG.apiDataLoaded = true;
+                    var ndEl = document.getElementById('nedarimRealTotalInSync');
+                    if (ndEl) ndEl.textContent = totalData.Donated.toLocaleString('he-IL') + ' ₪';
+                }
+                showNotification('הסכום נוסף לנדרים ולתוכנה. אין צורך בסנכרון.', 'success');
+            } catch (e) {
+                setResult('❌ ' + (e.message || e), true);
+                showNotification('שגיאה: ' + (e.message || e), 'error');
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = '➕ הוסף סכום לנדרים (מיד)'; }
+            }
         }
         
         // עדכון סכום בנדרים פלוס ישירות דרך API (Netlify proxy)
