@@ -16161,24 +16161,15 @@
                     });
                 }
                 
-                // ✅ שליחה דרך Google Sheets (Apps Script) – בלי תלות ב-Netlify, בלי 404
+                // ✅ שליחה דרך Google Sheets (Apps Script) – GET כדי למנוע CORS preflight (POST נחסם)
                 const sheetsUrl = (googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || DEFAULT_GOOGLE_SHEETS_URL || '').trim();
                 if (!sheetsUrl) {
                     throw new Error('אין כתובת Google Sheets. הזן כתובת בלשונית "עדכונים" → סנכרון דרך Google Sheets.');
                 }
-                const sheetsBody = {
-                    action: 'updateNedarimAmount',
-                    matrimId: finalMatrimId,
-                    amount: validAmount,
-                    clientName: (clientName || 'תורם אנונימי').trim(),
-                    comments: (comments || '').trim()
-                };
-                console.log('📤 שולח עדכון לנדרים דרך Google Sheets');
-                const res = await fetch(sheetsUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(sheetsBody)
-                });
+                const sep = sheetsUrl.indexOf('?') >= 0 ? '&' : '?';
+                const updateUrl = sheetsUrl + sep + 'action=updateNedarimAmount&matrimId=' + encodeURIComponent(finalMatrimId) + '&amount=' + encodeURIComponent(validAmount) + '&clientName=' + encodeURIComponent((clientName || 'תורם אנונימי').trim()) + '&comments=' + encodeURIComponent((comments || '').trim());
+                console.log('📤 שולח עדכון לנדרים דרך Google Sheets (GET)');
+                const res = await fetch(updateUrl, { method: 'GET' });
                 if (!res.ok) {
                     throw new Error('שגיאת שרת: ' + res.status + '. ודא שכתובת Google Sheets נכונה והסקריפט פרוס.');
                 }
@@ -20018,32 +20009,19 @@
                 // וודא ש-matrimId הוא מספר (לא תאריך)
                 const matrimId = String(donor.nedarimMatrimId).trim();
                 
-                const requestData = {
-                    action: 'updateNedarimAmount',
-                    matrimId: matrimId, // מספר מתרים אמיתי
-                    amount: delta, // שולח את השינוי, לא את הסכום הכולל
-                    clientName: clientName,
-                    comments: comments
-                };
+                const sep = url.indexOf('?') >= 0 ? '&' : '?';
+                const updateUrl = url + sep + 'action=updateNedarimAmount&matrimId=' + encodeURIComponent(matrimId) + '&amount=' + encodeURIComponent(delta) + '&clientName=' + encodeURIComponent(clientName) + '&comments=' + encodeURIComponent(comments);
                 
-                console.log('📤 שולח בקשה ל-Google Apps Script:', {
+                console.log('📤 שולח בקשה ל-Google Apps Script (GET – מונע CORS):', {
                     url: url.substring(0, 80) + '...',
                     matrimId: matrimId,
                     amount: delta,
                     action: 'updateNedarimAmount'
                 });
                 
-                // ניסיון 1: Direct fetch
                 let response;
                 try {
-                    response = await fetch(url, {
-                        method: 'POST',
-                        redirect: 'follow',
-                        headers: {
-                            'Content-Type': 'text/plain;charset=utf-8'
-                        },
-                        body: JSON.stringify(requestData)
-                    });
+                    response = await fetch(updateUrl, { method: 'GET', redirect: 'follow' });
                 } catch (fetchError) {
                     console.error('❌ שגיאה ב-fetch:', fetchError);
                     throw new Error(`שגיאה בחיבור לשרת: ${fetchError.message}`);
