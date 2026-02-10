@@ -3011,7 +3011,7 @@
             background-image: url('https://i.postimg.cc/ZRMCLxgW/wgw-t-t-dhws.png');
             background-repeat: no-repeat;
             background-position: center center;
-            background-size: cover;
+            background-size: 100% 100%;
             background-attachment: scroll;
             background-blend-mode: normal;
         }
@@ -10318,7 +10318,7 @@
             showNotification('הגנת הסיסמה כובתה');
         }
 
-        // הגדרות תצוגת לייב - ערכי ברירת מחדל כמו שהיו לפני הוספת מדור הניהול
+        // הגדרות תצוגת לייב - ערכי ברירת מחדל מקוריים
         let liveViewSettings = {
             bgColor: '#f5e6d3',
             bgColor2: '#fff8dc',
@@ -10374,9 +10374,9 @@
             showNotificationsOnLiveView: false,
         };
 
-        function loadLiveViewSettings() {
-            storageGetItem('liveViewSettings', (saved) => {
-            if (saved) {
+        function loadLiveViewSettings(skipStorage) {
+            const doLoad = (saved) => {
+            if (saved && !skipStorage) {
                 try {
                         liveViewSettings = { ...liveViewSettings, ...saved };
                         // וידוא שההגדרה של הודעות נטענת נכון
@@ -10610,7 +10610,12 @@
             
             // החלת ההגדרות מיד
             applyLiveViewSettings();
-            });
+            };
+            if (skipStorage) {
+                doLoad(null);
+            } else {
+                storageGetItem('liveViewSettings', doLoad);
+            }
         }
 
         function updateLiveViewSettings() {
@@ -10850,7 +10855,7 @@
             if (!confirm('האם לאפס את כל הגדרות תצוגת לייב לברירת מחדל?')) {
                 return;
             }
-            liveViewSettings = {
+            const defaults = {
                 bgColor: '#f5e6d3',
                 bgColor2: '#fff8dc',
                 titleSize: 32,
@@ -10904,9 +10909,10 @@
                 maxDonorsPerGroup: 0,
                 showNotificationsOnLiveView: false,
             };
-            storageSetItem('liveViewSettings', liveViewSettings);
-            loadLiveViewSettings();
-            applyLiveViewSettings();
+            liveViewSettings = defaults;
+            try { localStorage.setItem('liveViewSettings', JSON.stringify(defaults)); } catch (e) {}
+            storageSetItem('liveViewSettings', defaults);
+            loadLiveViewSettings(true);
             showNotification('הגדרות תצוגת לייב אופסו לברירת מחדל');
         }
 
@@ -10961,7 +10967,7 @@
                     background-image: url('https://i.postimg.cc/ZRMCLxgW/wgw-t-t-dhws.png') !important;
                     background-repeat: no-repeat !important;
                     background-position: center center !important;
-                    background-size: cover !important;
+                    background-size: 100% 100% !important;
                 }
                 .leaders-title {
                     font-size: ${liveViewSettings.titleSize}px !important;
