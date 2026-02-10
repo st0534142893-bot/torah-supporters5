@@ -2800,8 +2800,7 @@
         }
 
         .live-view-section {
-            background: linear-gradient(135deg, rgba(245, 230, 211, 0.7) 0%, rgba(255, 248, 220, 0.7) 100%),
-                        url('https://i.postimg.cc/ZRMCLxgW/wgw-t-t-dhws.png') center center / clamp(780px, 74vw, 1200px) auto no-repeat;
+            background: linear-gradient(135deg, rgba(245, 230, 211, 0.9) 0%, rgba(255, 248, 220, 0.9) 100%);
             position: relative;
             padding: 0;
             min-height: 100vh;
@@ -10952,18 +10951,17 @@
 
             style.textContent = `
                 .live-view-section {
-                    background: linear-gradient(135deg, ${liveViewSettings.bgColor}dd 0%, ${liveViewSettings.bgColor2}dd 100%),
-                                url('https://i.postimg.cc/PqpcB8WP/rq'-khh-lmsk.jpg') center center / clamp(780px, 74vw, 1200px) auto no-repeat !important;
+                    background: linear-gradient(135deg, ${liveViewSettings.bgColor} 0%, ${liveViewSettings.bgColor2} 100%) !important;
                 }
                 #liveLeadersBacking {
                     background: linear-gradient(135deg, ${liveViewSettings.bgColor} 0%, ${liveViewSettings.bgColor2} 100%) !important;
                 }
                 .live-donors-container {
-                    background: transparent !important;
-                    background-image: url('https://i.postimg.cc/PqpcB8WP/rq'-khh-lmsk.jpg') !important;
+                    background: none !important;
+                    background-image: url('https://i.postimg.cc/ZRMCLxgW/wgw-t-t-dhws.png') !important;
                     background-repeat: no-repeat !important;
                     background-position: center center !important;
-                    background-size: clamp(780px, 74vw, 1200px) auto !important;
+                    background-size: cover !important;
                 }
                 .leaders-title {
                     font-size: ${liveViewSettings.titleSize}px !important;
