@@ -4058,7 +4058,7 @@
             font-size: 18px;
             font-weight: 700;
             color: var(--primary-gold-dark);
-            min-width: 5ch;
+            min-width: 10ch;
             contain: layout;
         }
 
@@ -4216,6 +4216,8 @@
             direction: rtl;
             text-align: center;
             white-space: nowrap;
+            min-width: 14ch;
+            contain: layout;
         }
         /* הודעות */
         .notification {
@@ -10333,7 +10335,7 @@
         let liveViewSettings = {
             bgColor: '#f5e6d3',
             bgColor2: '#fff8dc',
-            bgImageUrl: '',
+            bgImageUrl: 'https://drive.google.com/file/d/1IUHFTfcOYtj9F_L_D-A6vfty6-EIWEN9/view?usp=sharing',
             titleSize: 32,
             donorNameSize: 18,
             amountSize: 14,
@@ -12069,6 +12071,47 @@
         // דגל למניעת קפיצות בזמן עדכון
         let leadersScrollIsRunning = false;
         let leadersScrollLastTime = 0;
+
+        /** סנכרון קלון המובילים ל-primary בלי innerHTML – מונע קפיצות */
+        function syncLeadersCloneToPrimary(primaryList) {
+            const clone = document.getElementById('leadersScrollClone');
+            if (!clone || !primaryList) return;
+            let cloneContent = clone.querySelector('.live-leaders-content');
+            if (!cloneContent) {
+                const primaryContent = document.querySelector('#leadersScrollPrimary .live-leaders-content');
+                if (primaryContent) {
+                    clone.innerHTML = primaryContent.outerHTML;
+                    cloneContent = clone.querySelector('.live-leaders-content');
+                }
+                if (!cloneContent) return;
+            }
+            const cloneList = cloneContent.querySelector('.leaders-list');
+            if (!cloneList) return;
+            const primaries = [...primaryList.children];
+            const clones = [...cloneList.children];
+            for (let i = 0; i < primaries.length; i++) {
+                const p = primaries[i];
+                let c = clones[i];
+                if (!c) {
+                    c = p.cloneNode(true);
+                    cloneList.appendChild(c);
+                } else {
+                    c.style.display = p.style.display || '';
+                    const pt = p.querySelector('.leader-total, .leader-target-progress-text');
+                    const ct = c.querySelector('.leader-total, .leader-target-progress-text');
+                    if (pt && ct) ct.textContent = pt.textContent;
+                    const pm = p.querySelector('.leader-target-meta');
+                    const cm = c.querySelector('.leader-target-meta');
+                    if (pm && cm) cm.textContent = pm.textContent;
+                    const pf = p.querySelector('.leader-target-progress-fill');
+                    const cf = c.querySelector('.leader-target-progress-fill');
+                    if (pf && cf) cf.style.width = pf.style.width;
+                }
+            }
+            while (cloneList.children.length > primaries.length) {
+                cloneList.removeChild(cloneList.lastChild);
+            }
+        }
         
         function restartLeadersAutoScroll({ immediate = false } = {}) {
             // אם הגלילה כבר רצה - לא לאפס!
@@ -14864,23 +14907,51 @@
                 </div>
             `;
 
-            // עדכון חלקי – רק מספרים, ללא קפיצות (כשאותם 5 מובילים באותו סדר)
-            const newDonorIds = sortedDonors.map(d => String(d.id || ''));
+            // עדכון חלקי בלבד – לעולם לא innerHTML (מונע קפיצות כשמשתנה סכום כולל או סדר מובילים)
             const existingLeaders = leadersList.querySelectorAll('.leader-item[data-donor-id]');
-            const existingIds = existingLeaders.length ? [...existingLeaders].map(el => el.dataset.donorId || '').filter(Boolean) : [];
-            const sameOrder = newDonorIds.length === existingIds.length && newDonorIds.every((id, i) => id === existingIds[i]);
-            const sameLeaders = sameOrder && newDonorIds.length >= 1;
+            const existingGroupCards = leadersList.querySelectorAll('.leader-target-card[data-group-id]');
+            const existingSummary = leadersList.querySelector('.leader-summary-card');
+            const canIncremental = existingLeaders.length > 0 || existingGroupCards.length > 0;
 
-            if (sameLeaders && existingLeaders.length === 5) {
-                sortedDonors.forEach((donor, index) => {
-                    const leaderEl = existingLeaders[index];
-                    if (!leaderEl || leaderEl.dataset.donorId !== String(donor.id)) {
-                        const match = [...existingLeaders].find(el => el.dataset.donorId === String(donor.id));
-                        if (match) updateLeaderItem(match, donor, index + 1);
-                    } else {
-                        updateLeaderItem(leaderEl, donor, index + 1);
-                    }
-                });
+            function updateLeaderItem(el, donor, rank) {
+                if (!el) return;
+                const rankEl = el.querySelector('.leader-rank');
+                const nameEl = el.querySelector('.leader-name');
+                const totalEl = el.querySelector('.leader-total');
+                if (rankEl) rankEl.textContent = rank;
+                if (nameEl) nameEl.textContent = donor.name || '';
+                if (totalEl) totalEl.textContent = '₪' + (donor.amount || 0).toLocaleString();
+                el.dataset.donorId = String(donor.id || '');
+                ['rank-1','rank-2','rank-3','rank-4','rank-5'].forEach(c => el.classList.remove(c));
+                el.classList.add('rank-' + Math.min(rank, 5));
+            }
+
+            if (canIncremental && (existingLeaders.length >= 1 || (sortedDonors.length === 0 && existingSummary))) {
+                // עדכון חלקי – רק מספרים ורכיבים, בלי להחליף DOM
+                const leadersContainer = leadersList.querySelector('.leaders-list') || leadersList;
+                const firstLeaderParent = existingLeaders[0] && existingLeaders[0].parentNode;
+                const idToEl = new Map();
+                existingLeaders.forEach(el => { idToEl.set(el.dataset.donorId || '', el); });
+
+                if (sortedDonors.length > 0) {
+                    const anchor = existingGroupCards[0] || existingSummary || null;
+                    sortedDonors.forEach((donor, index) => {
+                        let el = idToEl.get(String(donor.id || ''));
+                        if (!el) {
+                            el = document.createElement('div');
+                            el.className = 'leader-item';
+                            el.dataset.donorId = String(donor.id || '');
+                            el.innerHTML = '<div class="leader-rank"></div><div class="leader-info"><div class="leader-name"></div></div><div class="leader-total"></div>';
+                            if (firstLeaderParent && anchor) firstLeaderParent.insertBefore(el, anchor);
+                        }
+                        el.style.display = '';
+                        updateLeaderItem(el, donor, index + 1);
+                    });
+                    existingLeaders.forEach(el => {
+                        const id = el.dataset.donorId || '';
+                        if (!sortedDonors.some(d => String(d.id) === id)) el.style.display = 'none';
+                    });
+                }
                 leadersList.querySelectorAll('.leader-target-card[data-group-id]').forEach(card => {
                     const g = visibleGroups.find(gr => String(gr.id) === String(card.dataset.groupId));
                     if (g) {
@@ -14897,43 +14968,27 @@
                         if (meta) meta.textContent = 'מספר מתרימים: ' + groupDonors.length;
                     }
                 });
-                const summaryCard = leadersList.querySelector('.leader-summary-card');
-                if (summaryCard) {
-                    const fill = summaryCard.querySelector('.leader-target-progress-fill');
-                    const textEl = summaryCard.querySelector('.leader-target-progress-text');
-                    const meta = summaryCard.querySelector('.leader-target-meta');
+                if (existingSummary) {
+                    const fill = existingSummary.querySelector('.leader-target-progress-fill');
+                    const textEl = existingSummary.querySelector('.leader-target-progress-text');
+                    const meta = existingSummary.querySelector('.leader-target-meta');
                     if (fill) fill.style.width = progressWidth + '%';
                     if (textEl) textEl.textContent = summaryText;
                     if (meta) meta.textContent = 'מספר מתרימים: ' + totalDonorsCount;
                 }
+                // סנכרון לקלון בלי innerHTML – רק עדכון טקסט/מבנה אלמנט-אלמנט (מונע קפיצות)
+                if (isLiveViewActive() && liveViewSettings.enableAutoScroll && leadersScrollIsRunning) {
+                    syncLeadersCloneToPrimary(leadersList);
+                }
             } else {
                 leadersList.innerHTML = listHtml + groupsCardsHtml + summaryHtml;
             }
-            function updateLeaderItem(el, donor, rank) {
-                const rankEl = el.querySelector('.leader-rank');
-                const nameEl = el.querySelector('.leader-name');
-                const totalEl = el.querySelector('.leader-total');
-                if (rankEl) rankEl.textContent = rank;
-                if (nameEl) nameEl.textContent = donor.name || '';
-                if (totalEl) totalEl.textContent = '₪' + (donor.amount || 0).toLocaleString();
-                ['rank-1','rank-2','rank-3','rank-4','rank-5'].forEach(c => el.classList.remove(c));
-                el.classList.add('rank-' + rank);
-            }
             
-            // עדכון הקלון בלבד אם הגלילה כבר רצה - בלי לאפס את המיקום!
             if (isLiveViewActive() && liveViewSettings.enableAutoScroll) {
-                if (leadersScrollIsRunning) {
-                    // רק מעדכנים את הקלון, לא מאפסים את הגלילה
-                    const clone = document.getElementById('leadersScrollClone');
-                    const primaryContent = document.querySelector('#leadersScrollPrimary .live-leaders-content');
-                    if (clone && primaryContent) {
-                        clone.innerHTML = primaryContent.outerHTML;
-                    }
-                } else {
-                    // אם הגלילה לא רצה, מתחילים אותה
-                    setTimeout(() => {
-                        restartLeadersAutoScroll({ immediate: true });
-                    }, 100);
+                if (!leadersScrollIsRunning) {
+                    setTimeout(() => restartLeadersAutoScroll({ immediate: true }), 100);
+                } else if (!canIncremental) {
+                    syncLeadersCloneToPrimary(leadersList);
                 }
             }
         }
