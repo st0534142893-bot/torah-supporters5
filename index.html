@@ -3671,7 +3671,10 @@
             font-size: 14px;
             font-weight: 600;
             color: var(--brown-dark);
-            margin-top: 2px;
+        }
+        .amount-value, .goal-value {
+            min-width: 6ch;
+            contain: layout;
         }
 
         /* אזור מובילים בצד - רוחב קבוע באחוזים */
@@ -4055,6 +4058,8 @@
             font-size: 18px;
             font-weight: 700;
             color: var(--primary-gold-dark);
+            min-width: 5ch;
+            contain: layout;
         }
 
         .leader-item.rank-1 .leader-total {
@@ -14268,7 +14273,7 @@
         let isUpdatingLiveView = false;
         let lastLiveViewUpdateWhenActive = 0;
         let updateLiveViewScheduledWhenActive = null;
-        const LIVE_VIEW_BACKGROUND_UPDATE_INTERVAL_MS = 25000; // בתצוגת לייב – עדכון רקע לכל היותר כל 25 שניות (גלילה חלקה)
+        const LIVE_VIEW_BACKGROUND_UPDATE_INTERVAL_MS = 45000; // בתצוגת לייב – עדכון רקע לכל היותר כל 45 שניות (גלילה חלקה, ללא קפיצות)
         function updateLiveView(immediate = false) {
             // Debouncing - מניעת עדכונים תכופים מדי
             if (updateLiveViewTimeout && !immediate) {
@@ -14535,12 +14540,15 @@
                     </div>
                 `);
                 structureEntries.push(`header:${groupId}`);
+                // מבנה יציב (לפי id) – מונע קפיצות כשמשתנים רק סכומים
+                [...donorsInGroup].sort((a, b) => String(a.id || '').localeCompare(String(b.id || ''))).forEach(d => {
+                    structureEntries.push(`card:${d.id}`);
+                });
 
                 donorsInGroup.forEach(donor => {
                     const percentage = donor.personalGoal > 0 ? (donor.amount / donor.personalGoal) * 100 : 0;
                     const uniqueId = `donor_${donor.id}_${itemCounter++}`;
                     const groupLabel = group ? group.name : 'ללא קבוצה';
-                    structureEntries.push(`card:${donor.id}`);
 
                     const donorDisplayName = getDonorDisplayName(donor);
                     htmlParts.push(`
@@ -14702,7 +14710,8 @@
             const totalDonorsCount = donors.filter(d => d.name && d.name.trim()).length;
             
             // יצירת כרטיסיות לכל קבוצה - רק קבוצות שמוצגות בלייב
-            const groupsCardsHtml = groups.filter(g => g.showInLiveView !== false).map(group => {
+            const visibleGroups = groups.filter(g => g.showInLiveView !== false);
+            const groupsCardsHtml = visibleGroups.map(group => {
                 const groupDonors = donors.filter(d => d.groupId === group.id);
                 const collected = groupDonors.reduce((sum, donor) => sum + (donor.amount || 0), 0);
                 const groupGoal = group.goal || 0;
@@ -14716,7 +14725,7 @@
                     : `₪${collected.toLocaleString()} | ללא יעד מוגדר`;
                 
                 return `
-                    <div class="leader-target-card">
+                    <div class="leader-target-card" data-group-id="${group.id || ''}">
                         <div class="leader-target-title">${escapeHtml(group.name)}</div>
                         <div class="leader-target-meta">מספר מתרימים: ${groupDonors.length}</div>
                         <div class="leader-target-progress-bar">
@@ -14753,10 +14762,10 @@
                 else if (rank === 5) rankClass = 'rank-5';
                 
                 return `
-                    <div class="leader-item ${rankClass}">
+                    <div class="leader-item ${rankClass}" data-donor-id="${donor.id || ''}">
                         <div class="leader-rank">${rank}</div>
                         <div class="leader-info">
-                            <div class="leader-name">${donor.name}</div>
+                            <div class="leader-name">${escapeHtml(donor.name || '')}</div>
                         </div>
                         <div class="leader-total">₪${donor.amount.toLocaleString()}</div>
                     </div>
@@ -14765,7 +14774,7 @@
 
             // הוספת כרטיסית סיכום כללי
             const summaryHtml = `
-                <div class="leader-target-card">
+                <div class="leader-target-card leader-summary-card" data-summary="1">
                     <div class="leader-target-title">סה"כ נאסף</div>
                     <div class="leader-target-meta">מספר מתרימים: ${totalDonorsCount}</div>
                     <div class="leader-target-progress-bar">
@@ -14775,7 +14784,61 @@
                 </div>
             `;
 
-            leadersList.innerHTML = listHtml + groupsCardsHtml + summaryHtml;
+            // עדכון חלקי – רק מספרים, ללא קפיצות (כשאותם 5 מובילים באותו סדר)
+            const newDonorIds = sortedDonors.map(d => String(d.id || ''));
+            const existingLeaders = leadersList.querySelectorAll('.leader-item[data-donor-id]');
+            const existingIds = existingLeaders.length ? [...existingLeaders].map(el => el.dataset.donorId || '').filter(Boolean) : [];
+            const sameOrder = newDonorIds.length === existingIds.length && newDonorIds.every((id, i) => id === existingIds[i]);
+            const sameLeaders = sameOrder && newDonorIds.length >= 1;
+
+            if (sameLeaders && existingLeaders.length === 5) {
+                sortedDonors.forEach((donor, index) => {
+                    const leaderEl = existingLeaders[index];
+                    if (!leaderEl || leaderEl.dataset.donorId !== String(donor.id)) {
+                        const match = [...existingLeaders].find(el => el.dataset.donorId === String(donor.id));
+                        if (match) updateLeaderItem(match, donor, index + 1);
+                    } else {
+                        updateLeaderItem(leaderEl, donor, index + 1);
+                    }
+                });
+                leadersList.querySelectorAll('.leader-target-card[data-group-id]').forEach(card => {
+                    const g = visibleGroups.find(gr => String(gr.id) === String(card.dataset.groupId));
+                    if (g) {
+                        const groupDonors = donors.filter(d => d.groupId === g.id);
+                        const collected = groupDonors.reduce((s, d) => s + (d.amount || 0), 0);
+                        const gGoal = g.goal || 0;
+                        const gPct = gGoal > 0 ? (collected / gGoal) * 100 : 0;
+                        const gText = gGoal > 0 ? `₪${collected.toLocaleString()} מתוך ₪${gGoal.toLocaleString()} | ${Math.max(0, gPct).toFixed(1)}%` : `₪${collected.toLocaleString()} | ללא יעד מוגדר`;
+                        const fill = card.querySelector('.leader-target-progress-fill');
+                        const textEl = card.querySelector('.leader-target-progress-text');
+                        const meta = card.querySelector('.leader-target-meta');
+                        if (fill) fill.style.width = Math.min(gPct, 100) + '%';
+                        if (textEl) textEl.textContent = gText;
+                        if (meta) meta.textContent = 'מספר מתרימים: ' + groupDonors.length;
+                    }
+                });
+                const summaryCard = leadersList.querySelector('.leader-summary-card');
+                if (summaryCard) {
+                    const fill = summaryCard.querySelector('.leader-target-progress-fill');
+                    const textEl = summaryCard.querySelector('.leader-target-progress-text');
+                    const meta = summaryCard.querySelector('.leader-target-meta');
+                    if (fill) fill.style.width = progressWidth + '%';
+                    if (textEl) textEl.textContent = summaryText;
+                    if (meta) meta.textContent = 'מספר מתרימים: ' + totalDonorsCount;
+                }
+            } else {
+                leadersList.innerHTML = listHtml + groupsCardsHtml + summaryHtml;
+            }
+            function updateLeaderItem(el, donor, rank) {
+                const rankEl = el.querySelector('.leader-rank');
+                const nameEl = el.querySelector('.leader-name');
+                const totalEl = el.querySelector('.leader-total');
+                if (rankEl) rankEl.textContent = rank;
+                if (nameEl) nameEl.textContent = donor.name || '';
+                if (totalEl) totalEl.textContent = '₪' + (donor.amount || 0).toLocaleString();
+                ['rank-1','rank-2','rank-3','rank-4','rank-5'].forEach(c => el.classList.remove(c));
+                el.classList.add('rank-' + rank);
+            }
             
             // עדכון הקלון בלבד אם הגלילה כבר רצה - בלי לאפס את המיקום!
             if (isLiveViewActive() && liveViewSettings.enableAutoScroll) {
