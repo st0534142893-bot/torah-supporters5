@@ -9931,6 +9931,7 @@
         function saveAddresses() {
             try {
                 storageSetItem('addresses', addresses);
+                if (typeof notifyDataChanged === 'function') notifyDataChanged();
             } catch (e) {
                 console.error('שגיאה בשמירת כתובות:', e);
             }
