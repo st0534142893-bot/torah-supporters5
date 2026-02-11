@@ -8655,7 +8655,10 @@
                         if (typeof fillUpdateByApiDonorSelect === 'function') fillUpdateByApiDonorSelect();
                         if (typeof updateNedarimFixCurrentSumLabel === 'function') updateNedarimFixCurrentSumLabel();
                         if (typeof syncNedarimBlockPushCheckbox === 'function') syncNedarimBlockPushCheckbox();
-                        if (typeof syncAllDataToDatabase === 'function') syncAllDataToDatabase();
+                        // סנכרון ל-IndexedDB רק כשכבר יש מתרימים – מונע דריסה במחשב חדש
+                        if (typeof syncAllDataToDatabase === 'function' && donors && donors.length > 0) {
+                            syncAllDataToDatabase();
+                        }
                     }).catch(error => console.error('❌ שגיאה באתחול בסיס הנתונים:', error));
                 }
                 updateHomeStats();
@@ -11616,6 +11619,19 @@
                     ]);
                     
                     if (savedDonors) donors = savedDonors;
+                    // תמיד טוענים מהגליון כשיש URL – הגליון הוא מקור האמת; מונע חוסר סנכרון במחשב/חשבון אחר
+                    const hasSheetsUrlForLoad = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || (typeof DEFAULT_GOOGLE_SHEETS_URL !== 'undefined' ? DEFAULT_GOOGLE_SHEETS_URL : '') || '').trim();
+                    if (hasSheetsUrlForLoad && typeof loadFromGoogleSheets === 'function') {
+                        try {
+                            const r = await loadFromGoogleSheets(true);
+                            if (r && r.success && !r.skipped) {
+                                if (typeof window !== 'undefined') window._sheetDataLoadedOnInit = true;
+                                console.log('✅ נטענו מהגליון – מציג מה שמוצג בגליון');
+                            }
+                        } catch (e) {
+                            console.warn('⚠️ לא הצלחנו לטעון מהגליון:', e?.message || e);
+                        }
+                    }
                     if (savedGroups) {
                         groups = savedGroups;
                         // וידוא שלכל קבוצה יש orderNumber
@@ -21693,39 +21709,40 @@
         // ========== סוף מערכת היסטוריה ==========
 
         // טעינה אוטומטית בעליית התוכנה
+        // ⚠️ חשוב: מחכים לסיום runAppBootstrap לפני טעינה מהגליון – מונע מרוצי טעינה במחשב/חשבון חדש
         window.addEventListener('load', async () => {
             console.log('🚀 [אתחול] טוען הגדרות סנכרון...');
             loadGoogleSheetsSettings();
             try { if (typeof initRobot === 'function') initRobot(); } catch(e) { console.warn('[רובוט] אתחול:', e); }
-            // applySheetSyncSettings(); // בוטל - השתמש ברובוט אוטומטי
             loadComputerSettings();
             
-            // מחכה קצת כדי לוודא שהכל נטען
-            await new Promise(resolve => setTimeout(resolve, 500));
+            // מחכה שהאפליקציה תסיים לאתחל (כולל loadData) – מונע באגים במחשב חדש
+            await new Promise(resolve => setTimeout(resolve, 800));
             
-            // בדיקה אם יש Google Sheets מוגדר
             const hasSheetsUrl = !!(googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || DEFAULT_GOOGLE_SHEETS_URL);
             
             if (hasSheetsUrl) {
-                // תמיד טוענים מהגליון בפתיחה - גם במחשבים שלא הגדירו סנכרון
-                console.log('🔄 [אתחול] נמצא Google Sheets URL, טוען נתונים מהגליון...');
-                const sheetsStatusEl = document.getElementById('googleSheetsSyncStatus');
-                if (sheetsStatusEl && googleSheetsSyncEnabled) {
-                    sheetsStatusEl.style.display = 'block';
-                    sheetsStatusEl.style.background = '#cce5ff';
-                    sheetsStatusEl.style.color = '#004085';
-                    sheetsStatusEl.textContent = '🔄 טוען נתונים מהגליון בעת פתיחת התוכנה...';
+                // דילוג אם כבר טענו ב-loadData (מחשב חדש – מונע טעינה כפולה וקפיצות)
+                if (typeof window._sheetDataLoadedOnInit === 'boolean' && window._sheetDataLoadedOnInit) {
+                    console.log('ℹ️ [אתחול] הנתונים כבר נטענו מהגליון ב-loadData (מחשב חדש)');
+                } else {
+                    console.log('🔄 [אתחול] נמצא Google Sheets URL, טוען נתונים מהגליון...');
+                    const sheetsStatusEl = document.getElementById('googleSheetsSyncStatus');
+                    if (sheetsStatusEl && googleSheetsSyncEnabled) {
+                        sheetsStatusEl.style.display = 'block';
+                        sheetsStatusEl.style.background = '#cce5ff';
+                        sheetsStatusEl.style.color = '#004085';
+                        sheetsStatusEl.textContent = '🔄 טוען נתונים מהגליון...';
+                    }
+                    
+                    try {
+                        await loadFromGoogleSheets(!googleSheetsSyncEnabled);
+                        console.log('✅ [אתחול] הנתונים נטענו בהצלחה מ-Google Sheets');
+                        if (typeof notifyDataChanged === 'function') notifyDataChanged();
+                    } catch (error) {
+                        console.error('❌ [אתחול] שגיאה בטעינה מ-Google Sheets:', error);
+                    }
                 }
-                
-                try {
-                    await loadFromGoogleSheets(!googleSheetsSyncEnabled);
-                    console.log('✅ [אתחול] הנתונים נטענו בהצלחה מ-Google Sheets');
-                } catch (error) {
-                    console.error('❌ [אתחול] שגיאה בטעינה מ-Google Sheets:', error);
-                }
-                
-                // סנכרון תקופתי בוטל - השתמש ברובוט אוטומטי במדור ניהול
-                // startLiveViewSyncPolling();
             } else {
                 console.log('ℹ️ [אתחול] אין כתובת גליון – משתמש בנתונים מקומיים');
             }
