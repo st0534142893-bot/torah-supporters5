@@ -3018,8 +3018,9 @@
 
 
         .live-donors-scroll {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
             gap: 10px;
             padding: 10px;
             padding-bottom: 0;
@@ -3041,7 +3042,8 @@
         }
 
         .live-donor-group-header {
-            grid-column: 1 / -1;
+            flex-basis: 100%;
+            width: 100%;
             background: rgba(255, 255, 255, 0.92);
             border: 3px solid var(--primary-gold);
             border-radius: 18px;
@@ -3103,6 +3105,7 @@
             color: var(--brown-dark);
         }
         .live-donor-card {
+            flex: 0 0 calc((100% - 20px) / 3);
             background: rgba(255, 255, 255, 0.92);
             border: 3px solid var(--primary-gold);
             border-radius: 18px;
@@ -4498,12 +4501,15 @@
             }
 
             .live-donors-scroll {
-                grid-template-columns: repeat(4, minmax(320px, 1fr));
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
                 gap: 18px;
                 padding: 16px;
             }
 
             .live-donor-card {
+                flex: 0 0 calc((100% - 54px) / 4);
                 padding: 22px 26px;
                 min-height: 150px;
                 gap: 26px;
@@ -4562,11 +4568,14 @@
             }
 
             .live-donors-scroll {
-                grid-template-columns: repeat(5, minmax(340px, 1fr));
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
                 gap: 22px;
             }
 
             .live-donor-card {
+                flex: 0 0 calc((100% - 88px) / 5);
                 padding: 26px 32px;
                 min-height: 170px;
             }
@@ -4603,12 +4612,15 @@
         /* מסכים גדולים מאוד - 4000px */
         @media (min-width: 4000px) {
             .live-donors-scroll {
-                grid-template-columns: repeat(6, minmax(380px, 1fr));
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
                 gap: 28px;
                 padding: 24px;
             }
 
             .live-donor-card {
+                flex: 0 0 calc((100% - 140px) / 6);
                 padding: 32px 40px;
                 min-height: 200px;
                 gap: 32px;
@@ -4671,12 +4683,15 @@
         /* מסכים גדולים מאוד - 5000px */
         @media (min-width: 5000px) {
             .live-donors-scroll {
-                grid-template-columns: repeat(7, minmax(420px, 1fr));
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
                 gap: 32px;
                 padding: 28px;
             }
 
             .live-donor-card {
+                flex: 0 0 calc((100% - 192px) / 7);
                 padding: 38px 46px;
                 min-height: 230px;
                 gap: 38px;
@@ -4723,12 +4738,15 @@
         /* מסכים גדולים מאוד - 6000px ומעלה */
         @media (min-width: 6000px) {
             .live-donors-scroll {
-                grid-template-columns: repeat(8, minmax(460px, 1fr));
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
                 gap: 36px;
                 padding: 32px;
             }
 
             .live-donor-card {
+                flex: 0 0 calc((100% - 252px) / 8);
                 padding: 44px 52px;
                 min-height: 260px;
                 gap: 44px;
@@ -11005,7 +11023,12 @@
                     width: ${liveViewSettings.hideLeadersColumn ? '100%' : (liveViewSettings.donorsWidth + '%')} !important;
                 }
                 .live-donors-scroll {
-                    grid-template-columns: ${liveViewSettings.hideLeadersColumn ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)'} !important;
+                    display: flex !important;
+                    flex-wrap: wrap !important;
+                    justify-content: center !important;
+                }
+                .live-donor-card {
+                    flex: 0 0 calc((100% - ${(liveViewSettings.hideLeadersColumn ? 2 : 3) - 1} * ${liveViewSettings.groupGap || 0}px) / ${liveViewSettings.hideLeadersColumn ? 2 : 3}) !important;
                 }
                 .leader-target-card {
                     display: ${liveViewSettings.showSummary ? 'block' : 'none'} !important;
