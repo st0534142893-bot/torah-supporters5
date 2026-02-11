@@ -9552,7 +9552,7 @@
             const totalIncludingLeaders = allMembers.length + leadersCount;
             const uniqueMembers = new Set(allMembers.map(member => (member?.name || '').toLowerCase()).filter(Boolean));
             const stats = [
-                { label: 'מתרימים כולל ראשי סירה', value: totalIncludingLeaders.toLocaleString('he-IL') },
+                { label: 'מתרימים כולל ראשי סיירת', value: totalIncludingLeaders.toLocaleString('he-IL') },
                 { label: 'סירות פעילות', value: totalTeams.toLocaleString('he-IL') },
                 { label: 'מתרימים ייחודיים', value: uniqueMembers.size.toLocaleString('he-IL') }
             ];
@@ -20260,9 +20260,13 @@
                         } else {
                             // מתרים לא בעריכה ולא שונה לאחרונה - מעדכן מהגליון
                             if (sheetDonor) {
-                                // ⚠️ חשוב: שומר את מספר המתרים המקומי אם הוא תקין
+                                // ⚠️ לעולם לא לדרוס displayName לא ריק עם ריק מהגליון – שם תצוגה שערכת הוא מקודש
+                                const localDisplay = (existingDonor.displayName || '').toString().trim();
+                                const sheetDisplay = (sheetDonor.displayName || '').toString().trim();
+                                const keepLocalDisplay = localDisplay && !sheetDisplay;
                                 updatedDonors.push({
                                     ...sheetDonor,
+                                    displayName: keepLocalDisplay ? existingDonor.displayName : (sheetDisplay || sheetDonor.displayName),
                                     nedarimMatrimId: hasValidMatrimId ? existingDonor.nedarimMatrimId : (sheetDonor.nedarimMatrimId || existingDonor.nedarimMatrimId)
                                 });
                             } else {
@@ -20484,6 +20488,10 @@
                 // בתצוגת לייב – לא מעדכן בטיימר כדי לשמור על גלילה חלקה; בחזרה לטאב (forceLoadWhenVisible) תמיד טוענים
                 if (!forceLoadWhenVisible && typeof isLiveViewActive === 'function' && isLiveViewActive()) return;
                 try {
+                    // ⚠️ חשוב: שמירה קודם, טעינה אחרי – מונע דריסת displayName (עמודה C) בנתונים מקומיים
+                    if (sheetSyncSaveEnabled) {
+                        await saveToGoogleSheets();
+                    }
                     if (sheetSyncLoadEnabled) {
                         if (isUpdatingDonorForNedarim) {
                             console.log(`⏸️ [סנכרון] עדכון לנדרים/גליון בתהליך - מדלג על טעינה`);
@@ -20498,9 +20506,6 @@
                                 }
                             }
                         }
-                    }
-                    if (sheetSyncSaveEnabled) {
-                        await saveToGoogleSheets();
                     }
                 } catch (err) {
                     console.warn('⚠️ [סנכרון] שגיאה בעדכון תקופתי לגליון:', err);
