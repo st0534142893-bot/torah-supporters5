@@ -8001,6 +8001,7 @@
         function saveScoutsScheduleToStorage() {
             try {
                 storageSetItem('scoutsSchedule', scoutsSchedule);
+                if (typeof notifyDataChanged === 'function') notifyDataChanged();
             } catch (error) {
                 console.error('שגיאה בשמירת נתוני סיירות:', error);
             }
@@ -9584,7 +9585,8 @@
 
         function scoutsDeleteTeam(teamId) {
             const teams = getScoutsTeamsForActiveDay();
-            const index = teams.findIndex(team => team.id === teamId);
+            var idStr = String(teamId);
+            const index = teams.findIndex(team => String(team.id) === idStr);
             if (index === -1) return;
             if (!confirm('האם למחוק את סירת השטח הזו?')) return;
             teams.splice(index, 1);
@@ -9897,7 +9899,8 @@
                 return;
             }
             
-            addresses = addresses.filter(a => a.id !== addressId);
+            var idStr = String(addressId);
+            addresses = addresses.filter(a => String(a.id) !== idStr);
             saveAddresses();
             renderAddresses();
             showNotification('הכתובת נמחקה');
