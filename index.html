@@ -20274,12 +20274,12 @@
                 // טעינת קבוצות – מיזוג חכם: קבוצות ששונו לאחרונה נשמרות מקומית (מונע דריסת שם)
                     if (result.groups && Array.isArray(result.groups) && result.groups.length > 0) {
                     const now = Date.now();
-                    const GROUP_PROTECTION_MS = 35000; // כפי מתרימים – עדכונים מהגליון עוברים אחרי 35 שניות
+                    const GROUP_PROTECTION_MS = 35000;
                     const mergedGroups = result.groups.map(sheetGroup => {
-                        const localGroup = groups.find(g => g.id === sheetGroup.id);
-                        const lastUpdate = localGroup ? recentlyUpdatedGroups.get(sheetGroup.id) : null;
+                        const sheetId = sheetGroup.id;
+                        const localGroup = groups.find(g => String(g.id ?? '') === String(sheetId ?? ''));
+                        const lastUpdate = localGroup ? recentlyUpdatedGroups.get(sheetId) : null;
                         if (localGroup && lastUpdate != null && (now - lastUpdate < GROUP_PROTECTION_MS)) {
-                            // שומר את השם והשינויים המקומיים
                             return { ...sheetGroup, name: localGroup.name, goal: localGroup.goal, orderNumber: localGroup.orderNumber, showInLiveView: localGroup.showInLiveView, updatedAt: localGroup.updatedAt };
                         }
                         return { ...sheetGroup };
