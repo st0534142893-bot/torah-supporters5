@@ -6649,6 +6649,10 @@
                     <div class="sync-settings-panel">
                         <h3>עדכונים מנדרים פלוס</h3>
                         
+                        <div style="background: #e8f5e9; border: 1px solid #4caf50; border-radius: 8px; padding: 12px; margin-bottom: 15px; font-size: 13px;">
+                            <strong>✅ סנכרון חכם:</strong> מתרימים נטענים מנדרים פלוס (לא מהגליון) – מונע דריסת סכומים ועמודה C. שמירה לגליון נשארת לגיבוי. לטעינה מלאה מהגליון – "טען מהגליון".
+                        </div>
+                        
                         <!-- אזהרה על הגבלת פניות -->
                         <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 10px; padding: 15px; margin-bottom: 20px;">
                             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
@@ -7553,6 +7557,8 @@
         const NEDARIM_CONFIG = {
             mosadId: '1000642',
             matchingId: '715', // מזהה מצינג - Matching ID האמיתי (לא ה-mosadId)
+            // ApiValid – קוד אימות להטמעת iframe/ווקומרס באתר (שלחו מנדרים פלוס)
+            apiValid: 'wUF4j38+f+',
             // 💡 איך למצוא את ה-Matching ID:
             // 1. הפעל "בדוק סכום כולל מ-API" בקונסול
             // 2. חפש ב"ניסיון 4" את השדה "Matching" - למשל: "Nedarim:715:1:12::1:1"
@@ -11622,10 +11628,10 @@
                     // תמיד טוענים מהגליון כשיש URL – הגליון הוא מקור האמת
                     const hasSheetsUrlForLoad = ((typeof googleSheetsWebAppUrl !== 'undefined' && googleSheetsWebAppUrl) || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || (typeof DEFAULT_GOOGLE_SHEETS_URL !== 'undefined' ? DEFAULT_GOOGLE_SHEETS_URL : '') || '').toString().trim();
                     let sheetLoadedOk = false;
-                    if (hasSheetsUrlForLoad && typeof loadFromGoogleSheets === 'function') {
+                    if (hasSheetsUrlForLoad && typeof loadFromNedarimAndSheetGroups === 'function') {
                         try {
-                            const r = await loadFromGoogleSheets(true);
-                            if (r && r.success && !r.skipped) {
+                            const r = await loadFromNedarimAndSheetGroups(true);
+                            if (r && r.success) {
                                 sheetLoadedOk = true;
                                 if (typeof window !== 'undefined') window._sheetDataLoadedOnInit = true;
                                 if (typeof window !== 'undefined') window._lastSheetLoadTime = Date.now();
@@ -12931,6 +12937,11 @@
             if (!element) return;
             const difference = end - start;
             if (difference === 0) {
+                element.textContent = `${prefix}${end.toLocaleString('he-IL')}${suffix}`;
+                return;
+            }
+            // הפרש ענק (למשל 101→139169) – הצגה מיידית, ללא אנימציה (מונע הבהוב)
+            if (Math.abs(difference) > 5000) {
                 element.textContent = `${prefix}${end.toLocaleString('he-IL')}${suffix}`;
                 return;
             }
@@ -14343,20 +14354,29 @@
             }
         }
         // עדכון ממסך/טאב אחר – טוען רק מ-localStorage, בלי לדרוס מהגליון (מונע קפיצות)
+        let _reloadFromLocalStorageTimeout = null;
+        const RELOAD_DEBOUNCE_MS = 400; // מונע רענונים כפולים מ-BroadcastChannel + storage (הבהובים)
         function reloadFromLocalStorageOnly() {
-            try {
-                _lastLocalSyncFromOtherTab = Date.now(); // 🛡️ מסמן שעדכון מקומי חדש התקבל – טעינות מהגליון שחזרו אחרי כן ידולגו
-                const savedDonors = localStorage.getItem('donors');
-                const savedGroups = localStorage.getItem('groups');
-                if (savedDonors) {
-                    try { donors = JSON.parse(savedDonors); } catch (_) {}
-                }
-                if (savedGroups) {
-                    try { groups = JSON.parse(savedGroups); } catch (_) {}
-                }
-                ensureDonorsNormalized();
-                refreshAllScreensFromData();
-            } catch (e) { console.warn('שגיאה ברענון מ-localStorage:', e); }
+            _lastLocalSyncFromOtherTab = Date.now(); // 🛡️ מיד – הגנה מפני טעינה מהגליון
+            if (_reloadFromLocalStorageTimeout) {
+                clearTimeout(_reloadFromLocalStorageTimeout);
+                _reloadFromLocalStorageTimeout = null;
+            }
+            _reloadFromLocalStorageTimeout = setTimeout(() => {
+                _reloadFromLocalStorageTimeout = null;
+                try {
+                    const savedDonors = localStorage.getItem('donors');
+                    const savedGroups = localStorage.getItem('groups');
+                    if (savedDonors) {
+                        try { donors = JSON.parse(savedDonors); } catch (_) {}
+                    }
+                    if (savedGroups) {
+                        try { groups = JSON.parse(savedGroups); } catch (_) {}
+                    }
+                    ensureDonorsNormalized();
+                    refreshAllScreensFromData();
+                } catch (e) { console.warn('שגיאה ברענון מ-localStorage:', e); }
+            }, RELOAD_DEBOUNCE_MS);
         }
         syncChannel.addEventListener('message', async (event) => {
             if (event?.data?.type !== 'data-updated') return;
@@ -20081,7 +20101,72 @@
             }
         }
         
-        // טעינת נתונים מ-Google Sheets
+        /** טעינה מנדרים פלוס + קבוצות מגליון – מונע דריסת סכומים/עמודה C. מתרימים מנדרים, קבוצות מהגליון. */
+        async function loadFromNedarimAndSheetGroups(silent = false) {
+            const url = (document.getElementById('googleSheetsWebAppUrl')?.value?.trim() || '') 
+                || localStorage.getItem('googleSheetsWebAppUrl') || googleSheetsWebAppUrl || DEFAULT_GOOGLE_SHEETS_URL || '';
+            if (!url?.trim()) {
+                if (!silent) showNotification('❌ נא להגדיר כתובת Web App', 'error');
+                return { success: false };
+            }
+            if (!silent) {
+                console.log('📥 [סנכרון] טוען קבוצות מהגליון + מתרימים מנדרים פלוס (ללא דריסה מהגליון)');
+                showGoogleSheetsStatus('📥 טוען קבוצות מהגליון ומתרימים מנדרים פלוס...', 'info');
+            }
+            try {
+                const result = await fetchAppsScript(url, { action: 'getAllNoDonors', _: Date.now() }, { retries: 2, timeout: 15000 });
+                if (!result?.success || result.error) throw new Error(result?.error || 'שגיאה בטעינה');
+                let loadedGroups = 0;
+                if (result.groups && Array.isArray(result.groups) && result.groups.length > 0) {
+                    const now = Date.now();
+                    const mergedGroups = result.groups.map(sheetGroup => {
+                        const localGroup = groups.find(g => g.id === sheetGroup.id);
+                        const lastUpdate = localGroup ? recentlyUpdatedGroups.get(sheetGroup.id) : null;
+                        if (localGroup && lastUpdate != null && (now - lastUpdate < 35000)) {
+                            return { ...sheetGroup, name: localGroup.name, goal: localGroup.goal, orderNumber: localGroup.orderNumber, showInLiveView: localGroup.showInLiveView, updatedAt: localGroup.updatedAt };
+                        }
+                        return { ...sheetGroup };
+                    });
+                    groups = mergedGroups;
+                    loadedGroups = groups.length;
+                }
+                if (result.settings) {
+                    const s = result.settings;
+                    if (s.defaultDonorGoal != null) defaultDonorGoal = Number(s.defaultDonorGoal);
+                    if (s.matchingGoal != null && typeof matchingGoal !== 'undefined') matchingGoal = Number(s.matchingGoal);
+                    if (s.addresses && Array.isArray(s.addresses)) { addresses = s.addresses; try { localStorage.setItem('addresses', JSON.stringify(addresses)); } catch (e) {} }
+                    if (s.appSettings) {
+                        if (s.appSettings.matchingGoal != null) matchingGoal = Number(s.appSettings.matchingGoal);
+                        if (s.appSettings.defaultGroupGoal != null && typeof defaultGroupGoal !== 'undefined') defaultGroupGoal = Number(s.appSettings.defaultGroupGoal);
+                        if (s.appSettings.defaultDonorGoal != null) defaultDonorGoal = Number(s.appSettings.defaultDonorGoal);
+                    }
+                }
+                await syncWithNedarimPlus(true, true, true);
+                ensureDonorsNormalized();
+                try {
+                    localStorage.setItem('donors', JSON.stringify(donors));
+                    localStorage.setItem('groups', JSON.stringify(groups));
+                } catch (e) {}
+                updateDonorsList();
+                updateGroupsDisplay();
+                updateHomeStats();
+                if (typeof updateLiveView === 'function') updateLiveView(true);
+                updateLeadersList();
+                updateLiveTargets();
+                const totalAmount = donors.reduce((sum, d) => sum + (d.amount || 0), 0);
+                if (!silent) {
+                    showNotification(`✅ נטען מנדרים פלוס: ${donors.length} מתרימים, ${loadedGroups} קבוצות | ${totalAmount.toLocaleString()} ש"ח`, 'success');
+                    showGoogleSheetsStatus(`✅ מתרימים מנדרים | קבוצות מהגליון | ${totalAmount.toLocaleString()} ש"ח`, 'success');
+                }
+                return { success: true, donors: donors.length, groups: loadedGroups };
+            } catch (err) {
+                const friendly = translateFetchError(err);
+                if (!silent) { showNotification('❌ ' + friendly, 'error'); showGoogleSheetsStatus('❌ ' + friendly, 'error'); }
+                return { success: false, error: friendly };
+            }
+        }
+
+        // טעינת נתונים מ-Google Sheets (מלא – כולל מתרימים מהגליון. לסנכרון אוטומטי משתמשים ב-loadFromNedarimAndSheetGroups)
         // silent: true = ללא הודעות (לסנכרון אוטומטי בתצוגת לייב)
         async function loadFromGoogleSheets(silent = false) {
             const loadSeq = ++_loadFromSheetsSeq;
@@ -20171,6 +20256,12 @@
                 if (_lastLocalSyncFromOtherTab > loadStartTime) {
                     if (!silent) console.log('⏭️ [סנכרון] דילוג – התקבל עדכון מ-BroadcastChannel/storage אחרי תחילת הטעינה');
                     return { success: true, skipped: true, reason: 'local-sync-newer' };
+                }
+                // 🛡️ מניעת הבהוב: אם קיבלנו BroadcastChannel לאחרונה (3 דקות) – לא לדרוס עם גליון שעשוי להיות ישן
+                const LOCAL_SYNC_PROTECTION_MS = 180000; // 3 דקות
+                if (_lastLocalSyncFromOtherTab > 0 && (Date.now() - _lastLocalSyncFromOtherTab) < LOCAL_SYNC_PROTECTION_MS) {
+                    if (!silent) console.log('⏭️ [סנכרון] דילוג – עדכון מקומי לאחרונה, לא לדרוס מהגליון (מונע הבהובים)');
+                    return { success: true, skipped: true, reason: 'recent-local-sync' };
                 }
                 if (loadSeq !== _loadFromSheetsSeq) {
                     if (!silent) console.log('⏭️ [סנכרון] דילוג – התחילה טעינה חדשה יותר');
@@ -20518,7 +20609,7 @@
                 console.log(`⏸️ [סנכרון] עדכון לנדרים/גליון בתהליך - מדלג על טעינה מהגליון`);
                 return { success: true, skipped: true, reason: 'עדכון לנדרים בתהליך' };
             }
-            const r = await loadFromGoogleSheets(true);
+            const r = await loadFromNedarimAndSheetGroups(true);
             if (r && r.success && typeof notifyDataChanged === 'function') {
                 notifyDataChanged(true);
             }
@@ -20538,11 +20629,16 @@
                 // בתצוגת לייב – לא מעדכן בטיימר כדי לשמור על גלילה חלקה; בחזרה לטאב (forceLoadWhenVisible) תמיד טוענים
                 if (!forceLoadWhenVisible && typeof isLiveViewActive === 'function' && isLiveViewActive()) return;
                 try {
-                    // ⚠️ חשוב: טעינה קודם, שמירה אחרי – מונע דריסת עמודה C (displayName) בגליון
-                    // כשטוענים קודם, מתמזגים displayName מהגליון לתוך donors מקומיים (כש displayName מקומי ריק),
-                    // כך שבשמירה לא נדרוס שמות תצוגה קיימים בגליון
+                    const inLiveView = typeof isLiveViewActive === 'function' && isLiveViewActive();
+                    // 🛡️ מניעת הבהוב: תצוגת לייב + עדכון מקומי לאחרונה – לא לטעון (מונע דריסה)
+                    const recentLocalSync = (typeof _lastLocalSyncFromOtherTab !== 'undefined' && _lastLocalSyncFromOtherTab > 0 && (Date.now() - _lastLocalSyncFromOtherTab) < 180000);
+                    if (inLiveView && recentLocalSync && sheetSyncLoadEnabled) {
+                        console.log('⏭️ [סנכרון] דילוג – תצוגת לייב + עדכון מקומי לאחרונה (מונע הבהובים)');
+                        if (typeof updateLiveView === 'function') updateLiveView(true);
+                        return;
+                    }
                     if (sheetSyncLoadEnabled && !isUpdatingDonorForNedarim) {
-                        const r = await loadFromGoogleSheets(true);
+                        const r = await loadFromNedarimAndSheetGroups(true);
                         if (r && r.success) {
                             if (typeof refreshAllScreensFromData === 'function') refreshAllScreensFromData();
                             if (typeof notifyDataChanged === 'function') notifyDataChanged(true); // true=לא להפעיל autoSave – מונע שמירה כפולה והבהובים
@@ -20551,7 +20647,8 @@
                     } else if (isUpdatingDonorForNedarim) {
                         console.log(`⏸️ [סנכרון] עדכון לנדרים/גליון בתהליך - מדלג על טעינה`);
                     }
-                    if (sheetSyncSaveEnabled) {
+                    // בתצוגת לייב – לא שומרים (מונע דריסת שינויים ממחשב/טאב אחר)
+                    if (sheetSyncSaveEnabled && !inLiveView) {
                         await saveToGoogleSheets();
                     }
                 } catch (err) {
@@ -20565,11 +20662,11 @@
                 if (Date.now() - lastLoad < RECENT_LOAD_MS) {
                     console.log('ℹ️ [סנכרון] דילוג על טעינה ראשונה – נתונים נטענו לאחרונה ב-loadData');
                 } else {
-                    loadFromGoogleSheets(true).then(r => {
+                    loadFromNedarimAndSheetGroups(true).then(r => {
                         if (r && r.success) {
                             if (typeof window !== 'undefined') window._lastSheetLoadTime = Date.now();
-                            console.log('🔄 [סנכרון] טעינה ראשונה מהגליון הושלמה');
-                            if (typeof notifyDataChanged === 'function') notifyDataChanged(true); // true=לא להפעיל autoSave – מונע שמירה כפולה
+                            console.log('🔄 [סנכרון] טעינה ראשונה – קבוצות מגליון, מתרימים מנדרים פלוס');
+                            if (typeof notifyDataChanged === 'function') notifyDataChanged(true);
                         }
                     }).catch(err => console.warn('⚠️ [סנכרון] שגיאה בטעינה ראשונה:', err));
                 }
@@ -21786,8 +21883,8 @@
                         sheetsStatusEl.textContent = '🔄 טוען נתונים מהגליון...';
                     }
                     try {
-                        const r = await loadFromGoogleSheets(!googleSheetsSyncEnabled);
-                        if (r && r.success && !r.skipped) {
+                        const r = await loadFromNedarimAndSheetGroups(!googleSheetsSyncEnabled);
+                        if (r && r.success) {
                             if (typeof window !== 'undefined') window._lastSheetLoadTime = Date.now();
                             if (typeof window !== 'undefined') window._sheetDataLoadedOnInit = true;
                         }
