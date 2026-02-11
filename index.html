@@ -11621,11 +11621,14 @@
                     if (savedDonors) donors = savedDonors;
                     // תמיד טוענים מהגליון כשיש URL – הגליון הוא מקור האמת
                     const hasSheetsUrlForLoad = ((typeof googleSheetsWebAppUrl !== 'undefined' && googleSheetsWebAppUrl) || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || (typeof DEFAULT_GOOGLE_SHEETS_URL !== 'undefined' ? DEFAULT_GOOGLE_SHEETS_URL : '') || '').toString().trim();
+                    let sheetLoadedOk = false;
                     if (hasSheetsUrlForLoad && typeof loadFromGoogleSheets === 'function') {
                         try {
                             const r = await loadFromGoogleSheets(true);
                             if (r && r.success && !r.skipped) {
+                                sheetLoadedOk = true;
                                 if (typeof window !== 'undefined') window._sheetDataLoadedOnInit = true;
+                                if (typeof window !== 'undefined') window._lastSheetLoadTime = Date.now();
                                 console.log('✅ נטענו מהגליון – מציג מה שמוצג בגליון');
                             } else if (r && r.success && r.skipped) {
                                 console.log('📥 דילוג על טעינה (שמירה לאחרונה או כבר נטען)');
@@ -11637,9 +11640,12 @@
                             }
                         }
                     }
-                    if (savedGroups) {
+                    // ⚠️ כשטענו מהגליון – לא לדרוס groups מ-localStorage (זה גורם ל-groupId mismatch ו-₪1 בקבוצה הלא נכונה)
+                    if (savedGroups && !sheetLoadedOk) {
                         groups = savedGroups;
-                        // וידוא שלכל קבוצה יש orderNumber
+                    }
+                    // וידוא שלכל קבוצה יש orderNumber
+                    if (groups.length) {
                         groups.forEach((group, index) => {
                             if (!group.orderNumber) {
                                 group.orderNumber = index + 1;
@@ -13253,7 +13259,8 @@
             ensureGroupsGridDragSupport();
                 
             groups.forEach(group => {
-                    const groupDonors = donors.filter(d => d.groupId === group.id);
+                    const gid = String(group.id ?? '');
+                    const groupDonors = donors.filter(d => String(d.groupId ?? '') === gid);
                     const groupTotal = groupDonors.reduce((sum, d) => sum + d.amount, 0);
                     const groupProgress = group.goal > 0 ? (groupTotal / group.goal) * 100 : 0;
                     const showInLive = group.showInLiveView !== false; // ברירת מחדל: מוצג
@@ -14893,10 +14900,10 @@
                 filteredDonors = filteredDonors.filter(d => d.personalGoal > 0 && d.amount < d.personalGoal);
             }
 
-            // קיבוץ מתרימים לפי קבוצה
+            // קיבוץ מתרימים לפי קבוצה – מנורמל ל-string (הגליון יכול להחזיר מספר/מחרוזת)
             const donorsByGroup = new Map();
             filteredDonors.forEach(donor => {
-                const groupId = donor.groupId || 'no-group';
+                const groupId = String(donor.groupId ?? 'no-group');
                 if (!donorsByGroup.has(groupId)) {
                     donorsByGroup.set(groupId, []);
                 }
@@ -14919,28 +14926,28 @@
                 sortedGroups.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'he'));
             } else if (sortBy === 'collected') {
                 sortedGroups.sort((a, b) => {
-                    const aCollected = (donorsByGroup.get(a.id) || []).reduce((sum, d) => sum + (d.amount || 0), 0);
-                    const bCollected = (donorsByGroup.get(b.id) || []).reduce((sum, d) => sum + (d.amount || 0), 0);
+                    const aCollected = (donorsByGroup.get(String(a.id ?? '')) || []).reduce((sum, d) => sum + (d.amount || 0), 0);
+                    const bCollected = (donorsByGroup.get(String(b.id ?? '')) || []).reduce((sum, d) => sum + (d.amount || 0), 0);
                     return bCollected - aCollected;
                 });
             } else if (sortBy === 'collected-asc') {
                 sortedGroups.sort((a, b) => {
-                    const aCollected = (donorsByGroup.get(a.id) || []).reduce((sum, d) => sum + (d.amount || 0), 0);
-                    const bCollected = (donorsByGroup.get(b.id) || []).reduce((sum, d) => sum + (d.amount || 0), 0);
+                    const aCollected = (donorsByGroup.get(String(a.id ?? '')) || []).reduce((sum, d) => sum + (d.amount || 0), 0);
+                    const bCollected = (donorsByGroup.get(String(b.id ?? '')) || []).reduce((sum, d) => sum + (d.amount || 0), 0);
                     return aCollected - bCollected;
                 });
             } else if (sortBy === 'percentage') {
                 sortedGroups.sort((a, b) => {
-                    const aCollected = (donorsByGroup.get(a.id) || []).reduce((sum, d) => sum + (d.amount || 0), 0);
-                    const bCollected = (donorsByGroup.get(b.id) || []).reduce((sum, d) => sum + (d.amount || 0), 0);
+                    const aCollected = (donorsByGroup.get(String(a.id ?? '')) || []).reduce((sum, d) => sum + (d.amount || 0), 0);
+                    const bCollected = (donorsByGroup.get(String(b.id ?? '')) || []).reduce((sum, d) => sum + (d.amount || 0), 0);
                     const aPercentage = a.goal > 0 ? (aCollected / a.goal) * 100 : 0;
                     const bPercentage = b.goal > 0 ? (bCollected / b.goal) * 100 : 0;
                     return bPercentage - aPercentage;
                 });
             } else if (sortBy === 'percentage-asc') {
                 sortedGroups.sort((a, b) => {
-                    const aCollected = (donorsByGroup.get(a.id) || []).reduce((sum, d) => sum + (d.amount || 0), 0);
-                    const bCollected = (donorsByGroup.get(b.id) || []).reduce((sum, d) => sum + (d.amount || 0), 0);
+                    const aCollected = (donorsByGroup.get(String(a.id ?? '')) || []).reduce((sum, d) => sum + (d.amount || 0), 0);
+                    const bCollected = (donorsByGroup.get(String(b.id ?? '')) || []).reduce((sum, d) => sum + (d.amount || 0), 0);
                     const aPercentage = a.goal > 0 ? (aCollected / a.goal) * 100 : 0;
                     const bPercentage = b.goal > 0 ? (bCollected / b.goal) * 100 : 0;
                     return aPercentage - bPercentage;
@@ -14953,21 +14960,24 @@
 
             // סינון קבוצות לפי ההגדרות
             if (liveViewSettings.groupsFilter === 'with-donors') {
-                sortedGroups = sortedGroups.filter(g => donorsByGroup.has(g.id) && donorsByGroup.get(g.id).length > 0);
+                sortedGroups = sortedGroups.filter(g => {
+                    const gid = String(g.id ?? '');
+                    return donorsByGroup.has(gid) && donorsByGroup.get(gid).length > 0;
+                });
             } else if (liveViewSettings.groupsFilter === 'met-goal') {
                 sortedGroups = sortedGroups.filter(g => {
-                    const collected = (donorsByGroup.get(g.id) || []).reduce((sum, d) => sum + (d.amount || 0), 0);
+                    const collected = (donorsByGroup.get(String(g.id ?? '')) || []).reduce((sum, d) => sum + (d.amount || 0), 0);
                     return g.goal > 0 && collected >= g.goal;
                 });
             } else if (liveViewSettings.groupsFilter === 'not-met-goal') {
                 sortedGroups = sortedGroups.filter(g => {
-                    const collected = (donorsByGroup.get(g.id) || []).reduce((sum, d) => sum + (d.amount || 0), 0);
+                    const collected = (donorsByGroup.get(String(g.id ?? '')) || []).reduce((sum, d) => sum + (d.amount || 0), 0);
                     return g.goal > 0 && collected < g.goal;
                 });
             }
 
             const orderedGroups = sortedGroups
-                .map(group => group.id)
+                .map(group => String(group.id ?? ''))
                 .filter(id => donorsByGroup.has(id));
             const unorderedGroups = Array.from(donorsByGroup.keys())
                 .filter(id => !orderedGroups.includes(id));
@@ -15193,10 +15203,10 @@
                     if (data) updateCardElement(card, data);
                 });
                 container.querySelectorAll('.live-donor-group-header[data-entry-type="header"]').forEach(header => {
-                    const groupId = header.dataset.groupId;
-                    const group = groups.find(g => g.id === groupId);
+                    const groupId = (header.dataset.groupId || '').toString();
+                    const group = groups.find(g => String(g.id ?? '') === groupId);
                     if (!group) return;
-                    const groupDonors = donors.filter(d => d.groupId === groupId);
+                    const groupDonors = donors.filter(d => String(d.groupId ?? '') === groupId);
                     const groupCollected = groupDonors.reduce((sum, donor) => sum + Math.max(0, donor.amount || 0), 0);
                     const groupGoal = group.goal || 0;
                     const groupPercentage = groupGoal > 0 ? (groupCollected / groupGoal) * 100 : 0;
@@ -15223,12 +15233,12 @@
             const leadersList = document.getElementById('leadersList');
             if (!leadersList) return;
             
-            // קבוצות שמוצגות בלייב
-            const visibleGroupIds = new Set(groups.filter(g => g.showInLiveView !== false).map(g => g.id));
+            // קבוצות שמוצגות בלייב – מנורמל ל-string (הגליון יכול להחזיר מספר/מחרוזת)
+            const visibleGroupIds = new Set(groups.filter(g => g.showInLiveView !== false).map(g => String(g.id ?? '')));
             
             // מיון מתרימים לפי סכום - רק מקבוצות שמוצגות בלייב
             const sortedDonors = [...donors]
-                .filter(d => d.name && d.name.trim() && d.amount > 0 && visibleGroupIds.has(d.groupId))
+                .filter(d => d.name && d.name.trim() && d.amount > 0 && visibleGroupIds.has(String(d.groupId ?? '')))
                 .sort((a, b) => b.amount - a.amount)
                 .slice(0, 5);
             
@@ -15255,7 +15265,8 @@
             // יצירת כרטיסיות לכל קבוצה - רק קבוצות שמוצגות בלייב
             const visibleGroups = groups.filter(g => g.showInLiveView !== false);
             const groupsCardsHtml = visibleGroups.map(group => {
-                const groupDonors = donors.filter(d => d.groupId === group.id);
+                const gid = String(group.id ?? '');
+                const groupDonors = donors.filter(d => String(d.groupId ?? '') === gid);
                 const collected = groupDonors.reduce((sum, donor) => sum + (donor.amount || 0), 0);
                 const groupGoal = group.goal || 0;
                 const groupPercentage = groupGoal > 0 ? (collected / groupGoal) * 100 : 0;
@@ -15384,7 +15395,8 @@
                 leadersList.querySelectorAll('.leader-target-card[data-group-id]').forEach(card => {
                     const g = visibleGroups.find(gr => String(gr.id) === String(card.dataset.groupId));
                     if (g) {
-                        const groupDonors = donors.filter(d => d.groupId === g.id);
+                        const gid = String(g.id ?? '');
+                        const groupDonors = donors.filter(d => String(d.groupId ?? '') === gid);
                         const collected = groupDonors.reduce((s, d) => s + (d.amount || 0), 0);
                         const gGoal = g.goal || 0;
                         const gPct = gGoal > 0 ? (collected / gGoal) * 100 : 0;
@@ -15468,7 +15480,9 @@
             }
 
             const cardsHtml = groups.map(group => {
-                const groupDonors = donors.filter(d => d.groupId === group.id);
+                // השוואה לפי string – הגליון יכול להחזיר groupId כמספר או כמחרוזת
+                const gid = String(group.id ?? '');
+                const groupDonors = donors.filter(d => String(d.groupId ?? '') === gid);
                 const collected = groupDonors.reduce((sum, donor) => sum + (donor.amount || 0), 0);
                 const goal = group.goal || 0;
                 const percentage = goal > 0 ? (collected / goal) * 100 : 0;
@@ -20528,10 +20542,20 @@
                 }
             }
             if (sheetSyncLoadEnabled) {
-                loadFromGoogleSheets(true).then(r => {
-                    if (r && r.success) console.log('🔄 [סנכרון] טעינה ראשונה מהגליון הושלמה');
-                    if (r && r.success && typeof notifyDataChanged === 'function') notifyDataChanged();
-                }).catch(err => console.warn('⚠️ [סנכרון] שגיאה בטעינה ראשונה:', err));
+                // דילוג על טעינה מיידית אם כבר טענו ב-loadData (מונע קפיצות ערך – שתי טעינות מתחרות)
+                const lastLoad = (typeof window !== 'undefined' && window._lastSheetLoadTime) || 0;
+                const RECENT_LOAD_MS = 90000; // 90 שניות – אם טענו לאחרונה, לא לטעון שוב
+                if (Date.now() - lastLoad < RECENT_LOAD_MS) {
+                    console.log('ℹ️ [סנכרון] דילוג על טעינה ראשונה – נתונים נטענו לאחרונה ב-loadData');
+                } else {
+                    loadFromGoogleSheets(true).then(r => {
+                        if (r && r.success) {
+                            if (typeof window !== 'undefined') window._lastSheetLoadTime = Date.now();
+                            console.log('🔄 [סנכרון] טעינה ראשונה מהגליון הושלמה');
+                            if (typeof notifyDataChanged === 'function') notifyDataChanged();
+                        }
+                    }).catch(err => console.warn('⚠️ [סנכרון] שגיאה בטעינה ראשונה:', err));
+                }
             }
             liveViewSyncIntervalId = setInterval(runSheetSync, intervalMs);
             let lastVisibilitySync = 0;
@@ -21740,7 +21764,11 @@
                         sheetsStatusEl.textContent = '🔄 טוען נתונים מהגליון...';
                     }
                     try {
-                        await loadFromGoogleSheets(!googleSheetsSyncEnabled);
+                        const r = await loadFromGoogleSheets(!googleSheetsSyncEnabled);
+                        if (r && r.success && !r.skipped) {
+                            if (typeof window !== 'undefined') window._lastSheetLoadTime = Date.now();
+                            if (typeof window !== 'undefined') window._sheetDataLoadedOnInit = true;
+                        }
                         console.log('✅ [אתחול] הנתונים נטענו בהצלחה מ-Google Sheets');
                         if (typeof notifyDataChanged === 'function') notifyDataChanged();
                     } catch (error) {
