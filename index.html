@@ -7579,7 +7579,9 @@
         };
         let nedarimSyncTimer = null;
         let syncWithNedarimPlusInProgress = false; // 🛡️ מנע סנכרונים מקבילים – כל סנכרון שולח דלתות; אם רץ פעמיים = כפילות!
-        let lastSyncEndTime = 0; // 🛡️ מונע סנכרונים תכופים מרובוט – מרווח מינימלי 3 דקות
+        let lastSyncEndTime = 0; // 🛡️ מונע סנכרונים תכופים מרובוט – מרווח מינימלי 5 דקות
+        const lastNedarimPushByKey = new Map(); // 🛡️ מונע שליחת אותו עדכון פעמיים – מפתח: matrimId_delta
+        const NEDARIM_PUSH_COOLDOWN_MS = 120000; // 2 דקות – אותו מתרים+דלתה לא נשלח שוב
         
         // הגדרת עדכון אוטומטי של נדרים פלוס (נשמרת ב-localStorage)
         let autoSyncNedarimEnabled = false; // ברירת מחדל: מושבת – מונע קפיצות 2000 ₪
@@ -18566,7 +18568,7 @@
                 return;
             }
             // מונע סנכרונים תכופים מרובוט – מרווח מינימלי 3 דקות אחרי סנכרון קודם
-            const SYNC_COOLDOWN_MS = 3 * 60 * 1000;
+            const SYNC_COOLDOWN_MS = 5 * 60 * 1000; // 5 דקות – מונע סנכרונים תכופים ולולאות
             if (silent && lastSyncEndTime > 0 && (Date.now() - lastSyncEndTime) < SYNC_COOLDOWN_MS) {
                 const waitSec = Math.ceil((SYNC_COOLDOWN_MS - (Date.now() - lastSyncEndTime)) / 1000);
                 console.warn(`⚠️ [סנכרון] דילוג – סנכרון אחרון לפני פחות מ-3 דקות (המתן ${waitSec} שניות)`);
@@ -18593,18 +18595,10 @@
                 console.log(pullOnly ? '🔄 מתחיל משיכה מנדרים פלוס (ללא דחיפה לנדרים)...' : '🔄 מתחיל סנכרון דו-כיווני עם נדרים פלוס...');
                 console.log('═══════════════════════════════════════════════════════');
 
-                // טעינה מהגליון לפני סנכרון – הגליון הוא מקור האמת, מונע קפיצות ודריסות
-                const urlForSync = googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || DEFAULT_GOOGLE_SHEETS_URL || '';
-                if (!pullOnly && urlForSync && typeof loadFromGoogleSheets === 'function' && !editingDonorId) {
-                    try {
-                        const loadResult = await loadFromGoogleSheets(true);
-                        if (loadResult && loadResult.success) {
-                            console.log('📥 [סנכרון] נטען מהגליון לפני דחיפה לנדרים');
-                        }
-                    } catch (e) {
-                        console.warn('⚠️ [סנכרון] שגיאה בטעינה מהגליון לפני סנכרון:', e.message || e);
-                    }
-                }
+                // ⛔ בוטל: טעינה מהגליון לפני דחיפה גרמה לדריסת נתונים נכונים בנדרים פלוס
+                // כשהגליון לא מעודכן (שמירה ישנה/טאב אחר) – הסכומים המקומיים הוחלפו בנתוני גליון ישנים,
+                // ואז נשלחה דלתה שגויה לנדרים ← סכומים לא נכונים. הפתרון: להשתמש בנתונים המקומיים בזיכרון.
+                // (משיכה בלבד – pullOnly – עדיין משתמשת ב-donors הקיימים, לא טוענת גליון)
 
                 // ========== שלב 1: דחיפה לנדרים (סנכרון דו-כיווני) ==========
                 if (!pullOnly) {
@@ -20787,6 +20781,28 @@
                     return { success: true, skipped: true, message: 'אין שינוי בסכום' };
                 }
                 
+                // 🛡️ מונע כפילות: אותו עדכון (מתרים+דלתה) לא נשלח שוב בתוך 2 דקות
+                const matrimId = String(donor.nedarimMatrimId).trim();
+                const pushKey = matrimId + '_' + delta;
+                const lastPushAt = lastNedarimPushByKey.get(pushKey) || 0;
+                if (Date.now() - lastPushAt < NEDARIM_PUSH_COOLDOWN_MS) {
+                    console.warn('⚠️ [נדרים] דילוג – אותו עדכון נשלח לפני פחות מ-2 דקות (מונע כפילות דלתות)');
+                    return { success: true, skipped: true, message: 'מונע כפילות – אותו עדכון נשלח לאחרונה' };
+                }
+                // 🛡️ מונע כפילות מטאבים אחרים – נעילה ב-localStorage
+                const lsKey = 'nedarimPush_' + pushKey;
+                if (typeof localStorage !== 'undefined') {
+                    const lsVal = localStorage.getItem(lsKey);
+                    if (lsVal) {
+                        const lsTs = parseInt(lsVal, 10);
+                        if (!isNaN(lsTs) && Date.now() - lsTs < NEDARIM_PUSH_COOLDOWN_MS) {
+                            console.warn('⚠️ [נדרים] דילוג – טאב אחר שלח אותו עדכון לאחרונה (מונע כפילות)');
+                            return { success: true, skipped: true, message: 'טאב אחר שלח עדכון זה לאחרונה' };
+                        }
+                    }
+                    localStorage.setItem(lsKey, String(Date.now()));
+                }
+                
                 const group = groups.find(g => g.id === donor.groupId);
                 const groupName = group ? group.name : '';
                 const donorDisplayName = getDonorDisplayName(donor);
@@ -20815,9 +20831,6 @@
                     note: '⚠️ הזיהוי הוא לפי MatrimId בלבד (מספר מתרים), לא לפי שם המתרים'
                 });
                 
-                // וודא ש-matrimId הוא מספר (לא תאריך)
-                const matrimId = String(donor.nedarimMatrimId).trim();
-                
                 const requestData = {
                     action: 'updateNedarimAmount',
                     matrimId: matrimId, // מספר מתרים אמיתי
@@ -20832,6 +20845,15 @@
                     amount: delta,
                     action: 'updateNedarimAmount'
                 });
+                
+                // רישום למונע כפילות – לפני השליחה
+                lastNedarimPushByKey.set(pushKey, Date.now());
+                if (lastNedarimPushByKey.size > 200) {
+                    const cutoff = Date.now() - NEDARIM_PUSH_COOLDOWN_MS;
+                    for (const [k, t] of lastNedarimPushByKey) {
+                        if (t < cutoff) lastNedarimPushByKey.delete(k);
+                    }
+                }
                 
                 // ניסיון 1: Direct fetch
                 let response;
@@ -21105,7 +21127,7 @@
                         if (resultEl) resultEl.textContent = '✅ העדכון נשלח בהצלחה. הסכום בתוכנה ובגליון עודכן בהתאם.';
                     }
                 } else {
-                    setTimeout(() => syncWithNedarimPlus(true), 1500);
+                    setTimeout(() => syncWithNedarimPlus(true), 60000); // דקה – מונע לולאת סנכרון
                 }
                 showNotification('עדכון הסכום נשלח בהצלחה והתוכנה עודכנה בהתאם.', 'success');
             } catch (e) {
@@ -21172,7 +21194,7 @@
                         }
                     } else {
                         // מתרים ידני – מרענן מנדרים כדי שהסיכום יתעדכן
-                        setTimeout(() => syncWithNedarimPlus(true), 1500);
+                        setTimeout(() => syncWithNedarimPlus(true), 60000); // דקה – מונע לולאת סנכרון
                     }
                 } else {
                     setResult('❌ ' + (res && res.error ? res.error : 'ההפחתה נכשלה.'), true);
