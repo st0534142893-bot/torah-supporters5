@@ -18725,16 +18725,17 @@
 
         // פונקציה ראשית לסנכרון עם נדרים פלוס (משתמש ב-MatchPlus API)
         // סנכרון דו-כיווני: דוחף שינויים מקומיים לנדרים פלוס, then מושך עדכונים מנדרים פלוס (מכבד recentlyUpdatedDonors).
-        async function syncWithNedarimPlus(silent = false, pullOnly = false) {
+        // forceSync=true: מתעלם מ-cooldown – כשהמשתמש לוחץ ידנית "בדוק סכום כולל מ-API"
+        async function syncWithNedarimPlus(silent = false, pullOnly = false, forceSync = false) {
             if (syncWithNedarimPlusInProgress) {
                 console.warn('⚠️ [סנכרון] סנכרון כבר רץ – דילוג (מונע כפילות דלתות בנדרים פלוס)');
                 return;
             }
-            // מונע סנכרונים תכופים מרובוט – מרווח מינימלי 3 דקות אחרי סנכרון קודם
-            const SYNC_COOLDOWN_MS = 5 * 60 * 1000; // 5 דקות – מונע סנכרונים תכופים ולולאות
-            if (silent && lastSyncEndTime > 0 && (Date.now() - lastSyncEndTime) < SYNC_COOLDOWN_MS) {
+            // מונע סנכרונים תכופים מרובוט – מרווח מינימלי 5 דקות. forceSync=true (בדיקה ידנית) מתעלם
+            const SYNC_COOLDOWN_MS = 5 * 60 * 1000;
+            if (!forceSync && silent && lastSyncEndTime > 0 && (Date.now() - lastSyncEndTime) < SYNC_COOLDOWN_MS) {
                 const waitSec = Math.ceil((SYNC_COOLDOWN_MS - (Date.now() - lastSyncEndTime)) / 1000);
-                console.warn(`⚠️ [סנכרון] דילוג – סנכרון אחרון לפני פחות מ-3 דקות (המתן ${waitSec} שניות)`);
+                console.warn(`⚠️ [סנכרון] דילוג – סנכרון אחרון לפני פחות מ-5 דקות (המתן ${waitSec} שניות)`);
                 return;
             }
             syncWithNedarimPlusInProgress = true;
@@ -19642,7 +19643,8 @@
                             showNedarimStatus('מסנכרן סכומים מנדרים פלוס לתוכנה...', 'loading');
                         }
                         // סנכרון משיכה: משיכת רשימת מתרימים מנדרים ועדכון הסכום של כל מתרים בתוכנה
-                        await syncWithNedarimPlus(true, true);
+                        // forceSync=true: בדיקה ידנית – לא לדלג בגלל cooldown
+                        await syncWithNedarimPlus(true, true, true);
                         // אימות: אחרי הסנכרון בודקים אם הסכום המקומי באמת תואם לנדרים
                         const totalAfterSync = donors.reduce((s, d) => s + (d.amount || 0), 0);
                         const nowMatch = Math.abs(totalAfterSync - totalData.Donated) <= 1;
