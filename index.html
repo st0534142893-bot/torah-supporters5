@@ -12958,13 +12958,8 @@
                 ? NEDARIM_CONFIG.goalFromAPI 
                 : matchingGoal;
             const localSum = donors.reduce((sum, d) => sum + (d.amount || 0), 0);
-            // סכום שנאסף – מ-API אם נטען וסביר; אם גבוה פי 1.5 מהיעד, לא סומכים עליו (באג/כפילות) ומשתמשים בסכום המקומי
-            const fromApi = (NEDARIM_CONFIG.apiDataLoaded && NEDARIM_CONFIG.totalDonatedFromAPI != null && NEDARIM_CONFIG.totalDonatedFromAPI >= 0);
-            let totalCollected = fromApi ? NEDARIM_CONFIG.totalDonatedFromAPI : localSum;
-            if (fromApi && currentGoal > 0 && totalCollected > currentGoal * 1.5) {
-                console.warn('⚠️ [סטטיסטיקה] סכום מ-API לא סביר:', totalCollected, 'מעל יעד', currentGoal, '– משתמשים בסכום מקומי:', localSum);
-                totalCollected = localSum;
-            }
+            // ⚠️ תמיד מסכום המתרימים (עמודה E) – כמו בגליון, בלי API שגורם להבהוב
+            const totalCollected = localSum;
             
             const matchingPercentage = currentGoal > 0 ? (totalCollected / currentGoal) * 100 : 0;
             const totalDonors = donors.length;
@@ -15243,15 +15238,14 @@
                 .sort((a, b) => b.amount - a.amount)
                 .slice(0, 5);
             
-            // סכום כולל – מ-API אם סביר; אם גבוה פי 1.5 מהיעד, משתמשים בסכום מקומי
+            // ⚠️ סכום כולל תמיד מסכום המתרימים (עמודה E) – כמו בגליון, בלי API שגורם להבהוב
             const localSum = donors.reduce((sum, donor) => sum + Math.max(0, donor.amount || 0), 0);
             const goal = (NEDARIM_CONFIG.apiDataLoaded && 
                          NEDARIM_CONFIG.goalFromAPI !== null &&
                          NEDARIM_CONFIG.goalFromAPI > 0)
                 ? NEDARIM_CONFIG.goalFromAPI
                 : Math.max(0, Math.round(parseFloat(matchingGoal) || 0));
-            const fromApi = (NEDARIM_CONFIG.apiDataLoaded && NEDARIM_CONFIG.totalDonatedFromAPI != null && NEDARIM_CONFIG.totalDonatedFromAPI >= 0);
-            const totalCollected = fromApi ? NEDARIM_CONFIG.totalDonatedFromAPI : localSum;
+            const totalCollected = localSum;
             const percentage = goal > 0 ? (totalCollected / goal) * 100 : 0;
             const percentDisplay = percentage >= 100 ? Math.round(percentage) : Math.max(0, percentage).toFixed(1);
             
@@ -15455,15 +15449,14 @@
                 const text = overallContainer.querySelector('.leaders-overall-progress-text');
                 const note = overallContainer.querySelector('.leaders-overall-progress-note');
 
-                // סכום כולל – מ-API אם סביר; אם גבוה פי 1.5 מהיעד, משתמשים בסכום מקומי
+                // ⚠️ סכום כולל תמיד מסכום המתרימים (עמודה E) – כמו בגליון, בלי API שגורם להבהוב
                 const localSumT = donors.reduce((sum, donor) => sum + Math.max(0, donor.amount || 0), 0);
                 const goal = (NEDARIM_CONFIG.apiDataLoaded &&
                              NEDARIM_CONFIG.goalFromAPI !== null &&
                              NEDARIM_CONFIG.goalFromAPI > 0)
                     ? NEDARIM_CONFIG.goalFromAPI
                     : Math.max(0, Math.round(parseFloat(matchingGoal) || 0));
-                const fromApiT = (NEDARIM_CONFIG.apiDataLoaded && NEDARIM_CONFIG.totalDonatedFromAPI != null && NEDARIM_CONFIG.totalDonatedFromAPI >= 0);
-                const totalCollected = fromApiT ? NEDARIM_CONFIG.totalDonatedFromAPI : localSumT;
+                const totalCollected = localSumT;
 
                 if (goal > 0) {
                     const percentRaw = (totalCollected / goal) * 100;
