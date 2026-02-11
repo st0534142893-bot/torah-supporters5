@@ -7591,8 +7591,8 @@
                 const item = { fn: () => Promise.resolve(fn()), name, resolve, reject };
                 const wasQueued = nedarimOpsInProgress || nedarimOpsQueue.length > 0;
                 nedarimOpsQueue.push(item);
-                if (wasQueued && name && typeof showNotification === 'function') {
-                    showNotification('הפעולה "' + name + '" נוספה לתור – תפעל אחרי סיום הפעולה הנוכחית', 'info');
+                if (wasQueued && name) {
+                    console.log('📋 הפעולה "' + name + '" נוספה לתור – תפעל אחרי סיום הפעולה הנוכחית');
                 }
                 const processQueue = () => {
                     if (nedarimOpsInProgress || nedarimOpsQueue.length === 0) return;
@@ -15266,6 +15266,7 @@
                             el.className = 'leader-item';
                             el.dataset.donorId = String(donor.id || '');
                             el.innerHTML = '<div class="leader-rank"></div><div class="leader-info"><div class="leader-name"></div></div><div class="leader-total"></div>';
+                            idToEl.set(String(donor.id || ''), el); // כדי שלולאת הסדר תמצא ותמיק
                             if (parent && anchor) parent.insertBefore(el, anchor);
                         }
                         el.style.display = '';
@@ -19196,10 +19197,9 @@
                 if (typeof updateDonorsSummary === 'function') {
                     updateDonorsSummary();
                 }
-                // בתצוגת לייב - לא קוראים ל-updateLiveView כי זה מפריע לגלילה
-                // הגלילה מטפלת בעצמה בעדכון התוכן
-                if (!isLiveViewActive() && typeof updateLiveView === 'function') {
-                    updateLiveView(true);
+                // מעדכן תצוגת לייב מיד – הנתונים השתנו מסנכרון, חייבים להציג
+                if (typeof updateLiveView === 'function') {
+                    updateLiveView(true); // immediate=true – עוקף את ההשהיה של 60 שניות, מסנכרן מיד
                 }
 
                 // בודק את הסכום הכולל אחרי העדכון
@@ -19219,10 +19219,7 @@
                 updateHomeStats();
                 updateLeadersList();
                 updateLiveTargets();
-                // עדכון Live View גם אם הוא פעיל (עם debounce)
-                if (typeof updateLiveView === 'function') {
-                    updateLiveView(false); // לא immediate כדי לא להפריע לגלילה
-                }
+                // עדכון Live View – כבר עודכן למעלה עם immediate (נתונים השתנו מסנכרון)
 
                 // הודעת הצלחה רק כשהסכומים תואמים; אחרת – אזהרה ברורה
                 let message = `סנכרון הושלם! ${matrimList.length} מתרימים | ${updatedDonors} עודכנו מהתוכנה`;
