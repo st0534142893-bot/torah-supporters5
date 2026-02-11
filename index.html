@@ -19944,11 +19944,8 @@
                         try { localStorage.setItem('addresses', JSON.stringify(addresses)); storageSetItem('addresses', addresses); } catch (e) {}
                         if (typeof updateAddressesList === 'function') updateAddressesList();
                     }
-                    if (s.liveViewSettings && typeof liveViewSettings !== 'undefined') {
-                        Object.assign(liveViewSettings, s.liveViewSettings);
-                        try { localStorage.setItem('liveViewSettings', JSON.stringify(liveViewSettings)); storageSetItem('liveViewSettings', liveViewSettings); } catch (e) {}
-                        if (typeof applyLiveViewSettings === 'function') applyLiveViewSettings();
-                    }
+                    /* לא דורסים liveViewSettings מטעינה מהגליון – ההגדרות המקומיות (מספר עמודות, הסתרת מובלים וכו') נשמרות.
+                       סינכרון אוטומטי כל 5 דקות דרס את ההגדרות שהוגדרו locally בגרסה ישנה מהגיליון. */
                     if (s.campaignPlanning && typeof campaignPlanning !== 'undefined') {
                         Object.assign(campaignPlanning, s.campaignPlanning);
                         try { localStorage.setItem('campaignPlanning', JSON.stringify(campaignPlanning)); storageSetItem('campaignPlanning', campaignPlanning); } catch (e) {}
@@ -20330,7 +20327,7 @@
                     const s = result.settings;
                     if (s.defaultDonorGoal != null) defaultDonorGoal = Number(s.defaultDonorGoal);
                     if (s.addresses && Array.isArray(s.addresses)) { addresses = s.addresses; if (typeof updateAddressesList === 'function') updateAddressesList(); }
-                    if (s.liveViewSettings && typeof liveViewSettings !== 'undefined') { Object.assign(liveViewSettings, s.liveViewSettings); if (typeof applyLiveViewSettings === 'function') applyLiveViewSettings(); }
+                    /* לא דורסים liveViewSettings – נשמרות ההגדרות המקומיות */
                     if (s.campaignPlanning && typeof campaignPlanning !== 'undefined') Object.assign(campaignPlanning, s.campaignPlanning);
                     if (s.accessControl && typeof accessControl !== 'undefined') { Object.assign(accessControl, s.accessControl); if (typeof initPasswordSettingsUI === 'function') initPasswordSettingsUI(); }
                     if (s.appSettings) {
