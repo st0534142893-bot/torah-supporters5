@@ -13542,10 +13542,18 @@
             if (donor.amount > 0) {
                 recordDonorHistory(donor, donor.amount, donor.amount, 'manual-add', 'הוספת מתרים');
                 addAmountToDailyBreakdown(donor, donor.amount, new Date());
-                // לא שולחים אוטומטית לנדרים פלוס – מונע כפילות. להעלאה: "העלאת תרומה לנדרים פלוס" או סנכרון ידני.
             }
             donors.push(normalizeDonor(donor));
             saveData();
+            
+            // שליחה מיידית לנדרים פלוס – לא מחכים לסנכרון תרומות
+            if (donor.amount > 0 && typeof uploadOfflineDonation === 'function') {
+                const group = groups.find(g => g.id === groupId);
+                const groupName = group ? group.name : '';
+                uploadOfflineDonation(name, 'תרומה מהמערכת', donor.amount, 'הוספת מתרים', groupName, null).then(r => {
+                    if (r && r.success) console.log('✅ תרומה נשלחה לנדרים פלוס:', name);
+                }).catch(e => console.warn('⚠️ העלאה לנדרים פלוס נכשלה:', e.message));
+            }
             
             document.getElementById('donorNameInput').value = '';
             document.getElementById('donorAmountInput').value = '';
@@ -13588,10 +13596,18 @@
             if (donor.amount > 0) {
                 recordDonorHistory(donor, donor.amount, donor.amount, 'group-add', 'הוספת מתרים לקבוצה');
                 addAmountToDailyBreakdown(donor, donor.amount, new Date());
-                // לא שולחים אוטומטית לנדרים פלוס – מונע כפילות. להעלאה: "העלאת תרומה לנדרים פלוס" או סנכרון ידני.
             }
             donors.push(normalizeDonor(donor));
             saveData();
+            
+            // שליחה מיידית לנדרים פלוס – לא מחכים לסנכרון תרומות
+            if (donor.amount > 0 && typeof uploadOfflineDonation === 'function') {
+                const group = groups.find(g => g.id === groupId);
+                const groupName = group ? group.name : '';
+                uploadOfflineDonation(name, 'תרומה מהמערכת', donor.amount, 'הוספת מתרים לקבוצה', groupName, null).then(r => {
+                    if (r && r.success) console.log('✅ תרומה נשלחה לנדרים פלוס:', name);
+                }).catch(e => console.warn('⚠️ העלאה לנדרים פלוס נכשלה:', e.message));
+            }
             
             nameInput.value = '';
             amountInput.value = '';
@@ -14449,9 +14465,10 @@
                 storageSetItem('donors', donors);
             }
             
-            // שולח לנדרים פלוס אם יש שינוי בסכום (תוספת או הפחתה)
-            // משתמש במספר מתרים אם יש, אחרת בשם המקורי
-            if (amountDelta !== 0 && donor.fromNedarimPlus) {
+            // שולח לנדרים פלוס מיד אם יש שינוי בסכום – לא מחכים לסנכרון תרומות
+            // שולח כשהמתרים מקושר לנדרים (מספר מתרים תקין או נטען מנדרים)
+            const hasNedarimLink = donor.fromNedarimPlus || (donor.nedarimMatrimId && /^\d+$/.test(String(donor.nedarimMatrimId).trim()));
+            if (amountDelta !== 0 && hasNedarimLink) {
                 isUpdatingDonorForNedarim = true;
                 try {
                     const originalName = donor.originalName || donor.name;
@@ -15272,9 +15289,9 @@
                         el.style.display = '';
                         updateLeaderItem(el, donor, index + 1);
                     });
-                    // סדר מחדש: המקום הראשון חייב להיות ראשון ב-DOM (תיקון באג: עדכון חלקי לא שינה סדר)
+                    // סדר מחדש: מקום 1 (הסכום הגבוה ביותר) ראשון ב-DOM, מקום 5 אחרון
                     if (parent && anchor) {
-                        for (let i = sortedDonors.length - 1; i >= 0; i--) {
+                        for (let i = 0; i < sortedDonors.length; i++) {
                             const el = idToEl.get(String(sortedDonors[i].id || ''));
                             if (el) parent.insertBefore(el, anchor);
                         }
@@ -16631,6 +16648,14 @@
                 }, 120000);
             } else {
                 setTimeout(() => recentlyUpdatedDonors.delete(donorId), 120000);
+                // גם בלי גליון – שולח לנדרים פלוס (דרך Netlify אם יש)
+                if (actualDelta !== 0 && donor.nedarimMatrimId && typeof uploadOfflineDonation === 'function') {
+                    const group = groups.find(g => g.id === donor.groupId);
+                    const groupName = group ? group.name : '';
+                    uploadOfflineDonation(donor.originalName || donor.name, 'תרומה מהמערכת', actualDelta, note, groupName, donor.nedarimMatrimId).then(r => {
+                        if (r && r.success) showNotification(`✅ עודכן בנדרים פלוס: ${donorDisplayName} - ${Math.abs(actualDelta).toLocaleString()} ₪`, 'success');
+                    }).catch(() => {});
+                }
             }
             
             // עדכון הסכום הכולל מהמקומי – עמודת מובילים וסכום קבוצה יתעדכנו מיד
