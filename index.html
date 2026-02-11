@@ -5920,7 +5920,7 @@
                 <div class="management-tabs">
                     <button class="management-tab active" data-tab="donors">ניהול מתרימים</button>
                     <button class="management-tab" data-tab="manualDonation">הוספת תרומה באופן ידני מהחפ״ק</button>
-                    <button class="management-tab" data-tab="groups">הגדרת מתרימים</button>
+                    <button class="management-tab" data-tab="groups">ניהול קבוצות</button>
                     <button class="management-tab" data-tab="liveview">הגדרות תצוגת לייב</button>
                     <button class="management-tab" data-tab="calculator">מחשבון</button>
                     <button class="management-tab" data-tab="sync">עדכונים</button>
@@ -5960,7 +5960,7 @@
                     </div>
                 </div>
 
-                <!-- הגדרת מתרימים (קבוצות) -->
+                <!-- ניהול קבוצות -->
                 <div class="management-content" id="groupsContent">
                     <div class="management-actions-row" style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
                         <button class="btn" onclick="addNewGroup()">הוסף קבוצה חדשה</button>
@@ -5987,6 +5987,15 @@
                             <span id="selectedDonorsCount" style="font-size: 14px; color: var(--muted);">0 מתרימים נבחרו</span>
                             <button type="button" id="moveToGroupBtn" class="btn btn-primary btn-small" onclick="moveSelectedDonorsToGroup()" style="display: none;">העבר לקבוצה</button>
                             <span style="font-size: 12px; color: var(--muted); margin-right: auto;">💡 חפש מתרימים (למשל "שיעור ג"), לחץ "בחר הכל" והעבר לקבוצה</span>
+                        </div>
+                        <div class="donors-bulk-remove-text" style="margin-bottom: 16px; padding: 12px 16px; background: #fff8e1; border-radius: 10px; border: 1px solid #ffc107;">
+                            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                <label for="bulkRemoveTextInput" style="font-weight: 600; color: var(--brown-dark);">מחוק טקסט מירבי:</label>
+                                <input type="text" id="bulkRemoveTextInput" placeholder='למשל: "וועד שלישי"' style="flex: 1; min-width: 180px; padding: 8px 12px; border: 2px solid var(--border); border-radius: 8px; font-size: 14px;">
+                                <button type="button" class="btn btn-secondary btn-small" onclick="removeTextFromAllDonorNames()">הסר מכל השמות</button>
+                            </div>
+                            <p id="bulkRemoveTextResult" style="margin: 8px 0 0 0; font-size: 13px; color: #555;"></p>
+                            <p style="margin: 6px 0 0 0; font-size: 12px; color: var(--muted);">הטקסט יוסר משם התצוגה (עמודה C) בכל המתרימים שבשמם הוא מופיע. השם המקורי (עמודה B) לא משתנה.</p>
                         </div>
                         <div class="donors-list" id="donorsListContainer">
                             <!-- יוטען דינמית -->
@@ -7191,7 +7200,7 @@
                                 <li><strong>הגדרת חיבור ל-API:</strong> עברו למדור "ניהול" → "עדכונים" והזינו את ה-URL של Google Apps Script שלכם</li>
                                 <li><strong>הגדרת Google Sheets:</strong> הזינו את מזהה הגליון (Sheet ID) ואת שם הגליון</li>
                                 <li><strong>הגדרת נדרים פלוס:</strong> הזינו את פרטי החיבור ל-API של נדרים פלוס</li>
-                                <li><strong>יצירת קבוצות:</strong> עברו ל"הגדרות מתרימים" ויצרו את הקבוצות הראשונות</li>
+                                <li><strong>יצירת קבוצות:</strong> עברו ל"ניהול קבוצות" ויצרו את הקבוצות הראשונות</li>
                             </ol>
                         </div>
 
@@ -7583,7 +7592,7 @@
             { id: 'home', label: 'דף הבית' },
             { id: 'breakdown', label: 'פילוח נתונים' },
             { id: 'management', label: 'ניהול (כל המדור)' },
-            { id: 'management-groups', label: 'ניהול → הגדרת מתרימים' },
+            { id: 'management-groups', label: 'ניהול → ניהול קבוצות' },
             { id: 'management-donors', label: 'ניהול → ניהול מתרימים' },
             { id: 'management-manualDonation', label: 'ניהול → הוספת תרומה באופן ידני מהחפ״ק' },
             { id: 'management-liveview', label: 'ניהול → הגדרות תצוגת לייב' },
