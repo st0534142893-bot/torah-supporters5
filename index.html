@@ -5525,7 +5525,13 @@
                 <button type="button" class="btn" onclick="saveEntryCodeSheetUrl()" style="font-size: 13px;">שמור קישור</button>
                 <span id="entryCodeUrlSavedMsg" style="display: none; margin-right: 8px; color: var(--success); font-size: 12px;">✓ נשמר</span>
             </div>
-            <input type="text" id="entryCodeInput" class="app-lock-password-input" placeholder="הזן קוד כניסה" autocomplete="one-time-code" onkeydown="handleEntryCodeKeyDown(event)">
+            <div class="app-lock-password-wrapper" style="width: 100%; margin-bottom: 12px;">
+                <input type="password" id="entryCodeInput" class="app-lock-password-input" placeholder="הזן קוד כניסה" autocomplete="one-time-code" onkeydown="handleEntryCodeKeyDown(event)">
+                <label class="app-lock-show-password" style="display: flex; align-items: center; gap: 8px; margin-top: 10px; cursor: pointer; font-size: 14px; color: var(--brown-medium);">
+                    <input type="checkbox" id="entryCodeShowCheckbox" onchange="toggleEntryCodeVisibility(this.checked)" style="width: 18px; height: 18px; cursor: pointer;">
+                    <span>הצג קוד</span>
+                </label>
+            </div>
             <div class="app-lock-actions">
                 <button class="btn btn-primary" type="button" onclick="handleEntryCodeSubmit()">כניסה</button>
             </div>
@@ -5537,7 +5543,13 @@
             <div class="app-lock-logo"><img src="https://i.postimg.cc/ZRMCLxgW/wgw-t-t-dhws.png" alt="לוגו" style="height:64px;"></div>
             <h2 id="appLockTitle">כניסה למערכת</h2>
             <p>המערכת נעולה. הזן את סיסמת הניהול כדי להמשיך.</p>
-            <input type="password" id="appLockPasswordInput" class="app-lock-password-input" placeholder="הזן סיסמה" autocomplete="current-password" onkeydown="handleAppLockKeyDown(event)">
+            <div class="app-lock-password-wrapper" style="width: 100%; margin-bottom: 12px;">
+                <input type="password" id="appLockPasswordInput" class="app-lock-password-input" placeholder="הזן סיסמה" autocomplete="current-password" onkeydown="handleAppLockKeyDown(event)">
+                <label class="app-lock-show-password" style="display: flex; align-items: center; gap: 8px; margin-top: 10px; cursor: pointer; font-size: 14px; color: var(--brown-medium);">
+                    <input type="checkbox" id="appLockShowCheckbox" onchange="toggleAppLockVisibility(this.checked)" style="width: 18px; height: 18px; cursor: pointer;">
+                    <span>הצג סיסמה</span>
+                </label>
+            </div>
             <div class="app-lock-actions">
                 <button class="btn btn-primary" type="button" onclick="handleAppLockSubmit()">כניסה</button>
             </div>
@@ -8434,8 +8446,11 @@
                 if (error) error.textContent = '';
                 if (input) {
                     input.value = '';
+                    input.type = 'password';
                     setTimeout(() => input.focus(), 50);
                 }
+                const showCb = document.getElementById('appLockShowCheckbox');
+                if (showCb) showCb.checked = false;
             } else {
                 overlay.classList.add('hidden');
                 document.body?.classList.remove('app-locked');
@@ -8473,6 +8488,9 @@
             }
             overlay.classList.remove('hidden');
             input.value = '';
+            input.type = 'password';
+            const showCb = document.getElementById('entryCodeShowCheckbox');
+            if (showCb) showCb.checked = false;
             if (error) error.textContent = '';
             if (urlInput && typeof localStorage !== 'undefined') {
                 urlInput.value = localStorage.getItem('googleSheetsWebAppUrl') || '';
@@ -8612,8 +8630,20 @@
             }
         }
 
+        function toggleEntryCodeVisibility(show) {
+            const input = document.getElementById('entryCodeInput');
+            if (input) input.type = show ? 'text' : 'password';
+        }
+
+        function toggleAppLockVisibility(show) {
+            const input = document.getElementById('appLockPasswordInput');
+            if (input) input.type = show ? 'text' : 'password';
+        }
+
         window.handleEntryCodeSubmit = handleEntryCodeSubmit;
         window.handleEntryCodeKeyDown = handleEntryCodeKeyDown;
+        window.toggleEntryCodeVisibility = toggleEntryCodeVisibility;
+        window.toggleAppLockVisibility = toggleAppLockVisibility;
 
         async function handleAppLockSubmit() {
             if (!isAppLockRequired()) {
