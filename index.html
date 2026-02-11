@@ -5669,7 +5669,8 @@
                         <button type="button" data-day="day14" class="active">יום י״ד באדר</button>
                         <button type="button" data-day="day15">יום ט״ו באדר</button>
                     </div>
-                        <div class="scouts-actions">
+                        <datalist id="scoutCityOptions"></datalist>
+                    <div class="scouts-actions">
                         <button class="btn btn-small" type="button" onclick="scoutsAddTeam()">הוסף סירת </button>
                         </div>
                     </div>
@@ -7561,7 +7562,7 @@
                     return {
                         id: teamId,
                         name: (team?.name || 'סירת ').toString(),
-                        city: SCOUT_CITY_OPTIONS.includes(team?.city) ? team.city : '',
+                        city: (team?.city || '').toString().trim(),
                         members
                     };
                 });
@@ -9207,26 +9208,6 @@
             );
         }
 
-        function parseManualNumber(value) {
-            if (value === null || value === undefined || value === '') return null;
-            const parsed = Math.round(parseFloat(value));
-            if (Number.isNaN(parsed)) return null;
-            return Math.max(0, parsed);
-        }
-
-        function getTeamEffectiveTotals(team) {
-            if (!team) {
-                return { total: 0, average: 0, memberCount: 0 };
-            }
-            const fallbackTotal = (team.members || []).reduce((sum, member) => sum + (member?.amount || 0), 0);
-            const memberCount = (team.members || []).length;
-            const total = typeof team.manualTotal === 'number'
-                ? Math.max(0, Math.round(team.manualTotal))
-                : fallbackTotal;
-            const average = memberCount ? Math.round(total / Math.max(memberCount, 1)) : 0;
-            return { total, average, memberCount };
-        }
-
         function updateScoutsStats() {
             const statsEl = document.getElementById('scoutsStats');
             if (!statsEl) return;
@@ -9234,17 +9215,10 @@
             const totalTeams = teams.length;
             const allMembers = teams.flatMap(team => team.members);
             const uniqueMembers = new Set(allMembers.map(member => (member?.name || '').toLowerCase()).filter(Boolean));
-            const totals = teams.map(getTeamEffectiveTotals);
-            const totalAmount = totals.reduce((sum, item) => sum + item.total, 0);
-            const averagePerMember = allMembers.length ? Math.round(totalAmount / allMembers.length) : 0;
-            const averagePerTeam = totalTeams ? Math.round(totalAmount / totalTeams) : 0;
             const stats = [
                 { label: 'סירות פעילות', value: totalTeams.toLocaleString('he-IL') },
                 { label: 'סה״כ מתרימים', value: allMembers.length.toLocaleString('he-IL') },
-                { label: 'מתרימים ייחודיים', value: uniqueMembers.size.toLocaleString('he-IL') },
-                { label: 'סה״כ נאסף', value: formatCurrency(totalAmount) },
-                { label: 'ממוצע למתרים', value: formatCurrency(averagePerMember) },
-                { label: 'ממוצע לסירת ', value: formatCurrency(averagePerTeam) }
+                { label: 'מתרימים ייחודיים', value: uniqueMembers.size.toLocaleString('he-IL') }
             ];
             statsEl.innerHTML = stats.map(stat => `
                 <div class="scouts-stat-card">
@@ -9268,15 +9242,9 @@
                 return;
             } else {
                 container.innerHTML = teams.map(team => {
-                    const cityOptions = [
-                        '<option value="">בחירת עיר יעד</option>',
-                        ...SCOUT_CITY_OPTIONS.map(city => `<option value="${city}" ${team.city === city ? 'selected' : ''}>${city}</option>`)
-                    ].join('');
-                    const { total: effectiveTotal, average: effectiveAverage } = getTeamEffectiveTotals(team);
                     const memberCount = team.members.length;
                     const hasLeader = team.leader && team.leader.trim().length > 0;
                     const totalParticipants = memberCount + (hasLeader ? 1 : 0);
-                    const amountPerMember = totalParticipants > 0 ? (effectiveTotal / totalParticipants) : 0;
                     const membersRows = team.members.length
                         ? team.members.map((member, index) => {
                             return `
@@ -9319,7 +9287,8 @@
                             <div class="scout-team-header">
                                 <input type="text" value="${escapeHtml(team.name)}" placeholder="שם סירת "
                                     oninput="scoutsUpdateTeamName('${team.id}', this.value)">
-                                <select onchange="scoutsUpdateTeamCity('${team.id}', this.value)">${cityOptions}</select>
+                                <input type="text" value="${escapeHtml(team.city || '')}" placeholder="עיר יעד" list="scoutCityOptions"
+                                    oninput="scoutsUpdateTeamCity('${team.id}', this.value)">
                                 <button type="button" onclick="scoutsDeleteTeam('${team.id}')">מחק סירת </button>
                             </div>
                             <div class="scout-team-meta">
@@ -9337,30 +9306,12 @@
                                     <span class="scout-summary-label">מספר מתרימים${hasLeader ? ' (כולל ראש סירה)' : ''}</span>
                                     <div class="scout-summary-value scout-summary-static">${totalParticipants.toLocaleString('he-IL')}</div>
                                 </div>
-                                <div class="scout-summary-card">
-                                    <span class="scout-summary-label">סה״כ נאסף</span>
-                                    <div class="scout-summary-value">
-                                        <input type="number" min="0" step="1"
-                                            class="scout-summary-input scout-summary-total-input"
-                                            value="${effectiveTotal}"
-                                            data-team-id="${team.id}">
-                                        <span class="scout-summary-unit">₪</span>
-                                    </div>
-                                </div>
-                                <div class="scout-summary-card">
-                                    <span class="scout-summary-label">כמה יוצא למתרים</span>
-                                    <div class="scout-summary-value scout-summary-static" style="color: #0066cc; font-weight: 700;">${formatCurrencyExact(amountPerMember)}</div>
-                                </div>
-                                ${totalParticipants > 0 ? `
                                 <div class="scout-summary-card" style="grid-column: 1 / -1;">
-                                    <button type="button" 
-                                        class="btn btn-small" 
-                                        onclick="scoutsCalculateFinal('${team.id}')"
-                                        style="width: 100%; margin-top: 10px;">
-                                        חישוב סופי - חלק שווה בין כל המתרים${hasLeader ? ' וראש הסירה' : ''}
+                                    <button type="button" class="btn btn-small scout-add-member-btn" data-team-id="${team.id}" 
+                                        style="width: 100%; background: linear-gradient(135deg, var(--primary-gold) 0%, var(--primary-gold-dark) 100%); color: white; border: none; padding: 10px 16px; border-radius: 10px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);">
+                                        הוסף שם חדש לרשימת הסירת
                                     </button>
                                 </div>
-                                ` : ''}
                             </div>
                             <table class="scout-team-table">
                                 <thead>
@@ -9409,16 +9360,14 @@
                     }
                 });
             });
-            container.querySelectorAll('.scout-summary-total-input').forEach(input => {
-                input.addEventListener('change', (event) => {
-                    const teamId = event.target.dataset.teamId;
-                    const value = event.target.value;
-                    scoutsUpdateTeamTotal(teamId, value);
-                });
-                input.addEventListener('blur', (event) => {
-                    const teamId = event.target.dataset.teamId;
-                    const value = event.target.value;
-                    scoutsUpdateTeamTotal(teamId, value);
+            container.querySelectorAll('.scout-add-member-btn').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const teamId = event.currentTarget.dataset.teamId;
+                    const card = container.querySelector(`.scout-team-card[data-team-id="${teamId}"]`);
+                    const input = card?.querySelector('.scout-member-new-name-input');
+                    if (input) {
+                        input.focus();
+                    }
                 });
             });
             updateScoutsStats();
@@ -9437,20 +9386,10 @@
             if (scoutsNameExists(trimmed, { day: scoutsActiveDay, teamId })) {
                 return { status: 'duplicate-global' };
             }
-            const manualAmount = Math.max(0, Math.round(parseFloat(rawAmount ?? 0) || 0));
-            const donorMatch = donors.find(donor => (donor?.name || '').toString().trim().toLowerCase() === normalized);
-            const donorAmount = donorMatch ? Math.max(0, Math.round(parseFloat(donorMatch.amount) || 0)) : 0;
-            const resolvedAmount = manualAmount > 0 || options?.allowZeroManual
-                ? manualAmount
-                : donorAmount;
-            team.members.push({ name: trimmed, amount: resolvedAmount });
+            team.members.push({ name: trimmed, amount: 0 });
             saveScoutsScheduleToStorage();
-            let upsertResult = null;
-            if (resolvedAmount > 0) {
-                upsertResult = upsertDonorByName(trimmed, resolvedAmount);
-            }
             notifyDataChanged();
-            return { status: 'success', member: { name: trimmed, amount: resolvedAmount }, upsertResult };
+            return { status: 'success', member: { name: trimmed, amount: 0 } };
         }
 
         function scoutsCommitNewMemberRow(teamId, nameInput, options = {}) {
@@ -9478,54 +9417,6 @@
                     showNotification('אנא הזינו שם מתרים תקין');
                 }
             }
-        }
-
-        function scoutsUpdateTeamTotal(teamId, value) {
-            const teams = getScoutsTeamsForActiveDay();
-            const team = teams.find(item => item.id === teamId);
-            if (!team) return;
-            const parsed = parseManualNumber(value);
-            const previous = typeof team.manualTotal === 'number' ? team.manualTotal : null;
-            if (parsed === null) {
-                if (previous === null) return;
-                delete team.manualTotal;
-            } else {
-                if (previous === parsed) return;
-                team.manualTotal = parsed;
-            }
-            saveScoutsScheduleToStorage();
-            notifyDataChanged();
-            renderScoutsTeams();
-            showNotification('סה״כ לסירת השטח עודכן');
-        }
-
-        function scoutsCalculateFinal(teamId) {
-            const teams = getScoutsTeamsForActiveDay();
-            const team = teams.find(item => item.id === teamId);
-            if (!team) {
-                showNotification('סירת השטח לא נמצאה', 'error');
-                return;
-            }
-            if (!team.members || team.members.length === 0) {
-                showNotification('אין מתרימים בסירת השטח', 'error');
-                return;
-            }
-            const { total: effectiveTotal } = getTeamEffectiveTotals(team);
-            if (effectiveTotal <= 0) {
-                showNotification('אנא הזינו סה״כ נאסף גדול מ-0 בשדה "סה״כ נאסף" לפני החישוב', 'error');
-                return;
-            }
-            const hasLeader = team.leader && team.leader.trim().length > 0;
-            const totalParticipants = team.members.length + (hasLeader ? 1 : 0);
-            const amountPerMember = effectiveTotal / totalParticipants;
-            const participantsText = hasLeader 
-                ? `${team.members.length} מתרימים + ראש סירה (${totalParticipants} סה״כ)`
-                : `${totalParticipants} מתרימים`;
-            showNotification(`חישוב סופי: ${formatCurrency(effectiveTotal)} ÷ ${participantsText} = ${formatCurrencyExact(amountPerMember)} לכל אחד`);
-            // עדכון מחדש של הרינדור כדי שהערך יתעדכן
-            renderScoutsTeams();
-            // עדכון הסטטיסטיקות
-            updateScoutsStats();
         }
 
         function scoutsUpdateMemberName(teamId, memberIndex, value) {
@@ -9562,7 +9453,6 @@
             member.name = trimmed;
             saveScoutsScheduleToStorage();
             notifyDataChanged();
-            upsertDonorByName(trimmed, member.amount || 0);
             renderScoutsTeams();
             showNotification('שם המתרים עודכן בסירת השטח בהצלחה');
         }
@@ -9609,7 +9499,7 @@
             const teams = getScoutsTeamsForActiveDay();
             const team = teams.find(item => item.id === teamId);
             if (!team) return;
-            team.city = SCOUT_CITY_OPTIONS.includes(city) ? city : '';
+            team.city = (city || '').toString().trim();
             saveScoutsScheduleToStorage();
             notifyDataChanged();
         }
@@ -9644,12 +9534,17 @@
 
         function updateScoutsDatalist() {
             const datalist = document.getElementById('scoutDonorSuggestions');
-            if (!datalist) return;
-            const names = donors
-                .map(donor => (donor?.name || '').toString().trim())
-                .filter(Boolean);
-            const uniqueNames = Array.from(new Set(names)).sort((a, b) => a.localeCompare(b, 'he'));
-            datalist.innerHTML = uniqueNames.map(name => `<option value="${escapeHtml(name)}"></option>`).join('');
+            if (datalist) {
+                const names = donors
+                    .map(donor => (donor?.name || '').toString().trim())
+                    .filter(Boolean);
+                const uniqueNames = Array.from(new Set(names)).sort((a, b) => a.localeCompare(b, 'he'));
+                datalist.innerHTML = uniqueNames.map(name => `<option value="${escapeHtml(name)}"></option>`).join('');
+            }
+            const cityDatalist = document.getElementById('scoutCityOptions');
+            if (cityDatalist) {
+                cityDatalist.innerHTML = SCOUT_CITY_OPTIONS.map(city => `<option value="${escapeHtml(city)}">`).join('');
+            }
         }
 
         function showScoutsSummary() {
@@ -9668,21 +9563,16 @@
                                 <tr style="background: linear-gradient(135deg, var(--primary-gold) 0%, var(--primary-gold-dark) 100%); color: white;">
                                     <th style="padding: 15px; text-align: right; border-bottom: 2px solid rgba(255,255,255,0.2);">שם סירת</th>
                                     <th style="padding: 15px; text-align: center; border-bottom: 2px solid rgba(255,255,255,0.2);">מספר מתרימים</th>
-                                    <th style="padding: 15px; text-align: center; border-bottom: 2px solid rgba(255,255,255,0.2);">סה״כ נאסף</th>
-                                    <th style="padding: 15px; text-align: center; border-bottom: 2px solid rgba(255,255,255,0.2);">כמה יוצא למתרים</th>
                                     <th style="padding: 15px; text-align: right; border-bottom: 2px solid rgba(255,255,255,0.2);">עיר</th>
                                 </tr>
                             </thead>
                             <tbody>
             `;
 
-            let grandTotal = 0;
             let grandMemberCount = 0;
 
             teams.forEach((team, index) => {
-                const { total: effectiveTotal, average: effectiveAverage, memberCount } = getTeamEffectiveTotals(team);
-                const amountPerMember = memberCount > 0 ? Math.round(effectiveTotal / memberCount) : 0;
-                grandTotal += effectiveTotal;
+                const memberCount = (team.members || []).length;
                 grandMemberCount += memberCount;
 
                 const rowStyle = index % 2 === 0 ? 'background: rgba(245, 230, 211, 0.3);' : 'background: white;';
@@ -9690,14 +9580,10 @@
                     <tr style="${rowStyle}">
                         <td style="padding: 12px 15px; text-align: right; font-weight: 600; color: var(--brown-dark);">${escapeHtml(team.name || 'סירת שטח')}</td>
                         <td style="padding: 12px 15px; text-align: center;">${memberCount.toLocaleString('he-IL')}</td>
-                        <td style="padding: 12px 15px; text-align: center; font-weight: 600; color: var(--primary-gold);">${formatCurrency(effectiveTotal)}</td>
-                        <td style="padding: 12px 15px; text-align: center; font-weight: 600; color: #0066cc;">${formatCurrency(amountPerMember)}</td>
                         <td style="padding: 12px 15px; text-align: right; color: var(--muted);">${escapeHtml(team.city || '-')}</td>
                     </tr>
                 `;
             });
-
-            const grandAverage = grandMemberCount > 0 ? Math.round(grandTotal / grandMemberCount) : 0;
 
             summaryHTML += `
                             </tbody>
@@ -9705,8 +9591,6 @@
                                 <tr>
                                     <td style="padding: 15px; text-align: right; border-top: 2px solid var(--primary-gold);">סה״כ</td>
                                     <td style="padding: 15px; text-align: center; border-top: 2px solid var(--primary-gold);">${grandMemberCount.toLocaleString('he-IL')}</td>
-                                    <td style="padding: 15px; text-align: center; border-top: 2px solid var(--primary-gold); color: var(--primary-gold);">${formatCurrency(grandTotal)}</td>
-                                    <td style="padding: 15px; text-align: center; border-top: 2px solid var(--primary-gold); color: #0066cc;">${formatCurrency(grandAverage)}</td>
                                     <td style="padding: 15px; text-align: right; border-top: 2px solid var(--primary-gold);">-</td>
                                 </tr>
                             </tfoot>
@@ -9793,30 +9677,24 @@
                 worksheetData.push([]);
                 
                 // כותרות טבלה
-                worksheetData.push(['שם סירת', 'מספר מתרימים', 'סה״כ נאסף', 'כמה יוצא למתרים', 'עיר']);
+                worksheetData.push(['שם סירת', 'מספר מתרימים', 'עיר']);
                 
-                let grandTotal = 0;
                 let grandMemberCount = 0;
                 
                 teams.forEach(team => {
-                    const { total: effectiveTotal, average: effectiveAverage, memberCount } = getTeamEffectiveTotals(team);
-                    const amountPerMember = memberCount > 0 ? Math.round(effectiveTotal / memberCount) : 0;
-                    grandTotal += effectiveTotal;
+                    const memberCount = (team.members || []).length;
                     grandMemberCount += memberCount;
                     
                     worksheetData.push([
                         team.name || 'סירת שטח',
                         memberCount,
-                        effectiveTotal,
-                        amountPerMember,
                         team.city || '-'
                     ]);
                 });
                 
                 // סיכום
                 worksheetData.push([]);
-                const grandAverage = grandMemberCount > 0 ? Math.round(grandTotal / grandMemberCount) : 0;
-                worksheetData.push(['סה״כ', grandMemberCount, grandTotal, grandAverage, '-']);
+                worksheetData.push(['סה״כ', grandMemberCount, '-']);
                 
                 // יצירת workbook
                 const wb = XLSX.utils.book_new();
@@ -9826,8 +9704,6 @@
                 ws['!cols'] = [
                     { wch: 20 }, // שם סירת
                     { wch: 15 }, // מספר מתרימים
-                    { wch: 15 }, // סה״כ נאסף
-                    { wch: 18 }, // כמה יוצא למתרים
                     { wch: 15 }  // עיר
                 ];
                 
