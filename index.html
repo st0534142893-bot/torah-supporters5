@@ -7529,6 +7529,8 @@
         let lastLiveViewData = new Map();
         // מפה של מתרימים ששונו לאחרונה - מונע עדכון מהגליון עד שהשמירה תסתיים
         const recentlyUpdatedDonors = new Map(); // Map<donorId, timestamp>
+        const recentlyUpdatedGroups = new Map(); // Map<groupId, timestamp> – מונע דריסת שם קבוצה מטעינה מהגליון
+        const PROTECTION_WINDOW_MS = 120000; // 2 דקות הגנה מפני עדכון מהגליון
         // דגל: במהלך עדכון לנדרים/גליון – לא לטעון מהגליון כדי לא לדרוס נתונים
         let isUpdatingDonorForNedarim = false;
         let accessControl = {
@@ -13305,6 +13307,7 @@
             if (group && newName.trim()) {
                 group.name = newName.trim();
                 group.updatedAt = new Date().toISOString();
+                recentlyUpdatedGroups.set(groupId, Date.now()); // 🛡️ מונע דריסה מטעינה מהגליון
                 saveData();
                 // עדכון כל המדורים - מדור ניהול הוא המקור האמתי
                 updateGroupsDisplay();
@@ -13336,6 +13339,7 @@
                 const newOrder = parseInt(orderNumber) || 999;
                 group.orderNumber = newOrder;
                 group.updatedAt = new Date().toISOString();
+                recentlyUpdatedGroups.set(groupId, Date.now());
                 saveData();
                 updateGroupsDisplay();
                 updateLiveView();
@@ -13354,6 +13358,7 @@
             if (group) {
                 group.showInLiveView = show;
                 group.updatedAt = new Date().toISOString();
+                recentlyUpdatedGroups.set(groupId, Date.now());
                 saveData();
                 updateGroupsDisplay();
                 updateLiveView();
@@ -13373,6 +13378,7 @@
             if (group) {
                 group.goal = parseFloat(goal) || 0;
                 group.updatedAt = new Date().toISOString();
+                recentlyUpdatedGroups.set(groupId, Date.now());
                 saveData();
                 // עדכון כל המדורים - מדור ניהול הוא המקור האמתי
                 updateGroupsDisplay();
@@ -20016,9 +20022,19 @@
                 let loadedDonors = 0;
                 let loadedGroups = 0;
                 
-                // טעינת קבוצות
+                // טעינת קבוצות – מיזוג חכם: קבוצות ששונו לאחרונה נשמרות מקומית (מונע דריסת שם)
                 if (result.groups && Array.isArray(result.groups) && result.groups.length > 0) {
-                    groups = result.groups;
+                    const now = Date.now();
+                    const mergedGroups = result.groups.map(sheetGroup => {
+                        const localGroup = groups.find(g => g.id === sheetGroup.id);
+                        const lastUpdate = localGroup ? recentlyUpdatedGroups.get(sheetGroup.id) : null;
+                        if (localGroup && lastUpdate != null && (now - lastUpdate < PROTECTION_WINDOW_MS)) {
+                            // שומר את השם והשינויים המקומיים
+                            return { ...sheetGroup, name: localGroup.name, goal: localGroup.goal, orderNumber: localGroup.orderNumber, showInLiveView: localGroup.showInLiveView, updatedAt: localGroup.updatedAt };
+                        }
+                        return { ...sheetGroup };
+                    });
+                    groups = mergedGroups;
                     loadedGroups = groups.length;
                     if (!silent) console.log('📥 [Google Sheets] קבוצות נטענו:', groups.map(g => ({ id: g.id, name: g.name })));
                 }
@@ -20567,9 +20583,19 @@
                     throw new Error(result.error);
                 }
                 
-                // עדכון הנתונים המקומיים עם התוצאה הממוזגת
+                // עדכון הנתונים המקומיים עם התוצאה הממוזגת – שומר שם קבוצה ששונה לאחרונה
                 if (result.donors && Array.isArray(result.donors)) donors = result.donors;
-                if (result.groups && Array.isArray(result.groups)) groups = result.groups;
+                if (result.groups && Array.isArray(result.groups)) {
+                    const now = Date.now();
+                    groups = result.groups.map(sg => {
+                        const local = groups.find(g => g.id === sg.id);
+                        const lastUp = local ? recentlyUpdatedGroups.get(sg.id) : null;
+                        if (local && lastUp != null && (now - lastUp < PROTECTION_WINDOW_MS)) {
+                            return { ...sg, name: local.name, goal: local.goal, orderNumber: local.orderNumber, showInLiveView: local.showInLiveView, updatedAt: local.updatedAt };
+                        }
+                        return { ...sg };
+                    });
+                }
                 if (result.settings) {
                     const s = result.settings;
                     if (s.defaultDonorGoal != null) defaultDonorGoal = Number(s.defaultDonorGoal);
@@ -20638,9 +20664,18 @@
                 let loadedDonors = 0;
                 let loadedGroups = 0;
                 
-                // טעינת קבוצות
+                // טעינת קבוצות – שומר שם קבוצה ששונה לאחרונה (מונע דריסה)
                 if (result.groups && Array.isArray(result.groups) && result.groups.length > 0) {
-                    groups = result.groups;
+                    const now = Date.now();
+                    const merged = result.groups.map(sg => {
+                        const local = groups.find(g => g.id === sg.id);
+                        const lastUp = local ? recentlyUpdatedGroups.get(sg.id) : null;
+                        if (local && lastUp != null && (now - lastUp < PROTECTION_WINDOW_MS)) {
+                            return { ...sg, name: local.name, goal: local.goal, orderNumber: local.orderNumber, showInLiveView: local.showInLiveView, updatedAt: local.updatedAt };
+                        }
+                        return { ...sg };
+                    });
+                    groups = merged;
                     loadedGroups = groups.length;
                 }
                 
