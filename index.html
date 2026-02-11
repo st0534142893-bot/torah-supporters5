@@ -2730,6 +2730,44 @@
             background: rgba(255, 255, 255, 0.95);
         }
 
+        /* כרטיסי מתרים קומפקטיים – ניהול מתרימים */
+        .donors-list-simple .donor-item-compact {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 14px;
+            margin-bottom: 6px;
+            min-height: auto;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid var(--border);
+            transition: border-color 0.2s ease;
+        }
+        .donors-list-simple .donor-item-compact:hover {
+            border-color: var(--primary-gold);
+            transform: none;
+        }
+        .donor-item-compact-name {
+            flex: 1;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--brown-dark);
+            text-align: right;
+        }
+        .donor-item-compact-amount {
+            font-size: 14px;
+            color: var(--muted);
+            font-weight: 500;
+            min-width: 70px;
+            text-align: left;
+        }
+        .donor-item-compact-btn {
+            padding: 6px 14px !important;
+            font-size: 13px !important;
+            min-height: 32px !important;
+            min-width: auto !important;
+        }
+
         .donor-edit-panel {
             margin-top: 14px;
             background: rgba(255, 255, 255, 0.92);
@@ -5813,7 +5851,7 @@
                 </div>
                 
                 <div class="management-tabs">
-                    <button class="management-tab active" data-tab="groups">ניהול קבוצות</button>
+                    <button class="management-tab active" data-tab="groups">הגדרות מתרימים</button>
                     <button class="management-tab" data-tab="donors">ניהול מתרימים</button>
                     <button class="management-tab" data-tab="liveview">הגדרות תצוגת לייב</button>
                     <button class="management-tab" data-tab="calculator">מחשבון</button>
@@ -5854,7 +5892,7 @@
                     </div>
                 </div>
 
-                <!-- ניהול קבוצות -->
+                <!-- הגדרות מתרימים (קבוצות) -->
                 <div class="management-content active" id="groupsContent">
                     <div class="management-actions-row" style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
                         <button class="btn" onclick="addNewGroup()">הוסף קבוצה חדשה</button>
@@ -5867,38 +5905,15 @@
 
                 <!-- ניהול מתרימים -->
                 <div class="management-content" id="donorsContent">
-                    <div class="donors-management">
+                    <div class="donors-management donors-management-simple">
                         <div class="donors-search-bar">
                             <div class="donors-search-input-wrapper">
-                                <input type="text" id="donorSearchInput" class="donors-search-input" placeholder="חיפוש מתרימים לפי שם, קבוצה או סכום">
+                                <input type="text" id="donorSearchInput" class="donors-search-input" placeholder="חיפוש מתרימים לפי שם">
                                 <button type="button" id="donorSearchClear" class="donor-search-clear" aria-label="נקה חיפוש">×</button>
-                            </div>
-                            <div class="donors-search-hint">אפשר להזין חלק מהשם, שם קבוצה או מספר. ניתן לחפש כמה מילים יחד.</div>
-                            <div class="donors-summary" id="donorsSummary"></div>
-                            <div class="donors-summary-actions">
-                                <button class="btn btn-secondary btn-small" onclick="exportDonorsHistoryToExcel()">ייצוא היסטוריה לאקסל</button>
-                                <button class="btn btn-secondary btn-small" onclick="exportDonorNamesAndGroupsToExcel()">ייצוא שמות וקבוצות לאקסל</button>
-                            </div>
-                            <div class="donors-bulk-actions" id="donorsBulkActions" style="margin-top: 15px; padding: 15px; background: rgba(212, 175, 55, 0.1); border-radius: 8px; border: 2px solid var(--primary-gold);">
-                                <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
-                                    <span id="selectedDonorsCount" style="font-weight: 600; color: var(--brown-dark);">0 מתרימים נבחרו</span>
-                                    <button class="btn btn-secondary btn-small" onclick="selectAllDonors()">בחר הכל</button>
-                                    <button class="btn btn-secondary btn-small" onclick="deselectAllDonors()">בטל הכל</button>
-                                    <button class="btn btn-primary btn-small" onclick="moveSelectedDonorsToGroup()" id="moveToGroupBtn" style="display: none;">העבר לקבוצה</button>
-                                </div>
-                            </div>
-                            <div class="donors-bulk-remove-text" id="donorsBulkRemoveText" style="margin-top: 12px; padding: 12px 15px; background: #fff3e0; border-radius: 8px; border: 1px solid #ff9800;">
-                                <h4 style="margin: 0 0 8px 0; font-size: 14px; color: #e65100;">✂️ מחוק מירבי – שם תצוגה בלבד (עמודה C)</h4>
-                                <p style="margin: 0 0 10px 0; font-size: 12px; color: #555;">הזן טקסט להסרה (למשל "המיליים וועד שני"). הטקסט יוסר רק מ<strong>שם התצוגה</strong> (עמודה C בגליון). השם המקורי (עמודה B) לא משתנה – כך החיבור לנדרים פלוס לא נשבש.</p>
-                                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px;">
-                                    <input type="text" id="bulkRemoveTextInput" placeholder='למשל: המיליים וועד שני' style="min-width: 200px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;">
-                                    <button type="button" class="btn btn-small" onclick="removeTextFromAllDonorNames()" style="background: #ff9800; color: white;">הסר מכל השמות</button>
-                                </div>
-                                <p id="bulkRemoveTextResult" style="margin: 8px 0 0 0; font-size: 12px; min-height: 18px;"></p>
                             </div>
                             <div class="donors-search-meta" id="donorsSearchMeta"></div>
                         </div>
-                        <div class="donors-list" id="donorsListContainer">
+                        <div class="donors-list donors-list-simple" id="donorsListContainer">
                             <!-- יוטען דינמית -->
                         </div>
                     </div>
@@ -7076,7 +7091,7 @@
                                 <li><strong>הגדרת חיבור ל-API:</strong> עברו למדור "ניהול" → "עדכונים" והזינו את ה-URL של Google Apps Script שלכם</li>
                                 <li><strong>הגדרת Google Sheets:</strong> הזינו את מזהה הגליון (Sheet ID) ואת שם הגליון</li>
                                 <li><strong>הגדרת נדרים פלוס:</strong> הזינו את פרטי החיבור ל-API של נדרים פלוס</li>
-                                <li><strong>יצירת קבוצות:</strong> עברו ל"ניהול קבוצות" ויצרו את הקבוצות הראשונות</li>
+                                <li><strong>יצירת קבוצות:</strong> עברו ל"הגדרות מתרימים" ויצרו את הקבוצות הראשונות</li>
                             </ol>
                         </div>
 
@@ -7467,7 +7482,7 @@
             { id: 'home', label: 'דף הבית' },
             { id: 'breakdown', label: 'פילוח נתונים' },
             { id: 'management', label: 'ניהול (כל המדור)' },
-            { id: 'management-groups', label: 'ניהול → ניהול קבוצות' },
+            { id: 'management-groups', label: 'ניהול → הגדרות מתרימים' },
             { id: 'management-donors', label: 'ניהול → ניהול מתרימים' },
             { id: 'management-liveview', label: 'ניהול → הגדרות תצוגת לייב' },
             { id: 'management-sync', label: 'ניהול → עדכונים' },
@@ -11436,7 +11451,9 @@
             if (!tokens.length) return true;
             const group = groups.find(g => g.id === donor.groupId);
             const groupName = group ? group.name : '';
+            const displayName = donor.displayName || donor.name || '';
             const fields = [
+                displayName,
                 donor.name || '',
                 groupName,
                 donor.amount || 0,
@@ -11446,7 +11463,7 @@
             ];
             const normalizedFields = fields.map(normalizeForSearch).filter(Boolean);
             const combined = normalizeForSearch(
-                `${donor.name || ''} ${groupName || ''} ${donor.amount || ''} ${donor.personalGoal || ''}`
+                `${displayName} ${donor.name || ''} ${groupName || ''} ${donor.amount || ''} ${donor.personalGoal || ''}`
             );
             if (combined) {
                 normalizedFields.push(combined);
@@ -13238,7 +13255,10 @@
             const container = document.getElementById('donorsListContainer');
             if (!container) return;
             ensureDonorsNormalized();
-            updateDonorsSummary();
+            const isSimpleView = container.classList.contains('donors-list-simple');
+            if (!isSimpleView) {
+                updateDonorsSummary();
+            }
             const meta = document.getElementById('donorsSearchMeta');
             const searchTerm = donorSearchTerm.trim();
             const tokens = tokenizeSearchInput(searchTerm);
@@ -13278,6 +13298,21 @@
             if (editingDonorId && !filteredDonors.some(d => d.id === editingDonorId)) {
                 editingDonorId = null;
                 editingShouldFocus = false;
+            }
+
+            if (isSimpleView) {
+                container.innerHTML = filteredDonors.map(donor => {
+                    const displayName = donor.displayName || donor.name;
+                    return `
+                        <div class="donor-item donor-item-compact" data-donor-id="${donor.id}">
+                            <span class="donor-item-compact-name">${escapeHtml(displayName)}</span>
+                            <span class="donor-item-compact-amount">₪${(donor.amount || 0).toLocaleString()}</span>
+                            <button class="btn btn-primary btn-small donor-item-compact-btn" onclick="addDonorPayment(${donor.id})">הוסף תשלום</button>
+                        </div>
+                    `;
+                }).join('');
+                updateScoutsDatalist();
+                return;
             }
             
             container.innerHTML = filteredDonors.map(donor => {
