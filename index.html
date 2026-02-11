@@ -2733,10 +2733,10 @@
         /* כרטיסי מתרים קומפקטיים – ניהול מתרימים */
         .donors-list-simple .donor-item-compact {
             display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 8px 14px;
-            margin-bottom: 6px;
+            flex-direction: column;
+            gap: 6px;
+            padding: 10px 14px;
+            margin-bottom: 8px;
             min-height: auto;
             border-radius: 8px;
             background: rgba(255, 255, 255, 0.9);
@@ -2746,6 +2746,11 @@
         .donors-list-simple .donor-item-compact:hover {
             border-color: var(--primary-gold);
             transform: none;
+        }
+        .donor-item-compact-main {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
         .donor-item-compact-name {
             flex: 1;
@@ -2766,6 +2771,12 @@
             font-size: 13px !important;
             min-height: 32px !important;
             min-width: auto !important;
+        }
+        .donor-item-compact-details {
+            font-size: 12px;
+            color: var(--muted);
+            line-height: 1.4;
+            padding-right: 2px;
         }
 
         .donor-edit-panel {
@@ -8009,6 +8020,7 @@
         function saveToolkitTipsToStorage() {
             try {
                 storageSetItem('toolkitTips', toolkitTips);
+                if (typeof notifyDataChanged === 'function') notifyDataChanged();
             } catch (error) {
                 console.error('שגיאה בשמירת טיפים:', error);
             }
@@ -8244,7 +8256,7 @@
             toolkitTips.splice(index, 1);
             renderToolkitTips();
             saveToolkitTipsToStorage();
-            notifyDataChanged();
+            if (typeof saveToGoogleSheets === 'function') saveToGoogleSheets().catch(e => console.warn('שמירה לגליון:', e));
             showNotification('הטיפ הוסר');
         }
 
@@ -9229,10 +9241,12 @@
             const teams = getScoutsTeamsForActiveDay();
             const totalTeams = teams.length;
             const allMembers = teams.flatMap(team => team.members);
+            const leadersCount = teams.filter(t => t.leader && (t.leader || '').toString().trim().length > 0).length;
+            const totalIncludingLeaders = allMembers.length + leadersCount;
             const uniqueMembers = new Set(allMembers.map(member => (member?.name || '').toLowerCase()).filter(Boolean));
             const stats = [
+                { label: 'מתרימים כולל ראשי סירה', value: totalIncludingLeaders.toLocaleString('he-IL') },
                 { label: 'סירות פעילות', value: totalTeams.toLocaleString('he-IL') },
-                { label: 'סה״כ מתרימים', value: allMembers.length.toLocaleString('he-IL') },
                 { label: 'מתרימים ייחודיים', value: uniqueMembers.size.toLocaleString('he-IL') }
             ];
             statsEl.innerHTML = stats.map(stat => `
@@ -9497,7 +9511,7 @@
             teams.splice(index, 1);
             saveScoutsScheduleToStorage();
             renderScoutsTeams();
-            notifyDataChanged();
+            if (typeof saveToGoogleSheets === 'function') saveToGoogleSheets().catch(e => console.warn('שמירה לגליון:', e));
             showNotification('סירת השטח הוסרה מהרשימה');
         }
 
@@ -9539,7 +9553,7 @@
             const [removed] = team.members.splice(index, 1);
             saveScoutsScheduleToStorage();
             renderScoutsTeams();
-            notifyDataChanged();
+            if (typeof saveToGoogleSheets === 'function') saveToGoogleSheets().catch(e => console.warn('שמירה לגליון:', e));
             if (removed?.name) {
                 showNotification(`המתרים ${removed.name} הוסר מסירת השטח`);
             } else {
@@ -9789,11 +9803,11 @@
             if (!confirm('האם אתה בטוח שברצונך למחוק כתובת זו?')) {
                 return;
             }
-            
             var idStr = String(addressId);
             addresses = addresses.filter(a => String(a.id) !== idStr);
             saveAddresses();
             renderAddresses();
+            if (typeof saveToGoogleSheets === 'function') saveToGoogleSheets().catch(e => console.warn('שמירה לגליון:', e));
             showNotification('הכתובת נמחקה');
         }
         
@@ -13303,11 +13317,22 @@
             if (isSimpleView) {
                 container.innerHTML = filteredDonors.map(donor => {
                     const displayName = donor.displayName || donor.name;
+                    const group = groups.find(g => g.id === donor.groupId) || groups[0];
+                    const progress = donor.personalGoal > 0 ? (donor.amount / donor.personalGoal) * 100 : 0;
+                    const details = [
+                        donor.nedarimMatrimId ? `מספר מתרים: ${donor.nedarimMatrimId}` : null,
+                        `קבוצה: ${group ? escapeHtml(group.name) : 'ללא קבוצה'}`,
+                        `תרומה: ₪${(donor.amount || 0).toLocaleString()}`,
+                        `יעד: ₪${(donor.personalGoal || 0).toLocaleString()} (${Math.round(progress)}%)`
+                    ].filter(Boolean).join(' | ');
                     return `
                         <div class="donor-item donor-item-compact" data-donor-id="${donor.id}">
-                            <span class="donor-item-compact-name">${escapeHtml(displayName)}</span>
-                            <span class="donor-item-compact-amount">₪${(donor.amount || 0).toLocaleString()}</span>
-                            <button class="btn btn-primary btn-small donor-item-compact-btn" onclick="addDonorPayment(${donor.id})">הוסף תשלום</button>
+                            <div class="donor-item-compact-main">
+                                <span class="donor-item-compact-name">${escapeHtml(displayName)}</span>
+                                <span class="donor-item-compact-amount">₪${(donor.amount || 0).toLocaleString()}</span>
+                                <button class="btn btn-primary btn-small donor-item-compact-btn" onclick="addDonorPayment(${donor.id})">הוסף תשלום</button>
+                            </div>
+                            <div class="donor-item-compact-details">${details}</div>
                         </div>
                     `;
                 }).join('');
@@ -13761,6 +13786,8 @@
             if (typeof updateLiveTargets === 'function') updateLiveTargets();
             if (typeof renderScoutsTeams === 'function') renderScoutsTeams();
             if (typeof updateScoutsStats === 'function') updateScoutsStats();
+            if (typeof renderToolkitTips === 'function') renderToolkitTips();
+            if (typeof renderAddresses === 'function') renderAddresses();
             if (typeof renderGroomGrantList === 'function') renderGroomGrantList();
             if (typeof updateGroupSelect === 'function') updateGroupSelect();
             if (typeof lastDataHash !== 'undefined' && typeof calculateDataHash === 'function') lastDataHash = calculateDataHash();
@@ -19857,7 +19884,7 @@
                     if (s.addresses && Array.isArray(s.addresses)) {
                         addresses = s.addresses;
                         try { localStorage.setItem('addresses', JSON.stringify(addresses)); storageSetItem('addresses', addresses); } catch (e) {}
-                        if (typeof updateAddressesList === 'function') updateAddressesList();
+                        if (typeof renderAddresses === 'function') renderAddresses();
                     }
                     /* לא דורסים liveViewSettings מטעינה מהגליון – ההגדרות המקומיות (מספר עמודות, הסתרת מובלים וכו') נשמרות.
                        סינכרון אוטומטי כל 5 דקות דרס את ההגדרות שהוגדרו locally בגרסה ישנה מהגיליון. */
@@ -19877,9 +19904,10 @@
                         if (s.appSettings.totalRecruiters != null && typeof totalRecruiters !== 'undefined') totalRecruiters = Number(s.appSettings.totalRecruiters);
                         try { const appS = { matchingGoal, defaultGroupGoal, defaultDonorGoal, totalRecruiters }; storageSetItem('appSettings', appS); } catch (e) {}
                     }
-                    if (s.toolkitTips && typeof toolkitTips !== 'undefined') {
-                        Object.assign(toolkitTips, s.toolkitTips);
+                    if (s.toolkitTips != null) {
+                        toolkitTips = Array.isArray(s.toolkitTips) ? normalizeToolkitTips(s.toolkitTips) : [];
                         try { localStorage.setItem('toolkitTips', JSON.stringify(toolkitTips)); storageSetItem('toolkitTips', toolkitTips); } catch (e) {}
+                        if (typeof renderToolkitTips === 'function') renderToolkitTips();
                     }
                     if (s.scoutsSchedule && typeof scoutsSchedule !== 'undefined') {
                         scoutsSchedule = typeof normalizeScoutsSchedule === 'function' ? normalizeScoutsSchedule(s.scoutsSchedule) : s.scoutsSchedule;
@@ -20251,7 +20279,7 @@
                         if (s.appSettings.defaultDonorGoal != null) defaultDonorGoal = Number(s.appSettings.defaultDonorGoal);
                         if (s.appSettings.totalRecruiters != null) totalRecruiters = Number(s.appSettings.totalRecruiters);
                     }
-                    if (s.toolkitTips && typeof toolkitTips !== 'undefined') Object.assign(toolkitTips, s.toolkitTips);
+                    if (s.toolkitTips != null) { toolkitTips = Array.isArray(s.toolkitTips) ? normalizeToolkitTips(s.toolkitTips) : []; if (typeof renderToolkitTips === 'function') renderToolkitTips(); }
                     if (s.scoutsSchedule && typeof scoutsSchedule !== 'undefined') scoutsSchedule = typeof normalizeScoutsSchedule === 'function' ? normalizeScoutsSchedule(s.scoutsSchedule) : s.scoutsSchedule;
                     if (s.groomGrants && typeof groomGrants !== 'undefined') { const raw = Array.isArray(s.groomGrants) ? s.groomGrants : (s.groomGrants.grants || []); groomGrants = typeof normalizeGroomGrants === 'function' ? normalizeGroomGrants(raw) : raw; if (typeof renderGroomGrantList === 'function') renderGroomGrantList(); }
                     if (s.financeState && typeof financeState !== 'undefined') Object.assign(financeState, s.financeState);
