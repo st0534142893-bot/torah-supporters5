@@ -14973,6 +14973,8 @@
                 }
             }
             
+            // נרמול groupId/groupName לפני קיבוץ – מונע "מספר מתרימים: 0" כשטיפוסים לא תואמים
+            ensureDonorsNormalized();
             // יצירת רשימה כפולה לגלילה אינסופית
             // משתמש ב-displayName אם יש, אחרת ב-name
             const donorsWithNames = donors.filter(d => {
@@ -15148,7 +15150,7 @@
             const structureEntries = [];
 
             groupRenderOrder.forEach(groupId => {
-                const group = groups.find(g => g.id === groupId);
+                const group = groups.find(g => groupIdsMatch(g.id, groupId));
                 const groupName = group ? group.name : 'ללא קבוצה';
                 let donorsInGroup = donorsByGroup.get(groupId) || [];
                 if (!donorsInGroup.length) return;
@@ -15246,7 +15248,7 @@
 
             const donorDataMap = new Map();
             donorsWithNames.forEach(donor => {
-                const groupObj = groups.find(g => g.id === donor.groupId) || null;
+                const groupObj = groups.find(g => groupIdsMatch(g.id, donor.groupId)) || null;
                 const percentage = donor.personalGoal > 0 ? (donor.amount / donor.personalGoal) * 100 : 0;
                 donorDataMap.set(String(donor.id), {
                     name: getDonorDisplayName(donor),
@@ -21991,5 +21993,3 @@
         window.contactDeveloper = contactDeveloper;
 
     </script>
-</body>
-</html>
