@@ -2952,6 +2952,93 @@
         }
         .live-view-update-grants .grants-important strong { color: #2e7d32; }
 
+        /* Overlay בזמן עדכון "תוך כדי גלילה" / "זמן מותאם" */
+        .live-view-during-update-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 501;
+            background: linear-gradient(135deg, rgba(245, 230, 211, 0.97) 0%, rgba(255, 248, 220, 0.97) 100%);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .live-view-during-update-overlay.show {
+            display: flex;
+        }
+        .live-view-during-update-overlay .during-update-title {
+            font-size: clamp(18px, 2vw, 24px);
+            color: var(--brown-dark);
+            font-weight: 600;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        .live-view-during-update-overlay .during-update-scroll-container {
+            width: 100%;
+            max-width: 400px;
+            height: 280px;
+            overflow: hidden;
+            border: 2px solid var(--primary-gold);
+            border-radius: 16px;
+            background: rgba(255,255,255,0.6);
+            position: relative;
+        }
+        .live-view-during-update-overlay .during-update-scroll-inner {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 12px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        .live-view-during-update-overlay .during-update-scroll-inner {
+            transition: none;
+        }
+        .live-view-during-update-overlay .during-update-item {
+            font-size: 16px;
+            color: var(--brown-dark);
+            padding: 4px 0;
+        }
+        .live-view-during-update-overlay .during-update-recent-container {
+            width: 100%;
+            max-width: 420px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 2px solid var(--primary-gold);
+            border-radius: 16px;
+            background: rgba(255,255,255,0.7);
+            padding: 16px;
+        }
+        .live-view-during-update-overlay .during-update-recent-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--brown-dark);
+            margin-bottom: 12px;
+            text-align: center;
+        }
+        .live-view-during-update-overlay .during-update-recent-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+        .live-view-during-update-overlay .during-update-recent-item {
+            background: linear-gradient(135deg, var(--primary-gold), var(--primary-gold-dark));
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            animation: donorPreviewFade 0.4s ease;
+        }
         .live-view-section::before {
             content: '';
             position: absolute;
@@ -6497,6 +6584,15 @@
                                         <option value="seconds">שניות</option>
                                     </select>
                                 </div>
+                                <div class="liveview-setting-row" id="liveviewUpdateDuringDisplayRow" style="display: none;">
+                                    <label>מה להציג בזמן העדכון (תוך כדי / זמן מותאם):</label>
+                                    <select id="liveviewUpdateDuringDisplay" onchange="updateLiveViewSettings()">
+                                        <option value="none">ללא מסך (רק ברקע)</option>
+                                        <option value="fastScroll">גלילה מהירה ברשימה (מההתחלה לסוף ובחזרה)</option>
+                                        <option value="bounce">גלילה מעלה-מטה (מחזור ואז מההתחלה)</option>
+                                        <option value="recentlyUpdated">מראה מתרים שעודכנו בעדכון האחרון</option>
+                                    </select>
+                                </div>
                                 <div class="liveview-setting-row" id="liveviewUpdateEndOptionsRow">
                                     <label>מה להציג על המסך בזמן העדכון (רק במצב "בסיום מחזור"):</label>
                                     <select id="liveviewUpdateShow" onchange="updateLiveViewSettings()">
@@ -6962,6 +7058,17 @@
                             <li>המענק מורכב משני חלקים: 10% מכלל הסכומים שגייס המתרים לאורך השנים, ותוספת קבועה של 3,500 ש"ח.</li>
                         </ol>
                         <div class="grants-important"><strong>חשוב:</strong> כל הענקת מענקים מתבצעת בפועל בהנחיית מורנו ראש הישיבה שליט"א, ולאחר קבלת אישורו הסופי.</div>
+                    </div>
+                </div>
+                <!-- overlay בזמן עדכון תוך כדי גלילה / זמן מותאם -->
+                <div class="live-view-during-update-overlay" id="liveViewDuringUpdateOverlay">
+                    <div class="during-update-title">מעדכן נתונים...</div>
+                    <div class="during-update-scroll-container" id="duringUpdateScrollContainer" style="display: none;">
+                        <div class="during-update-scroll-inner" id="duringUpdateScrollInner"></div>
+                    </div>
+                    <div class="during-update-recent-container" id="duringUpdateRecentContainer" style="display: none;">
+                        <div class="during-update-recent-title">עודכנו בעדכון הנוכחי:</div>
+                        <div class="during-update-recent-list" id="duringUpdateRecentList"></div>
                     </div>
                 </div>
             </section>
@@ -7584,8 +7691,10 @@
         let nedarimSyncTimer = null;
         let syncWithNedarimPlusInProgress = false; // 🛡️ מנע סנכרונים מקבילים – כל סנכרון שולח דלתות; אם רץ פעמיים = כפילות!
         let lastSyncEndTime = 0; // 🛡️ מונע סנכרונים תכופים – מרווח מינימלי 5 דקות
+        let lastSyncUpdatedDonorNames = []; // מתרים שעודכנו בסנכרון האחרון – לשימוש ב-overlay "מתרים שעודכנו"
         /** עדכון פרוגרס ב-overlay של תצוגת לייב בזמן סנכרון */
         function updateLiveViewSyncProgress(current, total, lastUpdatedNames) {
+            if (lastUpdatedNames && Array.isArray(lastUpdatedNames)) lastSyncUpdatedDonorNames = [...lastUpdatedNames];
             const textEl = document.getElementById('liveViewUpdateProgressText');
             const barEl = document.getElementById('liveViewUpdateProgressBar');
             const fillEl = document.getElementById('liveViewUpdateProgressFill');
@@ -7594,6 +7703,11 @@
             if (barEl && fillEl && total > 0) { barEl.style.display = 'block'; fillEl.style.width = (total > 0 ? (current / total) * 100 : 0) + '%'; }
             if (previewEl && lastUpdatedNames && lastUpdatedNames.length > 0) {
                 previewEl.innerHTML = '<strong>עודכנו:</strong> ' + lastUpdatedNames.slice(-6).reverse().map(n => `<span class="live-view-update-donors-preview-item">${n}</span>`).join(' • ');
+            }
+            const duringRecentList = document.getElementById('duringUpdateRecentList');
+            const duringOverlay = document.getElementById('liveViewDuringUpdateOverlay');
+            if (duringRecentList && duringOverlay && duringOverlay.classList.contains('show') && lastUpdatedNames && lastUpdatedNames.length > 0) {
+                duringRecentList.innerHTML = lastUpdatedNames.map(n => `<span class="during-update-recent-item">${n}</span>`).join('');
             }
         }
         function hideLiveViewSyncProgress() {
@@ -10741,6 +10855,7 @@
             liveViewUpdateDuringMinutes: 5,
             liveViewUpdateCustomValue: 5,
             liveViewUpdateCustomUnit: 'minutes',
+            liveViewUpdateDuringDisplay: 'none',
         };
 
         function loadLiveViewSettings(skipStorage) {
@@ -10818,9 +10933,13 @@
             if (liveviewUpdateDuringMinutes) liveviewUpdateDuringMinutes.value = liveViewSettings.liveViewUpdateDuringMinutes || 5;
             if (liveviewUpdateCustomValue) liveviewUpdateCustomValue.value = liveViewSettings.liveViewUpdateCustomValue || 5;
             if (liveviewUpdateCustomUnit) liveviewUpdateCustomUnit.value = liveViewSettings.liveViewUpdateCustomUnit || 'minutes';
+            const duringDisplayRow = document.getElementById('liveviewUpdateDuringDisplayRow');
             if (duringRow) duringRow.style.display = (liveViewSettings.liveViewUpdateWhen === 'during') ? '' : 'none';
             if (customRow) customRow.style.display = (liveViewSettings.liveViewUpdateWhen === 'custom') ? '' : 'none';
             if (endOptionsRow) endOptionsRow.style.display = (liveViewSettings.liveViewUpdateWhen === 'end') ? '' : 'none';
+            if (duringDisplayRow) duringDisplayRow.style.display = (liveViewSettings.liveViewUpdateWhen === 'during' || liveViewSettings.liveViewUpdateWhen === 'custom') ? '' : 'none';
+            const duringDisplaySelect = document.getElementById('liveviewUpdateDuringDisplay');
+            if (duringDisplaySelect) duringDisplaySelect.value = liveViewSettings.liveViewUpdateDuringDisplay || 'none';
             
             // המרת #ffffff ל-rgba עבור groupHeaderBg אם צריך
             if (liveViewSettings.groupHeaderBg === '#ffffff' || liveViewSettings.groupHeaderBg === '#FFFFFF') {
@@ -11012,9 +11131,11 @@
             var duringRow = document.getElementById('liveviewUpdateDuringIntervalRow');
             var customRow = document.getElementById('liveviewUpdateCustomIntervalRow');
             var endOptionsRow = document.getElementById('liveviewUpdateEndOptionsRow');
+            const duringDisplayRow = document.getElementById('liveviewUpdateDuringDisplayRow');
             if (duringRow) duringRow.style.display = (whenVal === 'during') ? '' : 'none';
             if (customRow) customRow.style.display = (whenVal === 'custom') ? '' : 'none';
             if (endOptionsRow) endOptionsRow.style.display = (whenVal === 'end') ? '' : 'none';
+            if (duringDisplayRow) duringDisplayRow.style.display = (whenVal === 'during' || whenVal === 'custom') ? '' : 'none';
             const titleSize = document.getElementById('liveviewTitleSize');
             const titleSizeValue = document.getElementById('liveviewTitleSizeValue');
             const donorNameSize = document.getElementById('liveviewDonorNameSize');
@@ -11215,6 +11336,7 @@
                 liveViewUpdateDuringMinutes: document.getElementById('liveviewUpdateDuringMinutes') ? parseInt(document.getElementById('liveviewUpdateDuringMinutes').value) || 5 : (liveViewSettings.liveViewUpdateDuringMinutes || 5),
                 liveViewUpdateCustomValue: document.getElementById('liveviewUpdateCustomValue') ? parseFloat(document.getElementById('liveviewUpdateCustomValue').value) || 5 : (liveViewSettings.liveViewUpdateCustomValue || 5),
                 liveViewUpdateCustomUnit: document.getElementById('liveviewUpdateCustomUnit') ? document.getElementById('liveviewUpdateCustomUnit').value : (liveViewSettings.liveViewUpdateCustomUnit || 'minutes'),
+                liveViewUpdateDuringDisplay: document.getElementById('liveviewUpdateDuringDisplay') ? document.getElementById('liveviewUpdateDuringDisplay').value : (liveViewSettings.liveViewUpdateDuringDisplay || 'none'),
             };
 
             // שמירת ההגדרות
@@ -11314,6 +11436,7 @@
                 liveViewUpdateDuringMinutes: 5,
                 liveViewUpdateCustomValue: 5,
                 liveViewUpdateCustomUnit: 'minutes',
+                liveViewUpdateDuringDisplay: 'none',
             };
             liveViewSettings = defaults;
             try { localStorage.setItem('liveViewSettings', JSON.stringify(defaults)); } catch (e) {}
@@ -12414,14 +12537,69 @@
             state.handle = requestAnimationFrame(step);
         }
         
-        /** עדכון תוך כדי גלילה – בלי לעצור, בלי overlay. */
+        /** עדכון תוך כדי גלילה – עם או בלי overlay לפי ההגדרה. */
         var isLiveViewUpdateDuringRunning = false;
+        var duringUpdateAnimHandle = null;
+        function startDuringUpdateOverlay(displayMode) {
+            const overlay = document.getElementById('liveViewDuringUpdateOverlay');
+            const scrollContainer = document.getElementById('duringUpdateScrollContainer');
+            const scrollInner = document.getElementById('duringUpdateScrollInner');
+            const recentContainer = document.getElementById('duringUpdateRecentContainer');
+            const recentList = document.getElementById('duringUpdateRecentList');
+            if (!overlay) return;
+            lastSyncUpdatedDonorNames = [];
+            if (recentList) recentList.innerHTML = '';
+            if (displayMode === 'recentlyUpdated') {
+                if (scrollContainer) scrollContainer.style.display = 'none';
+                if (recentContainer) { recentContainer.style.display = 'block'; recentContainer.style.overflowY = 'auto'; }
+                overlay.classList.add('show');
+                return;
+            }
+            if (displayMode === 'fastScroll' || displayMode === 'bounce') {
+                if (recentContainer) recentContainer.style.display = 'none';
+                const names = (typeof donors !== 'undefined' && Array.isArray(donors)) ? donors.map(d => (d.name || '').trim()).filter(Boolean) : [];
+                if (names.length === 0 && scrollInner) scrollInner.innerHTML = '<div class="during-update-item">אין מתרימים להצגה</div>';
+                else if (scrollInner) scrollInner.innerHTML = names.map(n => `<div class="during-update-item">${n}</div>`).join('');
+                if (scrollContainer) scrollContainer.style.display = 'block';
+                overlay.classList.add('show');
+                var direction = 1;
+                var lastY = 0;
+                var velocity = displayMode === 'fastScroll' ? 0.12 : 0.08;
+                function animate() {
+                    if (!overlay || !overlay.classList.contains('show')) return;
+                    duringUpdateAnimHandle = requestAnimationFrame(animate);
+                    var inner = scrollInner;
+                    if (!inner) return;
+                    var innerH = inner.scrollHeight;
+                    var viewH = 280;
+                    if (innerH <= viewH) return;
+                    var maxY = innerH - viewH;
+                    var dt = 0.016;
+                    lastY += direction * velocity * maxY * dt;
+                    if (lastY >= maxY) { lastY = maxY; if (displayMode === 'bounce') direction = -1; else lastY = 0; }
+                    if (lastY <= 0) { lastY = 0; if (displayMode === 'bounce') direction = 1; }
+                    inner.style.transform = 'translate3d(0, ' + (-lastY) + 'px, 0)';
+                }
+                duringUpdateAnimHandle = requestAnimationFrame(animate);
+            }
+        }
+        function stopDuringUpdateOverlay() {
+            const overlay = document.getElementById('liveViewDuringUpdateOverlay');
+            const scrollContainer = document.getElementById('duringUpdateScrollContainer');
+            const recentContainer = document.getElementById('duringUpdateRecentContainer');
+            if (duringUpdateAnimHandle) { cancelAnimationFrame(duringUpdateAnimHandle); duringUpdateAnimHandle = null; }
+            if (scrollContainer) scrollContainer.style.display = 'none';
+            if (recentContainer) recentContainer.style.display = 'none';
+            if (overlay) overlay.classList.remove('show');
+        }
         async function runLiveViewUpdateDuring() {
             if (typeof isLiveViewActive !== 'function' || !isLiveViewActive() || !liveViewSettings.enableAutoScroll) return;
             if (isLiveViewUpdateDuringRunning) return;
             isLiveViewUpdateDuringRunning = true;
             lastLiveViewUpdateAt = Date.now();
-            console.log('🔄 [תצוגת לייב] עדכון תוך כדי גלילה (בלי לעצור)...');
+            var displayMode = (liveViewSettings.liveViewUpdateDuringDisplay || 'none');
+            if (displayMode !== 'none') startDuringUpdateOverlay(displayMode);
+            console.log('🔄 [תצוגת לייב] עדכון תוך כדי גלילה' + (displayMode !== 'none' ? ' (עם מסך ' + displayMode + ')' : '') + '...');
             try {
                 await checkTotalAmountFromAPI(true);
                 await syncWithNedarimPlus(true);
@@ -12438,6 +12616,7 @@
             } catch (err) {
                 console.warn('⚠️ [תצוגת לייב] שגיאה בעדכון תוך כדי גלילה:', err);
             }
+            if (displayMode !== 'none') stopDuringUpdateOverlay();
             isLiveViewUpdateDuringRunning = false;
         }
 
