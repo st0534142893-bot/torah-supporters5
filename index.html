@@ -15320,6 +15320,8 @@
             const leadersList = document.getElementById('leadersList');
             if (!leadersList) return;
             
+            const visibleGroups = groups.filter(g => g.showInLiveView !== false);
+            
             // מיון מתרימים לפי סכום - רק מקבוצות שמוצגות בלייב
             const sortedDonors = [...donors]
                 .filter(d => {
@@ -15347,7 +15349,6 @@
             const totalDonorsCount = donors.filter(d => d.name && d.name.trim()).length;
             
             // יצירת כרטיסיות לכל קבוצה - רק קבוצות שמוצגות בלייב
-            const visibleGroups = groups.filter(g => g.showInLiveView !== false);
             const groupsCardsHtml = visibleGroups.map(group => {
                 const groupDonors = getDonorsForGroup(group);
                 const collected = groupDonors.reduce((sum, donor) => sum + (donor.amount || 0), 0);
@@ -20766,9 +20767,11 @@
             
             if (!url) {
                 console.warn('⚠️ אין URL לשמירה ל-Google Sheets');
+                if (typeof showGoogleSheetsStatus === 'function') showGoogleSheetsStatus('❌ נא להגדיר את כתובת ה-Web App', 'error');
                 return { success: false, error: 'אין URL' };
             }
             
+            if (typeof showGoogleSheetsStatus === 'function') showGoogleSheetsStatus('💾 שומר לגליון...', 'info');
             console.log('💾 [Google Sheets] מתחיל שמירה...');
             console.log('💾 [Google Sheets] URL:', url.substring(0, 50) + '...');
             console.log('💾 [Google Sheets] מתרימים:', donors.length, ', קבוצות:', groups.length);
@@ -20845,6 +20848,7 @@
                 lastSaveToSheetsTime = Date.now(); // מונע טעינה מהגליון 15 שניות אחרי שמירה
                 const message = `✅ נשמרו ${donors.length} מתרימים, ${groups.length} קבוצות + כתובות והגדרות לגליון`;
                 console.log('💾 [Google Sheets] הצלחה!', message);
+                if (typeof showGoogleSheetsStatus === 'function') showGoogleSheetsStatus(message, 'success');
                 
                 return { success: true };
                 
