@@ -2883,6 +2883,29 @@
         .live-view-update-overlay.loading-only .live-view-update-loading { display: flex !important; }
         .live-view-update-overlay.grants-only .live-view-update-loading { display: none !important; }
         .live-view-update-overlay.grants-only .live-view-update-grants { display: block !important; }
+        .live-view-update-overlay.sidepanel-only { display: none !important; }
+        /* כרטיסיית עדכון בצד – לא מסך מלא, רק פאנל קטן */
+        .live-view-update-side-panel {
+            display: none;
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 502;
+            width: 200px;
+            padding: 16px 20px;
+            background: linear-gradient(135deg, rgba(255, 248, 220, 0.98) 0%, rgba(245, 230, 211, 0.98) 100%);
+            border: 2px solid var(--primary-gold);
+            border-radius: 14px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            text-align: center;
+            direction: rtl;
+        }
+        .live-view-update-side-panel.show { display: block !important; }
+        .live-view-update-side-panel .side-panel-title { font-size: 16px; font-weight: 600; color: var(--brown-dark); margin-bottom: 10px; }
+        .live-view-update-side-panel .side-panel-percent { font-size: 28px; font-weight: 700; color: var(--primary-gold-dark); margin: 8px 0; }
+        .live-view-update-side-panel .side-panel-bar { width: 100%; height: 10px; background: rgba(0,0,0,0.1); border-radius: 5px; overflow: hidden; margin-top: 8px; }
+        .live-view-update-side-panel .side-panel-fill { height: 100%; background: linear-gradient(90deg, var(--primary-gold), var(--primary-gold-dark)); border-radius: 5px; transition: width 0.3s ease; }
         .live-view-update-loading {
             display: none;
             flex-direction: column;
@@ -6598,6 +6621,7 @@
                                     <select id="liveviewUpdateShow" onchange="updateLiveViewSettings()">
                                         <option value="loading">סימן טעינה בלבד</option>
                                         <option value="grants">כללים למתרימים (מענקים)</option>
+                                        <option value="sidepanel">כרטיסיה בצד עם אחוזי התקדמות</option>
                                     </select>
                                 </div>
                                 <div class="liveview-setting-row" id="liveviewUpdateTypeRow">
@@ -7059,6 +7083,12 @@
                         </ol>
                         <div class="grants-important"><strong>חשוב:</strong> כל הענקת מענקים מתבצעת בפועל בהנחיית מורנו ראש הישיבה שליט"א, ולאחר קבלת אישורו הסופי.</div>
                     </div>
+                </div>
+                <!-- כרטיסיית עדכון בצד (מצב "כרטיסיה בצד עם אחוזים") -->
+                <div class="live-view-update-side-panel" id="liveViewUpdateSidePanel">
+                    <div class="side-panel-title">מעדכן...</div>
+                    <div class="side-panel-percent" id="liveViewSidePanelPercent">0%</div>
+                    <div class="side-panel-bar"><div class="side-panel-fill" id="liveViewSidePanelFill" style="width: 0%;"></div></div>
                 </div>
                 <!-- overlay בזמן עדכון תוך כדי גלילה / זמן מותאם -->
                 <div class="live-view-during-update-overlay" id="liveViewDuringUpdateOverlay">
@@ -7692,7 +7722,18 @@
         let syncWithNedarimPlusInProgress = false; // 🛡️ מנע סנכרונים מקבילים – כל סנכרון שולח דלתות; אם רץ פעמיים = כפילות!
         let lastSyncEndTime = 0; // 🛡️ מונע סנכרונים תכופים – מרווח מינימלי 5 דקות
         let lastSyncUpdatedDonorNames = []; // מתרים שעודכנו בסנכרון האחרון – לשימוש ב-overlay "מתרים שעודכנו"
-        /** עדכון פרוגרס ב-overlay של תצוגת לייב בזמן סנכרון */
+        /** עדכון פרוגרס בכרטיסיה בצד (מצב sidepanel) – אחוזים אמיתיים */
+        function updateLiveViewEndProgress(percent, label) {
+            var p = Math.min(100, Math.max(0, percent));
+            var sidePanel = document.getElementById('liveViewUpdateSidePanel');
+            var percentEl = document.getElementById('liveViewSidePanelPercent');
+            var fillEl = document.getElementById('liveViewSidePanelFill');
+            var titleEl = sidePanel ? sidePanel.querySelector('.side-panel-title') : null;
+            if (percentEl) percentEl.textContent = p + '%';
+            if (fillEl) fillEl.style.width = p + '%';
+            if (titleEl && label) titleEl.textContent = label || 'מעדכן...';
+        }
+        /** עדכון פרוגרס ב-overlay או בכרטיסיה בצד של תצוגת לייב בזמן סנכרון */
         function updateLiveViewSyncProgress(current, total, lastUpdatedNames) {
             if (lastUpdatedNames && Array.isArray(lastUpdatedNames)) lastSyncUpdatedDonorNames = [...lastUpdatedNames];
             const textEl = document.getElementById('liveViewUpdateProgressText');
@@ -7701,6 +7742,12 @@
             const previewEl = document.getElementById('liveViewUpdateDonorsPreview');
             if (textEl) textEl.textContent = total > 0 ? `מעדכן ${current} מ-${total} מתרימים...` : 'מעדכן...';
             if (barEl && fillEl && total > 0) { barEl.style.display = 'block'; fillEl.style.width = (total > 0 ? (current / total) * 100 : 0) + '%'; }
+            var showMode = (typeof liveViewSettings !== 'undefined' && liveViewSettings.liveViewUpdateShow) || 'loading';
+            if (showMode === 'sidepanel') {
+                var syncPercent = total > 0 ? (current / total) * 100 : 0;
+                var overallPercent = Math.min(99, Math.round(20 + 40 * (syncPercent / 100)));
+                updateLiveViewEndProgress(overallPercent, 'סנכרון מתרימים');
+            }
             if (previewEl && lastUpdatedNames && lastUpdatedNames.length > 0) {
                 previewEl.innerHTML = '<strong>עודכנו:</strong> ' + lastUpdatedNames.slice(-6).reverse().map(n => `<span class="live-view-update-donors-preview-item">${n}</span>`).join(' • ');
             }
@@ -12644,7 +12691,7 @@
             runLiveViewUpdateDuring().catch(function() {});
         }
 
-        /** אחרי סיום גלילה מלאה – עוצר גלילה, מציג overlay, מריץ עדכון לפי ההגדרה, ואז ממשיך גלילה (רק כשההגדרה "בסיום מחזור") */
+        /** אחרי סיום גלילה מלאה – עוצר גלילה, מציג overlay או כרטיסיה בצד, מריץ עדכון לפי ההגדרה, ואז ממשיך גלילה (רק כשההגדרה "בסיום מחזור") */
         async function onDonorsScrollCycleComplete() {
             if (typeof isLiveViewActive !== 'function' || !isLiveViewActive()) return;
             if (!liveViewSettings.enableAutoScroll) return;
@@ -12653,6 +12700,7 @@
             console.log('🔄 [תצוגת לייב] סיום מחזור גלילה – מציג overlay ומריץ עדכון...');
             lastLiveViewUpdateAt = Date.now();
             const overlay = document.getElementById('liveViewUpdateOverlay');
+            const sidePanel = document.getElementById('liveViewUpdateSidePanel');
             const showMode = liveViewSettings.liveViewUpdateShow || 'loading';
             const updateType = liveViewSettings.liveViewUpdateType || 'all';
 
@@ -12661,15 +12709,20 @@
             donorsScrollIsRunning = false;
             leadersScrollIsRunning = false;
 
-            if (overlay) {
-                overlay.classList.remove('loading-only', 'grants-only');
+            if (showMode === 'sidepanel') {
+                if (sidePanel) { sidePanel.classList.add('show'); updateLiveViewEndProgress(0, 'מעדכן...'); }
+            } else if (overlay) {
+                overlay.classList.remove('loading-only', 'grants-only', 'sidepanel-only');
                 overlay.classList.add(showMode === 'grants' ? 'grants-only' : 'loading-only');
                 overlay.classList.add('show');
             }
 
             try {
+                if (showMode === 'sidepanel') updateLiveViewEndProgress(5, 'בדיקת סכום');
                 await checkTotalAmountFromAPI(true);
+                if (showMode === 'sidepanel') updateLiveViewEndProgress(20, 'סנכרון תרומות');
                 await syncWithNedarimPlus(true);
+                if (showMode === 'sidepanel') updateLiveViewEndProgress(60, 'טעינת נתונים');
                 if (updateType === 'all') {
                     if (autoSyncNedarimEnabled && typeof performAutoRefresh === 'function') await performAutoRefresh();
                     var url = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').trim();
@@ -12686,16 +12739,23 @@
                 } else if (updateType === 'loadMatrim' && typeof loadMatrimFromNedarim === 'function') {
                     await loadMatrimFromNedarim(true);
                 }
+                if (showMode === 'sidepanel') updateLiveViewEndProgress(85, 'עדכון תצוגה');
                 if (typeof syncAllDataToDatabase === 'function') await syncAllDataToDatabase();
                 if (typeof updateLiveView === 'function') updateLiveView();
                 if (typeof updateLeadersList === 'function') updateLeadersList();
                 if (typeof notifyDataChanged === 'function') notifyDataChanged();
+                if (showMode === 'sidepanel') updateLiveViewEndProgress(100, 'הושלם');
                 console.log('✅ [תצוגת לייב] עדכון הושלם');
             } catch (err) {
                 console.warn('⚠️ [תצוגת לייב] שגיאה בעדכון:', err);
+                if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'שגיאה');
             }
 
             if (overlay) overlay.classList.remove('show');
+            if (sidePanel) {
+                if (showMode === 'sidepanel') setTimeout(function() { sidePanel.classList.remove('show'); }, 600);
+                else sidePanel.classList.remove('show');
+            }
             if (typeof hideLiveViewSyncProgress === 'function') hideLiveViewSyncProgress();
             if (typeof restartDonorsAutoScroll === 'function') restartDonorsAutoScroll();
             if (typeof restartLeadersAutoScroll === 'function' && isLiveViewActive()) setTimeout(() => restartLeadersAutoScroll({ immediate: true }), 50);
