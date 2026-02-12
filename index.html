@@ -1586,15 +1586,31 @@
             font-size: 14px;
         }
         
-        .address-form-row input {
+        .address-form-row input,
+        .address-form-row select,
+        .address-form-row textarea {
             padding: 10px 14px;
             border: 2px solid var(--border);
             border-radius: 8px;
             font-size: 16px;
             background: white;
+            width: 100%;
+            max-width: 400px;
+            box-sizing: border-box;
         }
         
-        .address-form-row input:focus {
+        .address-form-row select {
+            cursor: pointer;
+        }
+        
+        .address-form-row textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+        
+        .address-form-row input:focus,
+        .address-form-row select:focus,
+        .address-form-row textarea:focus {
             outline: none;
             border-color: var(--primary-gold);
         }
@@ -4427,6 +4443,58 @@
             user-select: none;
         }
 
+        /* חצי הגמר */
+        .semifinal-section { background: rgba(255, 255, 255, 0.5); }
+        .semifinal-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            max-width: 600px;
+        }
+        .semifinal-settings, .semifinal-status {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+        .semifinal-panel h3 { margin-bottom: 16px; color: var(--brown-dark); font-size: 20px; }
+        .semifinal-status-card { background: #f8f9fa; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+        .btn-large { padding: 14px 28px; font-size: 18px; }
+        .semifinal-video-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            background: #000;
+            flex-direction: column;
+        }
+        .semifinal-video-overlay.show { display: flex !important; }
+        .semifinal-video-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .semifinal-close-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.5);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .semifinal-close-btn:hover { background: rgba(255,255,255,0.3); }
+        #semifinalVideoIframe {
+            flex: 1;
+            width: 100%;
+            border: none;
+            min-height: 0;
+        }
         .app-lock-overlay {
             position: fixed;
             inset: 0;
@@ -5680,6 +5748,14 @@
             <p class="app-lock-contact-note">במקרה ונתקלת בנעילה ואתה לקוח של תוכנה זו – ניתן ליצור קשר עם <strong>S.C. פיתוח אתרים ותוכנות</strong> בדוא"ל <a href="mailto:s0534142893@gmail.com">s0534142893@gmail.com</a>. נשתדל לחזור אליכם בהקדם.</p>
         </div>
     </div>
+    <!-- overlay סרטון חצי הגמר – מסך מלא -->
+    <div class="semifinal-video-overlay" id="semifinalVideoOverlay">
+        <div class="semifinal-video-header">
+            <span>חצי הגמר</span>
+            <button class="semifinal-close-btn" onclick="closeSemifinalVideo()">✕ סגור</button>
+        </div>
+        <iframe id="semifinalVideoIframe" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </div>
     <div class="app-lock-overlay hidden" id="appLockOverlay" role="dialog" aria-modal="true" aria-labelledby="appLockTitle">
         <div class="app-lock-dialog">
             <div class="app-lock-logo"><img src="https://i.postimg.cc/ZRMCLxgW/wgw-t-t-dhws.png" alt="לוגו" style="height:64px;"></div>
@@ -5707,6 +5783,7 @@
             </div>
             <div class="nav-menu">
                 <button class="nav-item active" data-section="home">דף הבית</button>
+                <button class="nav-item" data-section="semifinal">חצי הגמר</button>
                 <button class="nav-item" data-section="liveview">תצוגה בלייב</button>
                 <button class="nav-item" data-section="breakdown">פילוח נתונים</button>
                 <button class="nav-item" data-section="management">ניהול</button>
@@ -5773,6 +5850,52 @@
                 <div class="home-content">
                     <div class="stats-grid" id="homeStats">
                         <!-- יוטען דינמית -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- חצי הגמר -->
+            <section class="content-section semifinal-section" id="semifinalSection">
+                <h2 class="section-header">חצי הגמר – סרטון מתי שמגיעים ליעד</h2>
+                <div class="semifinal-panel">
+                    <div class="semifinal-settings">
+                        <h3>הגדרות</h3>
+                        <div class="semifinal-form">
+                            <div class="address-form-row">
+                                <label for="semifinalTargetAmount">יעד להפעלת הסרטון (₪):</label>
+                                <input type="number" id="semifinalTargetAmount" min="0" step="1000" placeholder="למשל 500000" onchange="saveSemifinalSettings()">
+                            </div>
+                            <div class="address-form-row">
+                                <label for="semifinalDuration">משך הסרטון (דקות):</label>
+                                <input type="number" id="semifinalDuration" min="1" max="60" value="30" onchange="saveSemifinalSettings()">
+                            </div>
+                            <div class="address-form-row">
+                                <label for="semifinalVideoUrl">קישור לסרטון (Google Drive):</label>
+                                <input type="text" id="semifinalVideoUrl" placeholder="https://drive.google.com/..." onchange="saveSemifinalSettings()">
+                                <small style="color: var(--muted); margin-top: 4px;">הדבק קישור לשיתוף מ-Google Drive. ברירת מחדל: סרטון לת״ת</small>
+                            </div>
+                            <div class="address-form-row">
+                                <label class="switch-label">
+                                    <input type="checkbox" id="semifinalAutoPlay" onchange="saveSemifinalSettings()">
+                                    <span>הפעל אוטומטית כשמגיעים ליעד</span>
+                                </label>
+                            </div>
+                            <div class="address-form-actions">
+                                <button class="btn" onclick="saveSemifinalSettings()">שמור הגדרות</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="semifinal-status">
+                        <h3>סטטוס</h3>
+                        <div class="semifinal-status-card">
+                            <div>סה״כ נאסף: <strong id="semifinalCurrentTotal">₪0</strong></div>
+                            <div>יעד: <strong id="semifinalTargetDisplay">₪0</strong></div>
+                            <div id="semifinalProgressText" style="margin-top: 8px; font-size: 14px; color: var(--muted);">הגיעו ליעד? תוכלו להפעיל את הסרטון</div>
+                        </div>
+                        <button class="btn btn-primary btn-large" id="semifinalPlayBtn" onclick="playSemifinalVideo()" disabled>
+                            ▶️ הפעל סרטון חצי הגמר
+                        </button>
+                        <p style="font-size: 12px; color: var(--muted); margin-top: 8px;">הכפתור פעיל רק כשמגיעים ליעד שהגדרתם</p>
                     </div>
                 </div>
             </section>
@@ -7700,6 +7823,8 @@
         let donorSearchTerm = '';
         let manualDonorSearchTerm = '';
         let addresses = [];
+        let semiFinalSettings = { targetAmount: 0, durationMinutes: 30, videoUrl: 'https://drive.google.com/file/d/1HqEWgthH8jceOP5R5VFwntL5N1jHhf1K/view?usp=sharing', autoPlay: false };
+        let semiFinalVideoAlreadyPlayed = false; // מניעת הפעלה חוזרת אוטומטית
         let groups = [
             { id: 'group1', name: 'קבוצה 1', goal: defaultGroupGoal, orderNumber: 1 },
             { id: 'group2', name: 'קבוצה 2', goal: defaultGroupGoal, orderNumber: 2 },
@@ -7883,6 +8008,7 @@
         const SECTION_OPTIONS = [
             { id: 'addresses', label: 'כתובות' },
             { id: 'home', label: 'דף הבית' },
+            { id: 'semifinal', label: 'חצי הגמר' },
             { id: 'breakdown', label: 'פילוח נתונים' },
             { id: 'management', label: 'ניהול (כל המדור)' },
             { id: 'management-groups', label: 'ניהול → ניהול קבוצות' },
@@ -10500,7 +10626,7 @@
             showNotification('הכתובת נוספה בהצלחה');
         }
         
-        function deleteAddress(addressId) {
+        async function deleteAddress(addressId) {
             if (!confirm('האם אתה בטוח שברצונך למחוק כתובת זו?')) {
                 return;
             }
@@ -10508,8 +10634,18 @@
             addresses = addresses.filter(a => String(a.id) !== idStr);
             saveAddresses();
             renderAddresses();
-            if (typeof saveToGoogleSheets === 'function') saveToGoogleSheets().catch(e => console.warn('שמירה לגליון:', e));
-            showNotification('הכתובת נמחקה');
+            var url = (typeof googleSheetsWebAppUrl !== 'undefined' ? googleSheetsWebAppUrl : '') || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '';
+            if (url && typeof saveToGoogleSheets === 'function') {
+                try {
+                    await saveToGoogleSheets();
+                    showNotification('הכתובת נמחקה – כולל מהגליון');
+                } catch (e) {
+                    console.warn('שמירה לגליון:', e);
+                    showNotification('הכתובת נמחקה מקומית (שמירה לגליון נכשלה)');
+                }
+            } else {
+                showNotification('הכתובת נמחקה');
+            }
         }
         
         function updateAddressRecruiterSuggestions() {
@@ -10580,6 +10716,78 @@
                 console.error('שגיאה בטעינת כתובות:', e);
                 addresses = [];
             }
+        }
+
+        // ——— חצי הגמר: המרת קישור Google Drive ל-embed ———
+        function getEmbedUrlFromDriveUrl(url) {
+            if (!url || typeof url !== 'string') return '';
+            const m = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+            return m ? 'https://drive.google.com/file/d/' + m[1] + '/preview' : '';
+        }
+        function saveSemifinalSettings() {
+            const target = parseFloat(document.getElementById('semifinalTargetAmount')?.value) || 0;
+            const duration = parseInt(document.getElementById('semifinalDuration')?.value, 10) || 30;
+            const url = (document.getElementById('semifinalVideoUrl')?.value || '').trim();
+            const autoPlay = !!(document.getElementById('semifinalAutoPlay')?.checked);
+            semiFinalSettings = { targetAmount: Math.max(0, target), durationMinutes: Math.max(1, Math.min(60, duration)), videoUrl: url || semiFinalSettings.videoUrl, autoPlay };
+            try { localStorage.setItem('semiFinalSettings', JSON.stringify(semiFinalSettings)); } catch (e) {}
+            updateSemifinalStatus();
+            if (typeof showNotification === 'function') showNotification('הגדרות חצי הגמר נשמרו');
+        }
+        function loadSemifinalSettings() {
+            try {
+                const saved = localStorage.getItem('semiFinalSettings');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    semiFinalSettings = { ...semiFinalSettings, ...parsed };
+                }
+            } catch (e) {}
+            const elTarget = document.getElementById('semifinalTargetAmount');
+            const elDuration = document.getElementById('semifinalDuration');
+            const elUrl = document.getElementById('semifinalVideoUrl');
+            const elAuto = document.getElementById('semifinalAutoPlay');
+            if (elTarget) elTarget.value = semiFinalSettings.targetAmount || '';
+            if (elDuration) elDuration.value = semiFinalSettings.durationMinutes || 30;
+            if (elUrl) elUrl.value = semiFinalSettings.videoUrl || 'https://drive.google.com/file/d/1HqEWgthH8jceOP5R5VFwntL5N1jHhf1K/view?usp=sharing';
+            if (elAuto) elAuto.checked = !!semiFinalSettings.autoPlay;
+            updateSemifinalStatus();
+        }
+        function playSemifinalVideo() {
+            const embedUrl = getEmbedUrlFromDriveUrl(semiFinalSettings.videoUrl);
+            if (!embedUrl) {
+                if (typeof showNotification === 'function') showNotification('נא להזין קישור תקין לסרטון מ־Google Drive', 'error');
+                return;
+            }
+            const overlay = document.getElementById('semifinalVideoOverlay');
+            const iframe = document.getElementById('semifinalVideoIframe');
+            if (!overlay || !iframe) return;
+            iframe.src = embedUrl;
+            overlay.classList.add('show');
+            document.body.style.overflow = 'hidden';
+            const ms = (semiFinalSettings.durationMinutes || 30) * 60 * 1000;
+            if (window._semifinalCloseTimer) clearTimeout(window._semifinalCloseTimer);
+            window._semifinalCloseTimer = setTimeout(() => { closeSemifinalVideo(); }, ms);
+        }
+        function closeSemifinalVideo() {
+            const overlay = document.getElementById('semifinalVideoOverlay');
+            const iframe = document.getElementById('semifinalVideoIframe');
+            if (overlay) overlay.classList.remove('show');
+            if (iframe) iframe.src = '';
+            document.body.style.overflow = '';
+            if (window._semifinalCloseTimer) { clearTimeout(window._semifinalCloseTimer); window._semifinalCloseTimer = null; }
+        }
+        function updateSemifinalStatus() {
+            const total = (typeof getDisplayTotal === 'function') ? getDisplayTotal() : donors.reduce((s, d) => s + (d.amount || 0), 0);
+            const target = semiFinalSettings.targetAmount || 0;
+            const elTotal = document.getElementById('semifinalCurrentTotal');
+            const elTarget = document.getElementById('semifinalTargetDisplay');
+            const elProgress = document.getElementById('semifinalProgressText');
+            const elBtn = document.getElementById('semifinalPlayBtn');
+            if (elTotal) elTotal.textContent = '₪' + (total || 0).toLocaleString('he-IL');
+            if (elTarget) elTarget.textContent = '₪' + (target || 0).toLocaleString('he-IL');
+            const reached = target > 0 && total >= target;
+            if (elProgress) elProgress.textContent = reached ? '🎉 הגעתם ליעד! ניתן להפעיל את הסרטון.' : (target > 0 ? 'נשאר: ₪' + Math.max(0, target - total).toLocaleString('he-IL') + ' ליעד' : 'הגדירו יעד להפעלת הסרטון');
+            if (elBtn) elBtn.disabled = !reached;
         }
         
         function exportAllAddressesToExcel() {
@@ -12194,6 +12402,7 @@
                 loadAppSettings();
                 loadAccessControl();
                 loadCampaignPlanning();
+                if (typeof loadSemifinalSettings === 'function') loadSemifinalSettings();
                 renderToolkitTips();
                 updateScoutsStats();
                 renderGroomGrantList();
@@ -13432,6 +13641,8 @@
                     setTimeout(() => {
                         initLandingCards();
                     }, 100);
+                } else if (section === 'semifinal') {
+                    updateSemifinalStatus();
                 } else if (section === 'management') {
                     updateGroupsDisplay();
                     updateDonorsList();
@@ -13700,6 +13911,14 @@
                 totalDonors,
                 avgDonation: Math.round(avgDonation)
             };
+            
+            // חצי הגמר: הפעלה אוטומטית כשמגיעים ליעד
+            if (typeof semiFinalSettings !== 'undefined' && semiFinalSettings.autoPlay && semiFinalSettings.targetAmount > 0 &&
+                totalCollected >= semiFinalSettings.targetAmount && !semiFinalVideoAlreadyPlayed && typeof playSemifinalVideo === 'function') {
+                semiFinalVideoAlreadyPlayed = true;
+                playSemifinalVideo();
+            }
+            if (typeof updateSemifinalStatus === 'function') updateSemifinalStatus();
             
             // הפעלת אפקט נחיתה לכרטיסיות הסטטיסטיקה
             setTimeout(() => {
