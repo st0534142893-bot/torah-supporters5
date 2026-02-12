@@ -5894,6 +5894,11 @@
                         <datalist id="scoutCityOptions"></datalist>
                     <div class="scouts-actions">
                         <button class="btn btn-small" type="button" onclick="scoutsAddTeam()">הוסף סירת </button>
+                        <span style="margin: 0 8px; color: var(--muted);">|</span>
+                        <span>ייצוא לאקסל:</span>
+                        <button class="btn btn-small btn-secondary" type="button" onclick="exportScoutsToExcel('all')" title="כל הסירות">כל הסירות</button>
+                        <button class="btn btn-small btn-secondary" type="button" onclick="exportScoutsToExcel('day14')" title="רק יום י״ד">י״ד בלבד</button>
+                        <button class="btn btn-small btn-secondary" type="button" onclick="exportScoutsToExcel('day15')" title="רק יום ט״ו">ט״ו בלבד</button>
                         </div>
                     </div>
                     <div class="scouts-teams-list" id="scoutsTeamsContainer"></div>
@@ -7099,7 +7104,7 @@
                         <span class="side-panel-percent" id="liveViewSidePanelPercent">0%</span>
                         <div class="side-panel-bar"><div class="side-panel-fill" id="liveViewSidePanelFill" style="width: 0%;"></div></div>
                     </div>
-                    <div class="side-panel-warning">יתכן שיבושים או נתונים לא מעודכנים זמנית – אל דאגה, העדכון יושלם בקרוב</div>
+                    <div class="side-panel-warning">יתכן שיבושים או נתונים לא מעודכנים בזמן העידכון</div>
                 </div>
                 <!-- overlay בזמן עדכון תוך כדי גלילה / זמן מותאם -->
                 <div class="live-view-during-update-overlay" id="liveViewDuringUpdateOverlay">
@@ -7135,6 +7140,48 @@
                         <div class="address-form-row">
                             <label for="addressAmount">סכום תרומה (₪):</label>
                             <input type="number" id="addressAmount" min="0" step="1" placeholder="0">
+                        </div>
+                        <div class="address-form-row">
+                            <label for="addressWhoBrought">מי הביא את הכסף:</label>
+                            <input type="text" id="addressWhoBrought" placeholder="שם מי שהביא את הכסף">
+                        </div>
+                        <div class="address-form-row">
+                            <label>דיסקרטי:</label>
+                            <select id="addressDiscrete">
+                                <option value="לא משנה לי">לא משנה לי</option>
+                                <option value="כן">כן</option>
+                                <option value="לא">לא</option>
+                            </select>
+                        </div>
+                        <div class="address-form-row">
+                            <label for="addressFamily">איזה משפחה:</label>
+                            <input type="text" id="addressFamily" placeholder="שם המשפחה">
+                        </div>
+                        <div class="address-form-row">
+                            <label for="addressRecruiter">מי המתרים שהביא את הכתובת:</label>
+                            <input type="text" id="addressRecruiter" placeholder="שם המתרים" list="addressRecruiterSuggestions">
+                            <datalist id="addressRecruiterSuggestions"></datalist>
+                        </div>
+                        <div class="address-form-row">
+                            <label>באיזה תאריך:</label>
+                            <select id="addressDateType">
+                                <option value="">בחר</option>
+                                <option value="בי״ד">בי״ד</option>
+                                <option value="בט״ו">בט״ו</option>
+                                <option value="אחר">אחר</option>
+                            </select>
+                        </div>
+                        <div class="address-form-row">
+                            <label>שעת ביקור:</label>
+                            <select id="addressTimeOfDay">
+                                <option value="">בחר</option>
+                                <option value="בוקר">בוקר</option>
+                                <option value="צהריים">צהריים</option>
+                            </select>
+                        </div>
+                        <div class="address-form-row">
+                            <label for="addressNotes">הערות:</label>
+                            <textarea id="addressNotes" rows="2" placeholder="הערות נוספות"></textarea>
                         </div>
                         <div class="address-form-actions">
                             <button class="btn" onclick="addAddress()">הוסף כתובת</button>
@@ -10318,63 +10365,61 @@
         }
 
         function exportScoutsToExcel(day = null) {
-            const activeDay = day || scoutsActiveDay;
-            const originalActiveDay = scoutsActiveDay;
-            if (day) {
-                scoutsActiveDay = day;
-            }
-            const teams = getScoutsTeamsForActiveDay();
-            if (day) {
-                scoutsActiveDay = originalActiveDay;
+            var daysToExport = [];
+            if (day === 'all') {
+                daysToExport = ['day14', 'day15'];
+            } else if (day === 'day14' || day === 'day15') {
+                daysToExport = [day];
+            } else {
+                daysToExport = [day || scoutsActiveDay];
             }
             
-            if (!teams.length) {
+            var hasAny = false;
+            daysToExport.forEach(d => {
+                var teams = (scoutsSchedule[d] || []);
+                if (teams.length > 0) hasAny = true;
+            });
+            
+            if (!hasAny) {
                 showNotification('אין סירות לייצוא', 'error');
                 return;
             }
 
             try {
-                const worksheetData = [];
+                const wb = XLSX.utils.book_new();
+                const baseDate = new Date().toISOString().split('T')[0];
                 
-                // כותרת
-                worksheetData.push(['סיכום סירות - ' + SCOUT_DAY_LABELS[activeDay]]);
-                worksheetData.push([]);
-                
-                // כותרות טבלה
-                worksheetData.push(['שם סירת', 'מספר מתרימים', 'עיר']);
-                
-                let grandMemberCount = 0;
-                
-                teams.forEach(team => {
-                    const memberCount = (team.members || []).length;
-                    grandMemberCount += memberCount;
+                daysToExport.forEach(activeDay => {
+                    const teams = scoutsSchedule[activeDay] || [];
+                    if (teams.length === 0) return;
                     
-                    worksheetData.push([
-                        team.name || 'סירת שטח',
-                        memberCount,
-                        team.city || '-'
-                    ]);
+                    const worksheetData = [];
+                    worksheetData.push(['סיכום סירות - ' + (SCOUT_DAY_LABELS[activeDay] || activeDay)]);
+                    worksheetData.push([]);
+                    worksheetData.push(['שם סירת', 'מספר מתרימים', 'עיר']);
+                    
+                    let grandMemberCount = 0;
+                    teams.forEach(team => {
+                        const memberCount = (team.members || []).length;
+                        grandMemberCount += memberCount;
+                        worksheetData.push([
+                            team.name || 'סירת שטח',
+                            memberCount,
+                            team.city || '-'
+                        ]);
+                    });
+                    worksheetData.push([]);
+                    worksheetData.push(['סה״כ', grandMemberCount, '-']);
+                    
+                    const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+                    ws['!cols'] = [{ wch: 20 }, { wch: 15 }, { wch: 15 }];
+                    var sheetName = activeDay === 'day14' ? 'י״ד' : activeDay === 'day15' ? 'ט״ו' : activeDay;
+                    XLSX.utils.book_append_sheet(wb, ws, 'סירות ' + sheetName);
                 });
                 
-                // סיכום
-                worksheetData.push([]);
-                worksheetData.push(['סה״כ', grandMemberCount, '-']);
-                
-                // יצירת workbook
-                const wb = XLSX.utils.book_new();
-                const ws = XLSX.utils.aoa_to_sheet(worksheetData);
-                
-                // הגדרת רוחב עמודות
-                ws['!cols'] = [
-                    { wch: 20 }, // שם סירת
-                    { wch: 15 }, // מספר מתרימים
-                    { wch: 15 }  // עיר
-                ];
-                
-                XLSX.utils.book_append_sheet(wb, ws, 'סיכום סירות');
-                
-                // הורדת הקובץ
-                const fileName = `scouts_summary_${activeDay}_${new Date().toISOString().split('T')[0]}.xlsx`;
+                const fileName = day === 'all' 
+                    ? `scouts_all_${baseDate}.xlsx` 
+                    : `scouts_${daysToExport[0]}_${baseDate}.xlsx`;
                 XLSX.writeFile(wb, fileName);
                 
                 showNotification('הקובץ יוצא בהצלחה');
@@ -10401,6 +10446,13 @@
             const street = document.getElementById('addressStreet').value.trim();
             const date = document.getElementById('addressDate').value;
             const amount = parseFloat(document.getElementById('addressAmount').value) || 0;
+            const whoBrought = (document.getElementById('addressWhoBrought') && document.getElementById('addressWhoBrought').value.trim()) || '';
+            const discrete = (document.getElementById('addressDiscrete') && document.getElementById('addressDiscrete').value) || 'לא משנה לי';
+            const family = (document.getElementById('addressFamily') && document.getElementById('addressFamily').value.trim()) || '';
+            const recruiter = (document.getElementById('addressRecruiter') && document.getElementById('addressRecruiter').value.trim()) || '';
+            const dateType = (document.getElementById('addressDateType') && document.getElementById('addressDateType').value) || '';
+            const timeOfDay = (document.getElementById('addressTimeOfDay') && document.getElementById('addressTimeOfDay').value) || '';
+            const notes = (document.getElementById('addressNotes') && document.getElementById('addressNotes').value.trim()) || '';
             
             if (!city) {
                 showNotification('אנא הזן שם עיר');
@@ -10418,6 +10470,13 @@
                 street: street,
                 date: date || new Date().toISOString().split('T')[0],
                 amount: Math.max(0, Math.round(amount)),
+                whoBroughtMoney: whoBrought,
+                discrete: discrete,
+                family: family,
+                recruiterName: recruiter,
+                dateType: dateType,
+                timeOfDay: timeOfDay,
+                notes: notes,
                 createdAt: new Date().toISOString()
             };
             
@@ -10430,6 +10489,13 @@
             document.getElementById('addressStreet').value = '';
             document.getElementById('addressDate').value = '';
             document.getElementById('addressAmount').value = '';
+            if (document.getElementById('addressWhoBrought')) document.getElementById('addressWhoBrought').value = '';
+            if (document.getElementById('addressDiscrete')) document.getElementById('addressDiscrete').value = 'לא משנה לי';
+            if (document.getElementById('addressFamily')) document.getElementById('addressFamily').value = '';
+            if (document.getElementById('addressRecruiter')) document.getElementById('addressRecruiter').value = '';
+            if (document.getElementById('addressDateType')) document.getElementById('addressDateType').value = '';
+            if (document.getElementById('addressTimeOfDay')) document.getElementById('addressTimeOfDay').value = '';
+            if (document.getElementById('addressNotes')) document.getElementById('addressNotes').value = '';
             
             showNotification('הכתובת נוספה בהצלחה');
         }
@@ -10446,7 +10512,18 @@
             showNotification('הכתובת נמחקה');
         }
         
+        function updateAddressRecruiterSuggestions() {
+            const datalist = document.getElementById('addressRecruiterSuggestions');
+            if (!datalist || typeof donors === 'undefined') return;
+            datalist.innerHTML = '';
+            var names = new Set();
+            (donors || []).forEach(d => {
+                var n = (d.displayName || d.name || '').trim();
+                if (n && !names.has(n)) { names.add(n); var opt = document.createElement('option'); opt.value = n; datalist.appendChild(opt); }
+            });
+        }
         function renderAddresses() {
+            updateAddressRecruiterSuggestions();
             const list = document.getElementById('addressesList');
             if (!list) return;
             
@@ -10455,20 +10532,30 @@
                 return;
             }
             
-            list.innerHTML = addresses.map(address => `
+            list.innerHTML = addresses.map(address => {
+                var extra = [];
+                if (address.whoBroughtMoney) extra.push('מי הביא: ' + escapeHtml(address.whoBroughtMoney));
+                if (address.discrete && address.discrete !== 'לא משנה לי') extra.push('דיסקרטי: ' + escapeHtml(address.discrete));
+                if (address.family) extra.push('משפחה: ' + escapeHtml(address.family));
+                if (address.recruiterName) extra.push('מתרים: ' + escapeHtml(address.recruiterName));
+                if (address.dateType) extra.push(escapeHtml(address.dateType));
+                if (address.timeOfDay) extra.push(escapeHtml(address.timeOfDay));
+                if (address.notes) extra.push('הערות: ' + escapeHtml(address.notes));
+                return `
                 <div class="address-item">
                     <div class="address-item-info">
                         <div><strong>עיר:</strong> ${escapeHtml(address.city)}</div>
                         <div><strong>רחוב:</strong> ${escapeHtml(address.street)}</div>
                         <div><strong>תאריך:</strong> ${address.date || 'לא צוין'}</div>
                         <div><strong>סכום תרומה:</strong> ₪${(address.amount || 0).toLocaleString()}</div>
+                        ${extra.length ? '<div style="font-size: 12px; color: var(--muted); margin-top: 6px;">' + extra.join(' • ') + '</div>' : ''}
                     </div>
                     <div class="address-item-actions">
                         <button class="btn-export" onclick="exportSingleAddressToExcel('${address.id}')">ייצוא לאקסל</button>
                         <button class="btn-delete" onclick="deleteAddress('${address.id}')">מחק</button>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
         
         function saveAddresses() {
@@ -10509,7 +10596,7 @@
                 worksheetData.push([]);
                 
                 // כותרות טבלה
-                worksheetData.push(['עיר', 'רחוב', 'תאריך', 'סכום תרומה (₪)']);
+                worksheetData.push(['עיר', 'רחוב', 'תאריך', 'סכום (₪)', 'מי הביא', 'דיסקרטי', 'משפחה', 'מתרים', 'תאריך (י״ד/ט״ו)', 'שעה', 'הערות']);
                 
                 let totalAmount = 0;
                 
@@ -10518,14 +10605,21 @@
                         address.city || '',
                         address.street || '',
                         address.date || '',
-                        address.amount || 0
+                        address.amount || 0,
+                        address.whoBroughtMoney || '',
+                        address.discrete || '',
+                        address.family || '',
+                        address.recruiterName || '',
+                        address.dateType || '',
+                        address.timeOfDay || '',
+                        address.notes || ''
                     ]);
                     totalAmount += (address.amount || 0);
                 });
                 
                 // סיכום
                 worksheetData.push([]);
-                worksheetData.push(['סה״כ', '', '', totalAmount]);
+                worksheetData.push(['סה״כ', '', '', totalAmount, '', '', '', '', '', '', '']);
                 
                 // יצירת workbook
                 const wb = XLSX.utils.book_new();
@@ -10533,10 +10627,9 @@
                 
                 // הגדרת רוחב עמודות
                 ws['!cols'] = [
-                    { wch: 20 }, // עיר
-                    { wch: 30 }, // רחוב
-                    { wch: 15 }, // תאריך
-                    { wch: 18 }  // סכום
+                    { wch: 20 }, { wch: 30 }, { wch: 12 }, { wch: 12 },
+                    { wch: 18 }, { wch: 12 }, { wch: 18 }, { wch: 18 },
+                    { wch: 12 }, { wch: 10 }, { wch: 30 }
                 ];
                 
                 XLSX.utils.book_append_sheet(wb, ws, 'כתובות');
@@ -10571,6 +10664,13 @@
                 worksheetData.push(['רחוב', address.street || '']);
                 worksheetData.push(['תאריך', address.date || '']);
                 worksheetData.push(['סכום תרומה (₪)', address.amount || 0]);
+                worksheetData.push(['מי הביא את הכסף', address.whoBroughtMoney || '']);
+                worksheetData.push(['דיסקרטי', address.discrete || '']);
+                worksheetData.push(['איזה משפחה', address.family || '']);
+                worksheetData.push(['מי המתרים', address.recruiterName || '']);
+                worksheetData.push(['תאריך (י״ד/ט״ו)', address.dateType || '']);
+                worksheetData.push(['שעת ביקור', address.timeOfDay || '']);
+                worksheetData.push(['הערות', address.notes || '']);
                 
                 // יצירת workbook
                 const wb = XLSX.utils.book_new();
