@@ -7734,16 +7734,40 @@
         let lastSyncEndTime = 0; // 🛡️ מונע סנכרונים תכופים – מרווח מינימלי 5 דקות
         let lastSyncUpdatedDonorNames = []; // מתרים שעודכנו בסנכרון האחרון – לשימוש ב-overlay "מתרים שעודכנו"
         let liveViewSidePanelUpdateInProgress = false; // כשמופעל – כל העדכונים רק בזמן שהכרטיסיה בתחתית מוצגת (מונע קפיצות)
-        /** עדכון פרוגרס בכרטיסיה בצד (מצב sidepanel) – אחוזים אמיתיים */
+        let liveViewSidePanelSmoothProgressInterval = null;
+        let liveViewSidePanelSmoothPercent = 0;
+        /** התקדמות אחידה ומשוערת – רץ בהדרגה עד 95%, נראה אמיתי */
+        function startSidePanelSmoothProgress() {
+            if (liveViewSidePanelSmoothProgressInterval) return;
+            liveViewSidePanelSmoothPercent = 0;
+            liveViewSidePanelSmoothProgressInterval = setInterval(function() {
+                liveViewSidePanelSmoothPercent = Math.min(95, liveViewSidePanelSmoothPercent + 0.5);
+                var p = Math.round(liveViewSidePanelSmoothPercent);
+                var percentEl = document.getElementById('liveViewSidePanelPercent');
+                var fillEl = document.getElementById('liveViewSidePanelFill');
+                if (percentEl) percentEl.textContent = p + '%';
+                if (fillEl) fillEl.style.width = p + '%';
+            }, 250);
+        }
+        function stopSidePanelSmoothProgress() {
+            if (liveViewSidePanelSmoothProgressInterval) {
+                clearInterval(liveViewSidePanelSmoothProgressInterval);
+                liveViewSidePanelSmoothProgressInterval = null;
+            }
+        }
+        /** עדכון כרטיסיה בתחתית – label מעדכן את הטקסט, percent רק בסיום (100) או שגיאה */
         function updateLiveViewEndProgress(percent, label) {
-            var p = Math.min(100, Math.max(0, percent));
             var sidePanel = document.getElementById('liveViewUpdateSidePanel');
             var percentEl = document.getElementById('liveViewSidePanelPercent');
             var fillEl = document.getElementById('liveViewSidePanelFill');
             var titleEl = sidePanel ? sidePanel.querySelector('.side-panel-title') : null;
-            if (percentEl) percentEl.textContent = p + '%';
-            if (fillEl) fillEl.style.width = p + '%';
             if (titleEl && label) titleEl.textContent = label || 'מעדכן...';
+            if (percent >= 100 || label === 'הושלם' || label === 'שגיאה') {
+                stopSidePanelSmoothProgress();
+                var p = percent >= 100 ? 100 : Math.min(100, Math.max(0, percent));
+                if (percentEl) percentEl.textContent = p + '%';
+                if (fillEl) fillEl.style.width = p + '%';
+            }
         }
         /** עדכון פרוגרס ב-overlay או בכרטיסיה בצד של תצוגת לייב בזמן סנכרון */
         function updateLiveViewSyncProgress(current, total, lastUpdatedNames) {
@@ -7756,9 +7780,7 @@
             if (barEl && fillEl && total > 0) { barEl.style.display = 'block'; fillEl.style.width = (total > 0 ? (current / total) * 100 : 0) + '%'; }
             var showMode = (typeof liveViewSettings !== 'undefined' && liveViewSettings.liveViewUpdateShow) || 'loading';
             if (showMode === 'sidepanel') {
-                var syncPercent = total > 0 ? (current / total) * 100 : 0;
-                var overallPercent = Math.min(99, Math.round(20 + 40 * (syncPercent / 100)));
-                updateLiveViewEndProgress(overallPercent, 'סנכרון מתרימים');
+                updateLiveViewEndProgress(0, total > 0 ? 'סנכרון מתרימים ' + current + ' / ' + total : 'סנכרון מתרימים');
             }
             if (previewEl && lastUpdatedNames && lastUpdatedNames.length > 0) {
                 previewEl.innerHTML = '<strong>עודכנו:</strong> ' + lastUpdatedNames.slice(-6).reverse().map(n => `<span class="live-view-update-donors-preview-item">${n}</span>`).join(' • ');
@@ -12737,7 +12759,16 @@
 
             if (showMode === 'sidepanel') {
                 liveViewSidePanelUpdateInProgress = true;
-                if (sidePanel) { sidePanel.classList.add('show'); updateLiveViewEndProgress(0, 'מעדכן...'); }
+                stopSidePanelSmoothProgress();
+                if (sidePanel) {
+                    sidePanel.classList.add('show');
+                    updateLiveViewEndProgress(0, 'מעדכן...');
+                    var percentEl = document.getElementById('liveViewSidePanelPercent');
+                    var fillEl = document.getElementById('liveViewSidePanelFill');
+                    if (percentEl) percentEl.textContent = '0%';
+                    if (fillEl) fillEl.style.width = '0%';
+                    startSidePanelSmoothProgress();
+                }
             } else if (overlay) {
                 overlay.classList.remove('loading-only', 'grants-only', 'sidepanel-only');
                 overlay.classList.add(showMode === 'grants' ? 'grants-only' : 'loading-only');
@@ -12745,11 +12776,11 @@
             }
 
             try {
-                if (showMode === 'sidepanel') updateLiveViewEndProgress(5, 'בדיקת סכום');
+                if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'בדיקת סכום');
                 await checkTotalAmountFromAPI(true);
-                if (showMode === 'sidepanel') updateLiveViewEndProgress(20, 'סנכרון תרומות');
+                if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'סנכרון תרומות');
                 await syncWithNedarimPlus(true);
-                if (showMode === 'sidepanel') updateLiveViewEndProgress(60, 'טעינת נתונים');
+                if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'טעינת נתונים');
                 if (updateType === 'all') {
                     if (autoSyncNedarimEnabled && typeof performAutoRefresh === 'function') await performAutoRefresh();
                     var url = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').trim();
@@ -12766,7 +12797,7 @@
                 } else if (updateType === 'loadMatrim' && typeof loadMatrimFromNedarim === 'function') {
                     await loadMatrimFromNedarim(true);
                 }
-                if (showMode === 'sidepanel') updateLiveViewEndProgress(85, 'עדכון תצוגה');
+                if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'עדכון תצוגה');
                 if (typeof syncAllDataToDatabase === 'function') await syncAllDataToDatabase();
                 if (typeof updateLiveView === 'function') updateLiveView();
                 if (typeof updateLeadersList === 'function') updateLeadersList();
@@ -12781,6 +12812,7 @@
             if (overlay) overlay.classList.remove('show');
             if (sidePanel) {
                 if (showMode === 'sidepanel') {
+                    stopSidePanelSmoothProgress();
                     setTimeout(function() {
                         sidePanel.classList.remove('show');
                         liveViewSidePanelUpdateInProgress = false;
@@ -12789,7 +12821,7 @@
                     sidePanel.classList.remove('show');
                 }
             }
-            if (showMode !== 'sidepanel') liveViewSidePanelUpdateInProgress = false;
+            if (showMode !== 'sidepanel') { stopSidePanelSmoothProgress(); liveViewSidePanelUpdateInProgress = false; }
             if (typeof hideLiveViewSyncProgress === 'function') hideLiveViewSyncProgress();
             if (typeof restartDonorsAutoScroll === 'function') restartDonorsAutoScroll();
             if (typeof restartLeadersAutoScroll === 'function' && isLiveViewActive()) setTimeout(() => restartLeadersAutoScroll({ immediate: true }), 50);
@@ -13380,6 +13412,7 @@
         // יציאה מתצוגת לייב
         function exitLiveView() {
             liveViewSidePanelUpdateInProgress = false;
+            if (typeof stopSidePanelSmoothProgress === 'function') stopSidePanelSmoothProgress();
             const appContainer = document.querySelector('.app-container');
             appContainer.classList.remove('live-mode');
             detachLiveViewInteractionHandlers();
