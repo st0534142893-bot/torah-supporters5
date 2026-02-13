@@ -2615,6 +2615,77 @@
             transform: translateY(-50%) scale(1.1);
         }
 
+        .manual-donor-search-with-autocomplete {
+            position: relative;
+            max-width: 100% !important;
+        }
+        #manualDonationContent .donors-search-bar {
+            margin-bottom: 24px;
+            padding: 24px;
+            background: linear-gradient(135deg, #fffbf0 0%, #fff8e6 100%);
+            border: 2px solid var(--primary-gold);
+            border-radius: 14px;
+            box-shadow: 0 4px 16px rgba(212, 175, 55, 0.15);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .manual-search-label {
+            display: block;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--brown-dark);
+            margin-bottom: 4px;
+        }
+        #manualDonationContent .donors-search-bar .donors-search-input-wrapper {
+            max-width: 100%;
+        }
+        .manual-donor-search-input {
+            padding: 16px 20px !important;
+            font-size: 18px !important;
+            font-weight: 500;
+            border: 2px solid var(--primary-gold) !important;
+            background: white !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .manual-donor-search-input::placeholder {
+            color: #999;
+        }
+        .manual-donor-search-input:focus {
+            box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.25);
+        }
+        .manual-donor-autocomplete-list {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            left: 0;
+            margin-top: 4px;
+            max-height: 220px;
+            overflow-y: auto;
+            background: white;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+            z-index: 200;
+            direction: rtl;
+        }
+        .manual-donor-autocomplete-item {
+            padding: 12px 18px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--brown-dark);
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.15s;
+        }
+        .manual-donor-autocomplete-item:last-child {
+            border-bottom: none;
+        }
+        .manual-donor-autocomplete-item:hover,
+        .manual-donor-autocomplete-item.autocomplete-active {
+            background: rgba(212, 175, 55, 0.12);
+        }
+
         .donors-search-hint {
             font-size: 12px;
             color: var(--muted);
@@ -6352,9 +6423,10 @@
                             <span style="font-size: 13px; color: var(--muted);">מדור זה מאפשר הוספת תרומות באופן ידני שנאספו מהחפ״ק, לפי שנה.</span>
                         </div>
                         <div class="donors-search-bar">
-                            <div class="donors-search-input-wrapper">
-                                <input type="text" id="manualDonorSearchInput" class="donors-search-input" placeholder="חיפוש מתרימים לפי שם">
-                                <button type="button" id="manualDonorSearchClear" class="donor-search-clear" aria-label="נקה חיפוש">×</button>
+                            <label for="manualDonorSearchInput" class="manual-search-label">🔍 חיפוש חכם – הקלד חלק משם והצעות יופיעו אוטומטית</label>
+                            <div class="donors-search-input-wrapper manual-donor-search-with-autocomplete">
+                                <input type="text" id="manualDonorSearchInput" class="donors-search-input manual-donor-search-input" placeholder="למשל: יעקב, לוי, כהן..." autocomplete="off">
+                                <div id="manualDonorAutocompleteList" class="manual-donor-autocomplete-list" style="display: none;"></div>
                             </div>
                             <div class="donors-search-meta" id="manualDonorsSearchMeta"></div>
                         </div>
@@ -6811,7 +6883,7 @@
                                 <div class="liveview-setting-row">
                                     <label>מתי להריץ עדכון אוטומטי:</label>
                                     <select id="liveviewUpdateWhen" onchange="updateLiveViewSettings()">
-                                        <option value="end">בסיום מחזור גלילה (עוצר, מציג overlay, מעדכן, ממשיך)</option>
+                                        <option value="end">בסיום מחזור גלילה (עוצר, מציג overlay, מעדכן, ממשיך) – ⭐ ההגדרה הכי ממולצת</option>
                                         <option value="during">תוך כדי גלילה (בלי לעצור, בלי קפיצות)</option>
                                         <option value="custom">זמן מותאם אישית (כל X דקות/שניות)</option>
                                     </select>
@@ -6820,6 +6892,7 @@
                                     <label>כל כמה דקות (תוך כדי גלילה):</label>
                                     <input type="number" id="liveviewUpdateDuringMinutes" min="1" max="60" value="5" onchange="updateLiveViewSettings()" style="width: 60px;">
                                     <span style="font-size: 12px; color: var(--muted);">דקות</span>
+                                    <p style="font-size: 12px; color: var(--primary-gold); margin: 4px 0 0 0;">💡 מומלץ לפחות 4 דקות – פחות מכך עלול לגרום לקפיצות בתצוגה.</p>
                                 </div>
                                 <div class="liveview-setting-row" id="liveviewUpdateCustomIntervalRow" style="display: none;">
                                     <label>כל כמה:</label>
@@ -6828,6 +6901,7 @@
                                         <option value="minutes">דקות</option>
                                         <option value="seconds">שניות</option>
                                     </select>
+                                    <p style="font-size: 12px; color: var(--primary-gold); margin: 4px 0 0 0;" id="liveviewUpdateCustomMinutesNote">💡 כשמדובר בדקות – מומלץ לפחות 4, כדי למנוע קפיצות בתצוגה.</p>
                                 </div>
                                 <div class="liveview-setting-row" id="liveviewUpdateDuringDisplayRow" style="display: none;">
                                     <label>מה להציג בזמן העדכון (תוך כדי / זמן מותאם):</label>
@@ -6851,6 +6925,7 @@
                                     <input type="number" id="liveviewSidepanelIntervalMinutes" min="1" max="120" value="10" onchange="updateLiveViewSettings()" style="width: 70px;">
                                     <span style="font-size: 12px; color: var(--muted);">דקות</span>
                                     <p style="font-size: 12px; color: var(--muted); margin: 6px 0 0 0;">העדכון ירוץ בסיום גלילה. בנוסף, אם הגלילה לא הסתיימה – ירוץ כל X דקות.</p>
+                                    <p style="font-size: 12px; color: var(--primary-gold); margin: 4px 0 0 0;">💡 מומלץ לפחות 4 דקות – פחות מכך עלול לגרום לקפיצות או רעידות בתצוגה.</p>
                                 </div>
                                 <div class="liveview-setting-row" id="liveviewUpdateTypeRow">
                                     <label>סוג העדכון להרצה (בסיום מחזור) / תוך כדי גלילה תמיד: בדוק סכום + סנכרון + טען מגליון:</label>
@@ -6957,227 +7032,48 @@
                     <div class="sync-settings-panel">
                         <h3>עדכונים מנדרים פלוס</h3>
                         
-                        <div style="background: #e8f5e9; border: 1px solid #4caf50; border-radius: 8px; padding: 12px; margin-bottom: 15px; font-size: 13px;">
-                            <strong>✅ סנכרון חכם:</strong> מתרימים נטענים מנדרים פלוס (לא מהגליון) – מונע דריסת סכומים ועמודה C. שמירה לגליון נשארת לגיבוי. לטעינה מלאה מהגליון – "טען מהגליון".
-                        </div>
-                        
                         <!-- אזהרה על הגבלת פניות -->
                         <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 10px; padding: 15px; margin-bottom: 20px;">
-                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                                <span style="font-size: 24px;">⚠️</span>
-                                <strong style="color: #856404; font-size: 16px;">אזהרה חשובה - הגבלת פניות</strong>
-                            </div>
                             <p style="color: #856404; margin: 0; line-height: 1.6;">
-                                נדרים פלוס מגבילים לעד <strong>500 פניות לשעה</strong>. יש להקפיד על כך שהעדכון לא יהיה בתדירות גבוהה בפרט שזה מוצג בכמה מסכים ויש כמה קריאות מכל מסך בפני עצמו.
-                            </p>
-                            <p style="color: #856404; margin-top: 10px; margin-bottom: 0; line-height: 1.6;">
-                                <strong>המלצה:</strong> הגדר תדירות של לפחות 10-15 דקות בין עדכונים, במיוחד אם יש לך מספר מסכים פתוחים בו-זמנית.
+                                נדרים פלוס מגבילים לעד <strong>500 פניות לשעה</strong>. מומלץ להמתין 10-15 דקות בין עדכונים.
                             </p>
                         </div>
                         
-                        <div class="default-goal-panel" style="margin-bottom: 20px;">
-                            <label for="defaultDonorGoalInput">יעד ברירת מחדל לכל מתרים</label>
-                            <div class="default-goal-controls">
-                                <input type="number" id="defaultDonorGoalInput" min="1" step="1" placeholder="לדוגמה: 2100">
-                                <button class="btn" onclick="updateDefaultDonorGoal()">עדכן יעד כללי</button>
-                                    </div>
-                                    </div>
-                        
-                        <div class="nedarim-emergency-block" style="margin-bottom: 20px; padding: 12px 16px; background: #ffebee; border: 2px solid #c62828; border-radius: 10px;">
-                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600; color: #b71c1c;">
-                                <input type="checkbox" id="nedarimBlockPushCheckbox" onchange="toggleNedarimBlockPush(this.checked)" style="width: 20px; height: 20px;">
-                                <span>🛑 חסום דחיפה לנדרים פלוס (מצב חירום – מונע עליית סכומים)</span>
-                            </label>
-                            <p id="nedarimBlockPushStatus" style="margin: 6px 0 0 30px; font-size: 12px; color: #666;"></p>
-                        </div>
-                        <div style="margin-bottom: 20px;">
-                            <h4 style="margin-bottom: 15px;">פעולות עדכון ידניות</h4>
-                            <div class="default-goal-controls" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <div style="margin-bottom: 25px;">
+                            <h4 style="margin-bottom: 15px;">פעולות עדכון</h4>
+                            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                                 <button class="btn btn-success" onclick="runSequentialOp(()=>syncWithNedarimPlus(), 'סנכרון תרומות')" id="nedarimSyncBtn">
                                     🔄 סנכרון תרומות
-                                </button>
-                                <button class="btn btn-primary" onclick="runSequentialOp(()=>loadMatrimFromNedarim(), 'טען מתרימים מנדרים פלוס')" id="nedarimLoadMatrimBtn">
-                                    📥 טען מתרימים מנדרים פלוס
-                                </button>
-                                <button class="btn btn-warning" onclick="runSequentialOp(()=>cleanupAndReloadDonorsWithInvalidMatrimId(), 'ניקוי מתרים')" id="cleanupDonorsBtn" style="background: #ffc107; color: #000;">
-                                    🧹 נקה וטען מחדש מתרים ללא מספר מתרים תקין
-                                </button>
-                                <button class="btn btn-secondary" onclick="runSequentialOp(()=>loadMatrimIdsByNameFromNedarim(), 'טען מספרי מתרים')" id="loadMatrimIdsBtn" style="background: #6c757d; color: white;">
-                                    🔗 טען מספרי מתרים לפי שם (עמודה B)
                                 </button>
                                 <button class="btn btn-info" onclick="runSequentialOp(()=>checkTotalAmountFromAPI(), 'בדוק סכום כולל')" id="checkTotalBtn" style="background: #17a2b8; color: white;">
                                     🔍 בדוק סכום כולל מ-API
                                 </button>
-                            </div>
-                        </div>
-
-                        <div class="nedarim-fix-real-amount-box" style="margin-top: 15px; padding: 15px; background: #e3f2fd; border: 2px solid #1976d2; border-radius: 10px;">
-                            <h4 style="margin-bottom: 10px; color: #0d47a1;">📌 התאמה לסכום האמיתי (תיקון 2,040,947 וכו')</h4>
-                            <p style="margin-bottom: 10px; font-size: 13px; color: #333;">כדי שבתוכנה <strong>וגם</strong> בנדרים פלוס יופיע רק הסכום האמיתי:</p>
-                            <ol style="margin: 0 0 12px 1.2em; padding: 0; font-size: 13px; color: #333; line-height: 1.7;">
-                                <li>הזן למטה את <strong>הסכום האמיתי</strong> (הנכון) – מה שבאמת נאסף.</li>
-                                <li>לחץ "התאם סכומים בתוכנה" – הסכום של כל מתרים יתעדכן יחסית כך שהסיכום יהיה הסכום האמיתי.</li>
-                                <li>לחץ <strong>"סנכרון תרומות לנדרים פלוס"</strong> (הכפתור הירוק למעלה) – יישלחו הפחתות לנדרים והסכום שם יתעדכן להתאמה.</li>
-                            </ol>
-                            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 8px;">
-                                <span id="nedarimFixCurrentSumLabel" style="font-weight: 600;">סה"כ נוכחי בתוכנה: —</span>
-                                <input type="number" id="nedarimFixRealAmountInput" min="0" step="1" placeholder="הסכום האמיתי (₪)" style="width: 160px; padding: 8px 12px; border: 2px solid #1976d2; border-radius: 6px; font-size: 14px;">
-                                <button type="button" class="btn btn-primary" onclick="runSequentialOp(()=>applyRealAmountFix(), 'התאם סכומים')" style="background: #1976d2;">
-                                    התאם סכומים בתוכנה
+                                <button class="btn btn-primary" onclick="runSequentialOp(()=>loadMatrimFromNedarim(), 'טען מתרימים מנדרים פלוס')" id="nedarimLoadMatrimBtn">
+                                    📥 טען מתרימים מנדרים פלוס
                                 </button>
                             </div>
-                            <p id="nedarimFixResult" style="margin: 0; font-size: 12px; min-height: 18px; color: #0d47a1;"></p>
                         </div>
 
-                        <div class="nedarim-correction-box" style="margin-top: 15px; padding: 15px; background: #fff8e1; border: 2px solid #ff9800; border-radius: 10px;">
-                            <h4 style="margin-bottom: 10px; color: #e65100;">⚠️ תיקון סכום: הפחתה מנדרים פלוס (הפחתה ידנית)</h4>
-                            <p style="margin-bottom: 12px; font-size: 13px; color: #555;">אם נוסף סכום בטעות לנדרים (למשל בגלל באג סנכרון), אפשר להפחית כאן. ההפחתה תישלח לנדרים פלוס בלבד – לא תשנה את הסכום בתוכנה.</p>
-                            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;">
-                                <div>
-                                    <label style="display: block; margin-bottom: 4px; font-size: 12px;">מתרים (לפי רשימה או מספר מתרים):</label>
-                                    <select id="nedarimCorrectionDonorSelect" style="min-width: 220px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;">
-                                        <option value="">-- בחר מתרים --</option>
-                                    </select>
-                                    <input type="text" id="nedarimCorrectionMatrimIdManual" placeholder="או הזן מספר מתרים" style="margin-top: 6px; width: 120px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px;">
-                                </div>
-                                <div>
-                                    <label style="display: block; margin-bottom: 4px; font-size: 12px;">סכום להפחתה (₪):</label>
-                                    <input type="number" id="nedarimCorrectionAmount" min="1" step="1" placeholder="למשל 200000" style="width: 120px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;">
-                                </div>
-                                <button type="button" class="btn btn-warning" onclick="runSequentialOp(()=>applyNedarimCorrectionSubtraction(), 'הפחת סכום מנדרים')" style="background: #ff9800; color: white;">
-                                    ➖ הפחת סכום מנדרים פלוס
-                                </button>
-                            </div>
-                            <p id="nedarimCorrectionResult" style="margin-top: 10px; font-size: 12px; min-height: 20px;"></p>
-                        </div>
-
-                        <div class="nedarim-update-by-api-box" style="margin-top: 15px; padding: 15px; background: #e8f5e9; border: 2px solid #2e7d32; border-radius: 10px;">
-                            <h4 style="margin-bottom: 10px; color: #1b5e20;">📤 עדכן סכום לפי API (שליחה מאובטחת לנדרים פלוס)</h4>
-                            <p style="margin-bottom: 12px; font-size: 13px; color: #333;">שליחת עדכון תרומה ישירות לנדרים פלוס דרך השרת המאובטח. סכום חיובי = תוספת, סכום שלילי = הפחתה.</p>
-                            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;">
-                                <div>
-                                    <label style="display: block; margin-bottom: 4px; font-size: 12px;">מתרים:</label>
-                                    <select id="updateByApiDonorSelect" style="min-width: 220px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;">
-                                        <option value="">-- בחר מתרים --</option>
-                                    </select>
-                                    <input type="text" id="updateByApiMatrimIdManual" placeholder="או הזן מספר מתרים" style="margin-top: 6px; width: 120px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px;">
-                                </div>
-                                <div>
-                                    <label style="display: block; margin-bottom: 4px; font-size: 12px;">סכום (₪, חיובי=תוספת, שלילי=הפחתה):</label>
-                                    <input type="number" id="updateByApiAmount" step="1" placeholder="למשל 500 או -200" style="width: 140px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;">
-                                </div>
-                                <div>
-                                    <label style="display: block; margin-bottom: 4px; font-size: 12px;">הערה (אופציונלי):</label>
-                                    <input type="text" id="updateByApiComments" placeholder="הערה" style="width: 160px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;">
-                                </div>
-                                <button type="button" class="btn btn-success" onclick="runSequentialOp(()=>updateAmountByAPI(), 'עדכון סכום ב-API')" id="updateByApiBtn" style="background: #2e7d32; color: white;">
-                                    📤 עדכן סכום ב-API
-                                </button>
-                            </div>
-                            <p id="updateByApiResult" style="margin-top: 10px; font-size: 12px; min-height: 20px;"></p>
-                        </div>
-
-                        <div class="auto-sync-control" style="margin-top: 15px; padding: 15px; background: rgba(255, 255, 255, 0.6); border-radius: 10px; border: 1px solid var(--border);">
-                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 500;">
-                                <input type="checkbox" id="autoSyncNedarimCheckbox" onchange="saveAutoSyncNedarimSetting()" style="width: 20px; height: 20px; cursor: pointer;">
-                                <span>🔄 הפעל עדכון אוטומטי – הפעולה הנבחרת למטה תרוץ אוטומטית כל התדירות שתגדיר (למשל "בדוק סכום כולל מ-API" כל X דקות)</span>
-                            </label>
-                            <div style="margin-top: 12px; padding-right: 30px;">
-                                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text);">בחר איזה כפתור להפעיל אוטומטית:</label>
-                                <select id="autoSyncActionSelect" onchange="saveAutoSyncNedarimSetting()" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; background: white; cursor: pointer; margin-bottom: 12px;">
-                                    <option value="sync">🔄 סנכרון תרומות</option>
-                                    <option value="load">📥 טען מתרימים מנדרים פלוס</option>
-                                    <option value="check">🔍 בדוק סכום כולל מ-API</option>
-                                    <option value="all">⚡ כל הכפתורים בו-זמנית</option>
-                                </select>
-                                <div style="margin-top: 12px;">
-                                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text);">תדירות עדכון אוטומטי:</label>
-                                    <div style="display: flex; align-items: center; gap: 10px;">
-                                        <input type="number" id="autoSyncIntervalInput" min="1" step="1" value="5" onchange="updateAutoSyncIntervalDisplay(); saveAutoSyncNedarimSetting();" oninput="updateAutoSyncIntervalDisplay();" style="width: 80px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; background: white;">
-                                        <select id="autoSyncIntervalUnit" onchange="updateAutoSyncIntervalDisplay(); saveAutoSyncNedarimSetting();" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; background: white; cursor: pointer;">
-                                            <option value="minutes">דקות</option>
-                                            <option value="hours">שעות</option>
-                                        </select>
-                                    </div>
-                                    <div style="margin-top: 8px; font-size: 12px; color: var(--muted);">
-                                        💡 העדכון יתבצע כל <span id="autoSyncIntervalDisplay">5 דקות</span>
-                                    </div>
-                                </div>
-                                <div style="margin-top: 8px; font-size: 12px; color: var(--muted);" id="autoSyncWarningText">
-                                    💡 בחירת כפתור אחד בלבד עוזרת להימנע מהגבלת 500 קריאות לשעה
-                                </div>
-                            </div>
-                            <div style="margin-top: 8px; font-size: 14px; color: var(--muted); padding-right: 30px;">
-                                ההגדרה נשמרת ונשארת פעילה גם כשפותחים את התוכנה ממחשב אחר
-                            </div>
-                        </div>
-
-                        <div class="default-goal-note" style="margin-top: 15px;">השינוי ישפיע על מתרימים חדשים ויעדכן מתרימים קיימים שמשתמשים ביעד ברירת המחדל.</div>
                         <div class="nedarim-sync-status" id="nedarimSyncStatus"></div>
                         
-                        <!-- סנכרון דרך Google Sheets -->
+                        <!-- גליון Google Sheets -->
                         <div style="margin-top: 30px; padding-top: 30px; border-top: 2px solid var(--border);">
-                            <h3 style="margin-bottom: 15px;">🗂️ סנכרון דרך Google Sheets (גליון אלקטרוני)</h3>
-                            
-                            <div style="background: #e8f5e9; border: 2px solid #4caf50; border-radius: 10px; padding: 15px; margin-bottom: 20px;">
-                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                                    <span style="font-size: 24px;">✨</span>
-                                    <strong style="color: #2e7d32; font-size: 16px;">מומלץ! הדרך הקלה ביותר לסנכרון בין מחשבים</strong>
-                                </div>
-                                <p style="color: #2e7d32; margin: 0; line-height: 1.6;">
-                                    סנכרון דרך Google Sheets מאפשר לך לראות ולערוך את הנתונים גם ישירות בגליון האלקטרוני, 
-                                    ולעבוד מכל מחשב בלי צורך ב-GitHub Token.
-                                </p>
-                            </div>
+                            <h3 style="margin-bottom: 15px;">🗂️ גליון Google Sheets</h3>
                             
                             <div class="sync-input-group" style="margin-bottom: 20px;">
                                 <label style="display: block; margin-bottom: 8px; font-weight: 500;">כתובת Web App של Google Apps Script:</label>
                                 <input type="text" id="googleSheetsWebAppUrl" placeholder="https://script.google.com/macros/s/xxxx/exec" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px;" onchange="saveGoogleSheetsSettings(); applySheetSyncSettings();">
                                 <small style="display: block; margin-top: 5px; color: var(--muted);">
-                                    זה ה-URL שמתקבל אחרי פריסת הקוד ב-Google Apps Script. ראה הוראות למטה.
+                                    ה-URL שמתקבל אחרי פריסת הקוד ב-Google Apps Script.
                                 </small>
                             </div>
                             
                             <div class="sync-actions" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
                                 <button class="btn btn-success" onclick="runSequentialOp(()=>testGoogleSheetsConnection(), 'בדוק חיבור')">🔌 בדוק חיבור</button>
-                                <button class="btn btn-primary" onclick="runSequentialOp(()=>loadFromGoogleSheets(), 'טען מהגליון')">📥 טען מהגליון</button>
-                                <button class="btn btn-secondary" onclick="runSequentialOp(()=>saveToGoogleSheets(), 'שמור לגליון')">💾 שמור לגליון</button>
-                                <button class="btn btn-info" onclick="runSequentialOp(()=>syncWithGoogleSheets(), 'סנכרון דו-כיווני')">🔄 סנכרון דו-כיווני</button>
-                            </div>
-                            <div class="sync-actions" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; padding-top: 10px; border-top: 1px dashed var(--border);">
-                                <button class="btn btn-warning" onclick="runSequentialOp(()=>loadFromSimpleSheet(), 'טען מגיליון פשוט')" style="background: #ff9800; color: white;">📋 טען מגיליון פשוט (שם+קבוצה)</button>
-                                <span style="color: var(--muted); font-size: 12px; align-self: center;">לייבוא ראשוני מגיליון עם שתי עמודות</span>
+                                <button class="btn btn-primary" onclick="runSequentialOp(()=>saveToGoogleSheets(), 'שמור לגליון')">💾 שמור לגליון</button>
                             </div>
                             
                             <div class="sync-status" id="googleSheetsSyncStatus" style="display: none; padding: 10px; border-radius: 6px; margin-bottom: 15px;"></div>
-                            
-                            <div style="margin-top: 15px; margin-bottom: 20px;">
-                                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 500;">
-                                    <input type="checkbox" id="autoGoogleSheetsSyncCheckbox" onchange="saveGoogleSheetsSettings(); applySheetSyncSettings();" style="width: 20px; height: 20px; cursor: pointer;">
-                                    <span>🔄 הפעל עדכון אוטומטי לגליון</span>
-                                </label>
-                                <div id="sheetSyncOptions" style="margin-top: 12px; padding-right: 30px; padding-top: 12px; border-top: 1px dashed var(--border);">
-                                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text);">תדירות עדכון:</label>
-                                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                                        <input type="number" id="sheetSyncIntervalInput" min="1" max="120" value="5" onchange="saveGoogleSheetsSettings(); applySheetSyncSettings();" style="width: 70px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px;">
-                                        <span>דקות</span>
-                                    </div>
-                                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 8px;">
-                                        <input type="checkbox" id="sheetSyncLoadCheckbox" onchange="saveGoogleSheetsSettings(); applySheetSyncSettings();" style="width: 18px; height: 18px; cursor: pointer;">
-                                        <span>📥 טעינה מהגליון – למשוך שינויים מהגליון לתוכנה</span>
-                                    </label>
-                                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 8px;">
-                                        <input type="checkbox" id="sheetSyncSaveCheckbox" onchange="saveGoogleSheetsSettings(); applySheetSyncSettings();" style="width: 18px; height: 18px; cursor: pointer;">
-                                        <span>💾 שמירה לגליון – לשלוח את הנתונים מהתוכנה לגליון</span>
-                                    </label>
-                                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                        <input type="checkbox" id="sheetSyncSaveOnChangeCheckbox" onchange="saveGoogleSheetsSettings();" style="width: 18px; height: 18px; cursor: pointer;">
-                                        <span>שמירה לגליון רק בעדכון מתוזמן (סיום גלילה / כל X דקות)</span>
-                                    </label>
-                                    <p style="font-size: 12px; color: var(--muted); margin: 4px 0 0 0;">שמירה לגליון מתבצעת רק בעדכון מתוזמן – מונע קפיצות בתצוגת לייב.</p>
-                                    <p style="margin: 10px 0 0 0; font-size: 12px; color: var(--muted);">💡 ניתן לסמן טעינה בלבד, שמירה בלבד, או את שניהם. טעינה ראשונה מתבצעת גם בעליית התוכנה.</p>
-                                </div>
-                            </div>
                             
                             <div style="background: #fff3e0; border: 2px solid #ff9800; border-radius: 10px; padding: 15px; margin-top: 15px;">
                                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
@@ -11196,6 +11092,13 @@
             return Boolean(liveSection && liveSection.classList.contains('active'));
         }
 
+        /** האם תצוגת הלייב מוגדרת לעדכון מתוזמן בלבד (סיום גלילה / תוך כדי / כל X דקות) – מונע קפיצות */
+        function isLiveViewScheduledUpdatesOnly() {
+            if (typeof isLiveViewActive !== 'function' || !isLiveViewActive()) return false;
+            const when = (liveViewSettings && liveViewSettings.liveViewUpdateWhen) || 'end';
+            return when === 'end' || when === 'during' || when === 'custom';
+        }
+
         function hideLiveViewBackButton() {
             if (liveViewBackButtonTimer) {
                 clearTimeout(liveViewBackButtonTimer);
@@ -13235,8 +13138,9 @@
                     if (sheetSyncSaveEnabled && typeof saveToGoogleSheets === 'function') await saveToGoogleSheets();
                 }
                 if (typeof syncAllDataToDatabase === 'function') await syncAllDataToDatabase();
-                if (typeof updateLiveView === 'function') updateLiveView();
-                if (typeof updateLeadersList === 'function') updateLeadersList();
+                if (typeof updateLiveView === 'function') updateLiveView(true, true); // forceFromScheduled – עדכון מתוזמן
+                if (typeof updateLeadersList === 'function') updateLeadersList(true);
+                if (typeof updateLiveTargets === 'function') updateLiveTargets(true);
                 if (typeof notifyDataChanged === 'function') notifyDataChanged(true);
                 console.log('✅ [תצוגת לייב] עדכון תוך כדי גלילה הושלם');
             } catch (err) {
@@ -13330,8 +13234,9 @@
                 }
                 if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'עדכון תצוגה');
                 if (typeof syncAllDataToDatabase === 'function') await syncAllDataToDatabase();
-                if (typeof updateLiveView === 'function') updateLiveView();
-                if (typeof updateLeadersList === 'function') updateLeadersList();
+                if (typeof updateLiveView === 'function') updateLiveView(true, true); // forceFromScheduled – עדכון מתוזמן (סיום גלילה)
+                if (typeof updateLeadersList === 'function') updateLeadersList(true);
+                if (typeof updateLiveTargets === 'function') updateLiveTargets(true);
                 if (typeof notifyDataChanged === 'function') notifyDataChanged();
                 if (showMode === 'sidepanel') updateLiveViewEndProgress(100, 'הושלם');
                 console.log('✅ [תצוגת לייב] עדכון הושלם');
@@ -13584,30 +13489,103 @@
         }
 
         const manualDonorSearchInput = document.getElementById('manualDonorSearchInput');
-        const manualDonorSearchClear = document.getElementById('manualDonorSearchClear');
+        const manualDonorAutocompleteList = document.getElementById('manualDonorAutocompleteList');
+        let manualDonorAutocompleteIndex = -1;
+        let manualDonorAutocompleteMatches = [];
         if (manualDonorSearchInput) {
             manualDonorSearchInput.addEventListener('input', () => {
                 manualDonorSearchTerm = manualDonorSearchInput.value;
                 updateManualDonorsList();
+                updateManualDonorAutocomplete();
+            });
+            manualDonorSearchInput.addEventListener('focus', () => {
+                if (manualDonorSearchInput.value.trim()) updateManualDonorAutocomplete();
             });
             manualDonorSearchInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') {
+                    hideManualDonorAutocomplete();
                     manualDonorSearchTerm = '';
                     manualDonorSearchInput.value = '';
                     updateManualDonorsList();
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    manualDonorAutocompleteIndex = Math.min(manualDonorAutocompleteIndex + 1, manualDonorAutocompleteMatches.length - 1);
+                    manualDonorAutocompleteHighlight();
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    manualDonorAutocompleteIndex = Math.max(manualDonorAutocompleteIndex - 1, -1);
+                    manualDonorAutocompleteHighlight();
+                } else if (e.key === 'Enter' && manualDonorAutocompleteList && manualDonorAutocompleteList.style.display !== 'none' && manualDonorAutocompleteMatches.length) {
+                    e.preventDefault();
+                    const idx = manualDonorAutocompleteIndex >= 0 ? manualDonorAutocompleteIndex : 0;
+                    if (manualDonorAutocompleteMatches[idx]) {
+                        selectManualDonorAutocomplete(manualDonorAutocompleteMatches[idx]);
+                    }
                 }
             });
         }
-        if (manualDonorSearchClear) {
-            manualDonorSearchClear.addEventListener('click', () => {
-                manualDonorSearchTerm = '';
-                if (manualDonorSearchInput) {
-                    manualDonorSearchInput.value = '';
-                    manualDonorSearchInput.focus();
-                }
+        function hideManualDonorAutocomplete() {
+            if (manualDonorAutocompleteList) {
+                manualDonorAutocompleteList.style.display = 'none';
+                manualDonorAutocompleteList.innerHTML = '';
+            }
+            manualDonorAutocompleteIndex = -1;
+            manualDonorAutocompleteMatches = [];
+        }
+        function updateManualDonorAutocomplete() {
+            const input = document.getElementById('manualDonorSearchInput');
+            if (!input || !manualDonorAutocompleteList) return;
+            const q = (input.value || '').trim();
+            if (!q || q.length < 2) {
+                hideManualDonorAutocomplete();
+                return;
+            }
+            ensureDonorsNormalized();
+            const tokens = tokenizeSearchInput(q);
+            let matches = donors.filter(d => donorMatchesSearch(d, tokens));
+            matches = [...matches].sort((a, b) => {
+                const na = (a.displayName || a.name || '').trim();
+                const nb = (b.displayName || b.name || '').trim();
+                return na.localeCompare(nb, 'he');
+            }).slice(0, 12);
+            manualDonorAutocompleteMatches = matches;
+            manualDonorAutocompleteIndex = -1;
+            if (matches.length === 0) {
+                hideManualDonorAutocomplete();
+                return;
+            }
+            manualDonorAutocompleteList.innerHTML = matches.map(d => {
+                const name = escapeHtml(d.displayName || d.name || '');
+                return `<div class="manual-donor-autocomplete-item" data-donor-id="${d.id}">${name}</div>`;
+            }).join('');
+            manualDonorAutocompleteList.style.display = 'block';
+            manualDonorAutocompleteList.querySelectorAll('.manual-donor-autocomplete-item').forEach((el, idx) => {
+                el.addEventListener('click', () => selectManualDonorAutocomplete(matches[idx]));
+            });
+        }
+        function selectManualDonorAutocomplete(donor) {
+            const input = document.getElementById('manualDonorSearchInput');
+            if (input && donor) {
+                const name = (donor.displayName || donor.name || '').trim();
+                input.value = name;
+                manualDonorSearchTerm = name;
                 updateManualDonorsList();
-            });
+            }
+            hideManualDonorAutocomplete();
+            if (input) input.focus();
         }
+        function manualDonorAutocompleteHighlight() {
+            if (!manualDonorAutocompleteList) return;
+            const items = manualDonorAutocompleteList.querySelectorAll('.manual-donor-autocomplete-item');
+            items.forEach((el, i) => el.classList.toggle('autocomplete-active', i === manualDonorAutocompleteIndex));
+            if (manualDonorAutocompleteIndex >= 0 && items[manualDonorAutocompleteIndex]) {
+                items[manualDonorAutocompleteIndex].scrollIntoView({ block: 'nearest' });
+            }
+        }
+        document.addEventListener('click', (e) => {
+            const wrapper = document.querySelector('.manual-donor-search-with-autocomplete');
+            if (wrapper && !wrapper.contains(e.target)) hideManualDonorAutocomplete();
+        });
 
         function initManualDonationYearSelect() {
             const sel = document.getElementById('manualDonationYearSelect');
@@ -13841,9 +13819,9 @@
                 if (section === 'liveview') {
                     appContainer.classList.add('live-mode');
                     applyLiveViewSettings(); // יישום הגדרות תצוגת לייב
-                    updateLiveView();
-                    updateLeadersList();
-                    updateLiveTargets();
+                    updateLiveView(true, true); // forceFromScheduled – עדכון ראשוני בכניסה
+                    updateLeadersList(true);
+                    updateLiveTargets(true);
                     attachLiveViewInteractionHandlers();
                     hideLiveViewBackButton();
                     // הפעלת גלילה אוטומטית למובילים
@@ -15935,7 +15913,9 @@
         let lastLiveViewUpdateWhenActive = 0;
         let updateLiveViewScheduledWhenActive = null;
         const LIVE_VIEW_BACKGROUND_UPDATE_INTERVAL_MS = 60000; // בתצוגת לייב – עדכון רקע לכל היותר כל 60 שניות (גלילה חלקה, ללא קפיצות)
-        function updateLiveView(immediate = false) {
+        function updateLiveView(immediate = false, forceFromScheduled = false) {
+            // 🛡️ במצב עדכון מתוזמן – חסימת עדכונים מבחוץ. רק העדכון המתוזמן (סיום גלילה / כל X דקות) מעדכן.
+            if (typeof isLiveViewScheduledUpdatesOnly === 'function' && isLiveViewScheduledUpdatesOnly() && !forceFromScheduled) return;
             // במצב כרטיסיה בתחתית – רק כשהכרטיסיה מוצגת (מונע קפיצות מעדכונים מזמן אחר)
             if (typeof isLiveViewActive === 'function' && isLiveViewActive() && (liveViewSettings.liveViewUpdateShow || 'loading') === 'sidepanel' && !liveViewSidePanelUpdateInProgress) {
                 return;
@@ -16351,7 +16331,9 @@
             });
         }
         // עדכון רשימת מובילים
-        function updateLeadersList() {
+        function updateLeadersList(forceFromScheduled = false) {
+            // 🛡️ במצב עדכון מתוזמן – חסימת עדכונים מבחוץ
+            if (typeof isLiveViewScheduledUpdatesOnly === 'function' && isLiveViewScheduledUpdatesOnly() && !forceFromScheduled) return;
             // במצב כרטיסיה בתחתית – רק כשהכרטיסיה מוצגת (מונע קפיצות)
             if (typeof isLiveViewActive === 'function' && isLiveViewActive() && (liveViewSettings.liveViewUpdateShow || 'loading') === 'sidepanel' && !liveViewSidePanelUpdateInProgress) {
                 return;
@@ -16554,7 +16536,8 @@
             }
         }
 
-        function updateLiveTargets() {
+        function updateLiveTargets(forceFromScheduled = false) {
+            if (typeof isLiveViewScheduledUpdatesOnly === 'function' && isLiveViewScheduledUpdatesOnly() && !forceFromScheduled) return;
             const container = document.getElementById('targetsList');
             if (!container) {
                 // לא עוצרים גלילה - הWATCHDOG ידאג
@@ -17293,15 +17276,11 @@
         setInterval(() => {
             const now = Date.now();
             
-            // בתצוגת לייב - לא לעדכן את הרשימות כל 5 שניות, זה גורם לקפיצות
+            // בתצוגת לייב עם עדכון מתוזמן – לא לעדכן כלל (מונע קפיצות). העדכון רק בסיום גלילה/כל X דקות.
+            if (typeof isLiveViewScheduledUpdatesOnly === 'function' && isLiveViewScheduledUpdatesOnly()) return;
             if (isLiveViewActive()) {
-                // רק עדכון סטטיסטיקות בסיסיות, בלי לגעת בגלילה
                 updateHomeStats();
-                // עדכון רשימות רק כל 60 שניות בתצוגת לייב
-                if (now - lastAutoUpdateTime > 60000) {
-                    lastAutoUpdateTime = now;
-                    // לא קוראים ל-updateLeadersList - זה מטופל בנפרד
-                }
+                if (now - lastAutoUpdateTime > 60000) lastAutoUpdateTime = now;
             } else {
                 // לא בתצוגת לייב - עדכון רגיל
                 updateHomeStats();
@@ -21749,8 +21728,7 @@
                     const recentLocalSync = (typeof _lastLocalSyncFromOtherTab !== 'undefined' && _lastLocalSyncFromOtherTab > 0 && (Date.now() - _lastLocalSyncFromOtherTab) < 180000);
                     if (inLiveView && recentLocalSync && sheetSyncLoadEnabled) {
                         console.log('⏭️ [סנכרון] דילוג – תצוגת לייב + עדכון מקומי לאחרונה (מונע הבהובים)');
-                        if (typeof updateLiveView === 'function') updateLiveView(true);
-                        return;
+                        return; // לא מעדכן תצוגת לייב – רק בעדכון מתוזמן
                     }
                     if (sheetSyncLoadEnabled) {
                         if (isUpdatingDonorForNedarim) {
@@ -21758,9 +21736,8 @@
                         } else {
                             const r = await loadFromGoogleSheets(true);
                             if (r && r.success) {
-                                if (typeof refreshAllScreensFromData === 'function') refreshAllScreensFromData();
-                                if (typeof notifyDataChanged === 'function') notifyDataChanged(true); // true=לא להפעיל autoSave – מונע שמירה כפולה והבהובים
-                                if (typeof updateLiveView === 'function') updateLiveView(true);
+                                if (typeof refreshAllScreensFromData === 'function') refreshAllScreensFromData(inLiveView); // בתצוגת לייב – לא לרענן (מונע קפיצות)
+                                if (typeof notifyDataChanged === 'function') notifyDataChanged(true);
                             }
                         }
                     }
@@ -21779,7 +21756,8 @@
                         if (typeof window !== 'undefined') window._lastSheetLoadTime = Date.now();
                         console.log('🔄 [סנכרון] טעינה ראשונה מהגליון הושלמה');
                         if (typeof notifyDataChanged === 'function') notifyDataChanged(true);
-                        if (typeof refreshAllScreensFromData === 'function') refreshAllScreensFromData();
+                        const inLive = typeof isLiveViewActive === 'function' && isLiveViewActive();
+                        if (typeof refreshAllScreensFromData === 'function') refreshAllScreensFromData(inLive);
                     }
                 }).catch(err => console.warn('⚠️ [סנכרון] שגיאה בטעינה ראשונה:', err));
             }
