@@ -7172,8 +7172,9 @@
                                     </label>
                                     <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                                         <input type="checkbox" id="sheetSyncSaveOnChangeCheckbox" onchange="saveGoogleSheetsSettings();" style="width: 18px; height: 18px; cursor: pointer;">
-                                        <span>שמירה אוטומטית בכל שינוי (מלבד התדירות למעלה)</span>
+                                        <span>שמירה לגליון רק בעדכון מתוזמן (סיום גלילה / כל X דקות)</span>
                                     </label>
+                                    <p style="font-size: 12px; color: var(--muted); margin: 4px 0 0 0;">שמירה לגליון מתבצעת רק בעדכון מתוזמן – מונע קפיצות בתצוגת לייב.</p>
                                     <p style="margin: 10px 0 0 0; font-size: 12px; color: var(--muted);">💡 ניתן לסמן טעינה בלבד, שמירה בלבד, או את שניהם. טעינה ראשונה מתבצעת גם בעליית התוכנה.</p>
                                 </div>
                             </div>
@@ -12668,20 +12669,17 @@
                         // התעלם מהשגיאה
                     }
                     
-                    // שולח הודעה דרך BroadcastChannel לעדכון כל המסכים
-                    notifyDataChanged();
+                    // שולח הודעה דרך BroadcastChannel לעדכון כל המסכים (ללא שמירה לגליון)
+                    notifyDataChanged(true); // true = שמירה לגליון רק בעדכון מתוזמן (סיום גלילה / כל X דקות)
                     
                     // סנכרון לבסיס הנתונים הלוקאלי (לא חוסם)
                     syncAllDataToDatabase().catch(err => {
                         console.warn('⚠️ שגיאה בסנכרון לבסיס הנתונים:', err);
                     });
                     
-                    // שמירה אוטומטית ל-Google Sheets (אם מופעל)
-                    if (typeof autoSaveToGoogleSheets === 'function') {
-                        autoSaveToGoogleSheets();
-                    }
+                    // ⚠️ שמירה לגליון לא מתבצעת כאן – רק בעדכון מתוזמן (סיום גלילה / כל X דקות) – מונע קפיצות בתצוגת לייב
                     
-                    console.log('💾 נתונים נשמרו אוטומטית');
+                    console.log('💾 נתונים נשמרו אוטומטית (מקומית)');
                 } catch (e) {
                     console.error('שגיאה בשמירת נתונים:', e);
                 }
@@ -13229,14 +13227,17 @@
                 await checkTotalAmountFromAPI(true);
                 await syncWithNedarimPlus(true);
                 var url = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').trim();
-                if (url && typeof loadFromGoogleSheets === 'function') {
-                    var r = await loadFromGoogleSheets(true);
-                    if (r && r.success && typeof notifyDataChanged === 'function') notifyDataChanged();
+                if (url && googleSheetsSyncEnabled) {
+                    if (sheetSyncLoadEnabled && typeof loadFromGoogleSheets === 'function') {
+                        var r = await loadFromGoogleSheets(true);
+                        if (r && r.success && typeof notifyDataChanged === 'function') notifyDataChanged(true);
+                    }
+                    if (sheetSyncSaveEnabled && typeof saveToGoogleSheets === 'function') await saveToGoogleSheets();
                 }
                 if (typeof syncAllDataToDatabase === 'function') await syncAllDataToDatabase();
                 if (typeof updateLiveView === 'function') updateLiveView();
                 if (typeof updateLeadersList === 'function') updateLeadersList();
-                if (typeof notifyDataChanged === 'function') notifyDataChanged();
+                if (typeof notifyDataChanged === 'function') notifyDataChanged(true);
                 console.log('✅ [תצוגת לייב] עדכון תוך כדי גלילה הושלם');
             } catch (err) {
                 console.warn('⚠️ [תצוגת לייב] שגיאה בעדכון תוך כדי גלילה:', err);
@@ -15408,13 +15409,16 @@
 
         const syncChannel = new BroadcastChannel('matching_sync');
 
-        /** מרענן את כל המסכים והתצוגות לפי הנתונים הנוכחיים – סנכרון בין מסכים */
-        function refreshAllScreensFromData() {
+        /** מרענן את כל המסכים והתצוגות לפי הנתונים הנוכחיים – סנכרון בין מסכים
+         * @param {boolean} skipLiveView - כאשר true ולא בתצוגת לייב: דילוג. כאשר true ובתצוגת לייב: לא לרענן תצוגת לייב (מונע קפיצות – עדכון רק בעדכון מתוזמן) */
+        function refreshAllScreensFromData(skipLiveView) {
             if (typeof updateDonorsList === 'function') updateDonorsList();
             if (typeof updateGroupsDisplay === 'function') updateGroupsDisplay();
             if (typeof updateHomeStats === 'function') updateHomeStats();
-            if (typeof updateLiveView === 'function') updateLiveView(true);
-            if (typeof updateLeadersList === 'function') updateLeadersList();
+            if (!skipLiveView) {
+                if (typeof updateLiveView === 'function') updateLiveView(true);
+                if (typeof updateLeadersList === 'function') updateLeadersList();
+            }
             if (typeof updateLiveTargets === 'function') updateLiveTargets();
             if (typeof renderScoutsTeams === 'function') renderScoutsTeams();
             if (typeof updateScoutsStats === 'function') updateScoutsStats();
@@ -15425,18 +15429,14 @@
             if (typeof lastDataHash !== 'undefined' && typeof calculateDataHash === 'function') lastDataHash = calculateDataHash();
         }
 
-        // skipAutoSaveToSheets=true: רק BroadcastChannel, ללא השפעה על הגליון – מונע שמירה כפולה אחרי טעינה
+        /** מעדכן מסכים אחרים דרך BroadcastChannel. שמירה לגליון לא מתבצעת כאן – רק בעדכון מתוזמן (סיום גלילה / כל X דקות). */
         function notifyDataChanged(skipAutoSaveToSheets) {
             try {
                 syncChannel.postMessage({ type: 'data-updated', timestamp: Date.now() });
             } catch (err) {
                 console.warn('שגיאה בשליחת עדכון סנכרון', err);
             }
-            if (skipAutoSaveToSheets) return; // אחרי טעינה מהגליון – לא להפעיל autoSave (מונע שמירה כפולה והבהובים)
-            var url = (typeof googleSheetsWebAppUrl !== 'undefined' ? googleSheetsWebAppUrl : '') || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '';
-            if (url && typeof autoSaveToGoogleSheets === 'function' && (typeof sheetSyncSaveOnChange === 'undefined' || sheetSyncSaveOnChange)) {
-                autoSaveToGoogleSheets();
-            }
+            // שמירה לגליון מתבצעת רק בעדכון מתוזמן – לא כאן (מונע קפיצות בתצוגת לייב)
         }
         // עדכון ממסך/טאב אחר – טוען רק מ-localStorage, בלי לדרוס מהגליון (מונע קפיצות)
         let _reloadFromLocalStorageTimeout = null;
@@ -15459,7 +15459,9 @@
                         try { groups = JSON.parse(savedGroups); } catch (_) {}
                     }
                     ensureDonorsNormalized();
-                    refreshAllScreensFromData();
+                    // בתצוגת לייב: לא לרענן את התצוגה – מונע קפיצות. העדכון יתבצע רק בעדכון מתוזמן (סיום גלילה / כל X דקות)
+                    const inLiveView = typeof isLiveViewActive === 'function' && isLiveViewActive();
+                    refreshAllScreensFromData(inLiveView);
                 } catch (e) { console.warn('שגיאה ברענון מ-localStorage:', e); }
             }, RELOAD_DEBOUNCE_MS);
         }
