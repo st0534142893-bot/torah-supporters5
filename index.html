@@ -2055,9 +2055,29 @@
         }
 
         .password-sections-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .password-section-group {
+            background: rgba(255, 255, 255, 0.6);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .password-section-group-title {
+            font-weight: 600;
+            color: var(--brown-dark);
+            margin-bottom: 12px;
+            font-size: 15px;
+        }
+
+        .password-section-group-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-            gap: 12px;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
         }
 
         .password-section-option {
@@ -2065,13 +2085,21 @@
             align-items: center;
             gap: 10px;
             padding: 10px 14px;
-            background: rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.9);
             border: 1px solid var(--border);
             border-radius: 10px;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .password-section-option:hover {
+            border-color: var(--primary-gold);
+            background: rgba(255, 255, 255, 1);
         }
 
         .password-section-option input {
             transform: scale(1.1);
+            cursor: pointer;
         }
 
         .password-update-form {
@@ -2907,6 +2935,9 @@
         .donor-edit-field {
             display: flex;
             flex-direction: column;
+        }
+        .donor-edit-field-full {
+            grid-column: 1 / -1;
         }
 
         .donor-edit-field label {
@@ -7032,12 +7063,6 @@
                     <div class="sync-settings-panel">
                         <h3>עדכונים מנדרים פלוס</h3>
                         
-                        <!-- אזהרה על הגבלת פניות -->
-                        <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 10px; padding: 15px; margin-bottom: 20px;">
-                            <p style="color: #856404; margin: 0; line-height: 1.6;">
-                                נדרים פלוס מגבילים לעד <strong>500 פניות לשעה</strong>. מומלץ להמתין 10-15 דקות בין עדכונים.
-                            </p>
-                        </div>
                         
                         <div style="margin-bottom: 25px;">
                             <h4 style="margin-bottom: 15px;">פעולות עדכון</h4>
@@ -7070,35 +7095,11 @@
                             
                             <div class="sync-actions" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
                                 <button class="btn btn-success" onclick="runSequentialOp(()=>testGoogleSheetsConnection(), 'בדוק חיבור')">🔌 בדוק חיבור</button>
-                                <button class="btn btn-primary" onclick="runSequentialOp(()=>saveToGoogleSheets(), 'שמור לגליון')">💾 שמור לגליון</button>
+                                <button class="btn btn-primary" onclick="runSequentialOp(()=>loadFromGoogleSheets(), 'טען מהגליון')">📥 טען מהגליון</button>
+                                <button class="btn btn-secondary" onclick="runSequentialOp(()=>saveToGoogleSheets(), 'שמור לגליון')">💾 שמור לגליון</button>
                             </div>
                             
                             <div class="sync-status" id="googleSheetsSyncStatus" style="display: none; padding: 10px; border-radius: 6px; margin-bottom: 15px;"></div>
-                            
-                            <div style="background: #fff3e0; border: 2px solid #ff9800; border-radius: 10px; padding: 15px; margin-top: 15px;">
-                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                                    <span style="font-size: 24px;">📋</span>
-                                    <strong style="color: #e65100; font-size: 16px;">הוראות התקנה (פעם אחת בלבד)</strong>
-                                </div>
-                                <ol style="color: #e65100; margin: 0; padding-right: 25px; line-height: 2;">
-                                    <li>פתח את הגליון האלקטרוני שלך ב-Google Sheets</li>
-                                    <li>לחץ על <strong>"הרחבות" (Extensions)</strong> → <strong>"Apps Script"</strong></li>
-                                    <li>מחק את כל הקוד הקיים והדבק את התוכן מהקובץ <code>SheetsSync.gs</code></li>
-                                    <li>שנה את <code>SPREADSHEET_ID</code> למזהה של הגליון שלך (מופיע ב-URL)</li>
-                                    <li>לחץ על <strong>"פריסה" (Deploy)</strong> → <strong>"פריסה חדשה"</strong></li>
-                                    <li>בחר סוג: <strong>"אפליקציית אינטרנט"</strong></li>
-                                    <li>הגדר <strong>"הפעל כ"</strong>: אני (Me) | <strong>"למי יש גישה"</strong>: כל אחד (Anyone)</li>
-                                    <li>לחץ <strong>"פרוס"</strong> והעתק את ה-URL שמתקבל</li>
-                                    <li>הדבק את ה-URL בשדה למעלה ולחץ "בדוק חיבור"</li>
-                                </ol>
-                            </div>
-                            
-                            <div style="background: #e3f2fd; border: 1px solid #2196f3; border-radius: 8px; padding: 12px; margin-top: 15px;">
-                                <strong style="color: #1565c0;">💡 טיפ:</strong>
-                                <p style="color: #1565c0; margin: 5px 0 0 0; line-height: 1.6;">
-                                    לאחר הגדרת ה-URL, הגליון יהיה זמין דרך הסנכרון.
-                                </p>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -9793,14 +9794,18 @@
             }
 
             if (sectionsList) {
-                // הפרדת מדורים רגילים ותת-מדורים של ניהול
-                const regularSections = SECTION_OPTIONS.filter(opt => !opt.id.startsWith('management-'));
+                const regularSections = SECTION_OPTIONS.filter(opt => !opt.id.startsWith('management-') && opt.id !== 'management');
                 const managementSections = SECTION_OPTIONS.filter(opt => opt.id.startsWith('management-'));
                 const managementMain = SECTION_OPTIONS.find(opt => opt.id === 'management');
                 
-                let html = '';
+                let html = '<p style="font-size: 13px; color: var(--muted); margin-bottom: 16px;">בחר רק את המדורים שדורשים סיסמה – שאר המדורים יהיו נגישים לכולם.</p>';
                 
-                // מדורים רגילים
+                // מדורים כלליים
+                html += `
+                    <div class="password-section-group">
+                        <div class="password-section-group-title">מדורים כלליים</div>
+                        <div class="password-section-group-grid">
+                `;
                 regularSections.forEach(option => {
                     const checked = accessControl.protectedSections.includes(option.id) ? 'checked' : '';
                     html += `
@@ -9810,37 +9815,37 @@
                         </label>
                     `;
                 });
+                html += '</div></div>';
                 
-                // מדור ניהול עם תת-מדורים
+                // מדורי ניהול – אפשרות לנעול את הכל או רק טאבים ספציפיים
+                html += `
+                    <div class="password-section-group">
+                        <div class="password-section-group-title">מדורי ניהול (טאבים within ניהול)</div>
+                        <p style="font-size: 12px; color: var(--muted); margin-bottom: 12px;">ניתן לנעול את כל מדור הניהול, או רק טאבים ספציפיים – שאר הטאבים יהיו נגישים.</p>
+                `;
                 if (managementMain) {
                     const mainChecked = accessControl.protectedSections.includes(managementMain.id) ? 'checked' : '';
-                    // אם מדור הניהול כולו מוגן, מציג את תת-המדורים גם אם לא נבחרו במפורש
-                    const showSubsections = mainChecked || managementSections.some(opt => accessControl.protectedSections.includes(opt.id));
                     html += `
-                        <div class="management-sections-group" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);">
-                            <label class="password-section-option" style="font-weight: 600;">
-                                <input type="checkbox" value="${managementMain.id}" ${mainChecked} id="managementMainCheckbox" onchange="toggleManagementSubsections(this.checked)">
-                                <span>${managementMain.label}</span>
-                            </label>
-                            <div class="management-subsections" id="managementSubsections" style="margin-right: 25px; margin-top: 5px; ${showSubsections ? '' : 'display: none;'}">
+                        <label class="password-section-option" style="margin-bottom: 12px; background: rgba(212, 175, 55, 0.08); border-color: var(--primary-gold);">
+                            <input type="checkbox" value="${managementMain.id}" ${mainChecked} id="managementMainCheckbox" onchange="toggleManagementSubsections(this.checked)">
+                            <span><strong>${managementMain.label}</strong></span>
+                        </label>
+                        <div class="management-subsections" id="managementSubsections" style="${mainChecked ? '' : 'display: none;'}">
+                            <div class="password-section-group-grid">
                     `;
-                    
                     managementSections.forEach(option => {
-                        // אם מדור הניהול כולו מוגן, מסמן גם את כל תת-המדורים
                         const checked = (mainChecked || accessControl.protectedSections.includes(option.id)) ? 'checked' : '';
+                        const shortLabel = option.label.replace('ניהול → ', '');
                         html += `
-                            <label class="password-section-option" style="font-weight: normal; opacity: 0.9;">
+                            <label class="password-section-option">
                                 <input type="checkbox" value="${option.id}" ${checked}>
-                                <span>${option.label}</span>
+                                <span>${escapeHtml(shortLabel)}</span>
                             </label>
                         `;
                     });
-                    
-                    html += `
-                            </div>
-                        </div>
-                    `;
+                    html += '</div></div>';
                 }
+                html += '</div>';
                 
                 sectionsList.innerHTML = html;
             }
@@ -13844,6 +13849,8 @@
                 } else if (section === 'semifinal') {
                     if (typeof loadSemifinalSettings === 'function') loadSemifinalSettings();
                 } else if (section === 'management') {
+                    // אם הטאב המוצג כברירת מחדל (ניהול מתרימים) מוגן – בודק גישה או עובר לטאב ראשון לא-מוגן
+                    ensureManagementDefaultTabAccessible();
                     updateGroupsDisplay();
                     updateDonorsList();
                     setTimeout(() => {
@@ -13899,6 +13906,29 @@
                 }
         }
 
+        /** כשנכנסים למדור ניהול – אם הטאב המוצג מוגן, מבקש גישה או עובר לטאב לא-מוגן */
+        function ensureManagementDefaultTabAccessible() {
+            const activeContent = document.querySelector('.management-content.active');
+            if (!activeContent || !activeContent.id) return;
+            const tabName = activeContent.id.replace('Content', '');
+            const sectionId = 'management-' + tabName;
+            if (!isSectionProtected(sectionId)) return;
+            if (requestSectionAccess(sectionId)) return;
+            // המשתמש ביטל – מעבר לטאב ראשון לא-מוגן
+            const tabOrder = ['groups', 'donors', 'manualDonation', 'liveview', 'calculator', 'sync', 'history', 'reset', 'password'];
+            for (const t of tabOrder) {
+                const sid = 'management-' + t;
+                if (!isSectionProtected(sid)) {
+                    const tab = document.querySelector(`.management-tab[data-tab="${t}"]`);
+                    const content = document.getElementById(t + 'Content');
+                    if (tab && content) {
+                        tab.click();
+                    }
+                    break;
+                }
+            }
+        }
+
         // פונקציה להצגה/הסתרה של תת-מדורי ניהול
         function toggleManagementSubsections(show) {
             const subsections = document.getElementById('managementSubsections');
@@ -13944,17 +13974,16 @@
             const homeNav = document.querySelector('.nav-item[data-section="home"]');
             activateSection('home', homeNav);
         }
-        // ניהול טאבים במדור ניהול
+        // ניהול טאבים במדור ניהול – בודק גישה רק לפי התת-מדור הספציפי (לא כל הניהול)
         document.querySelectorAll('.management-tab').forEach(tab => {
             tab.addEventListener('click', () => {
                 const tabName = tab.dataset.tab;
                 
-                // בדיקת גישה לתת-מדור במדור הניהול
+                // בדיקת גישה לתת-מדור הספציפי בלבד – מאפשר גישה לשאר הטאבים ללא סיסמה
                 if (tabName) {
                     const managementSubSectionId = 'management-' + tabName;
-                    // בודק אם מדור הניהול כולו מוגן או התת-מדור הספציפי
-                    if (isSectionProtected('management') || isSectionProtected(managementSubSectionId)) {
-                        if (!requestSectionAccess('management') && !requestSectionAccess(managementSubSectionId)) {
+                    if (isSectionProtected(managementSubSectionId)) {
+                        if (!requestSectionAccess(managementSubSectionId)) {
                             return; // המשתמש ביטל או הזין סיסמה שגויה
                         }
                     }
@@ -14926,27 +14955,18 @@
                                        onkeydown="handleDonorNameKey(event, ${donor.id})"
                                        placeholder="שם המתרים">
                             </div>
-                            <div class="donor-details">
-                                ${donor.nedarimMatrimId ? `<span style="color: var(--muted); font-size: 12px;">מספר מתרים: ${donor.nedarimMatrimId}</span> | ` : ''}
-                                קבוצה: ${group ? escapeHtml(group.name) : 'ללא קבוצה'} | 
-                                תרומה: ₪${donor.amount.toLocaleString()} | 
-                                יעד: ₪${donor.personalGoal.toLocaleString()} (${Math.round(progress)}%)
-                            </div>
-                        </div>
-                        <div class="donor-actions">
-                            <button class="btn btn-primary btn-small" onclick="toggleDonorEditor(${donor.id})" title="ערוך פרטי מתרים (כולל מספר מתרים)">
-                                ✏️ ערוך
-                            </button>
-                            <button class="btn btn-secondary btn-small" onclick="addDonorPayment(${donor.id})">הוסף תשלום</button>
-                            <button class="btn btn-secondary btn-small" onclick="toggleDonorHistory(${donor.id})">היסטוריה</button>
-                            <button class="btn btn-danger btn-small" onclick="deleteDonor(${donor.id})">מחק</button>
-                        </div>
-                        <div class="donor-edit-panel${isEditing ? ' active' : ''}" id="donorEdit_${donor.id}">
+                            <div class="donor-edit-panel${isEditing ? ' active' : ''}" id="donorEdit_${donor.id}">
                             <div class="donor-edit-grid">
-                                <div class="donor-edit-field">
+                                <div class="donor-edit-field donor-edit-field-full">
                                     <label for="editName_${donor.id}">שם המתרים (כפי שיוצג בתוכנה)</label>
                                     <input type="text" id="editName_${donor.id}" value="${escapeHtml(displayName)}" placeholder="שם מלא">
                                     ${originalName && originalName !== displayName ? `<small style="color: var(--muted); display: block; margin-top: 5px;">שם מקורי בנדרים פלוס: ${escapeHtml(originalName)}</small>` : ''}
+                                </div>
+                                <div class="donor-edit-summary donor-edit-field-full" style="padding: 12px; background: rgba(248,249,250,0.9); border-radius: 8px; font-size: 14px; color: var(--muted); grid-column: 1 / -1;">
+                                    ${donor.nedarimMatrimId ? `<span>מספר מתרים: ${donor.nedarimMatrimId}</span> | ` : ''}
+                                    <span>קבוצה: ${group ? escapeHtml(group.name) : 'ללא קבוצה'}</span> | 
+                                    <span>תרומה: ₪${donor.amount.toLocaleString()}</span> | 
+                                    <span>יעד: ₪${donor.personalGoal.toLocaleString()} (${Math.round(progress)}%)</span>
                                 </div>
                                 <div class="donor-edit-field" style="border: 2px solid #007bff; padding: 10px; border-radius: 5px; background: #f0f8ff;">
                                     <label for="editMatrimId_${donor.id}" style="font-weight: bold; color: #007bff; font-size: 14px;">🔗 מספר מתרים (נדרים פלוס)</label>
@@ -14977,6 +14997,15 @@
                                 <button class="btn btn-secondary btn-small" onclick="saveDonorEdits(${donor.id})">שמור</button>
                                 <button class="btn btn-secondary btn-small" onclick="cancelDonorEdits(${donor.id})">בטל</button>
                             </div>
+                        </div>
+                        </div>
+                        <div class="donor-actions">
+                            <button class="btn btn-primary btn-small" onclick="toggleDonorEditor(${donor.id})" title="ערוך פרטי מתרים (כולל מספר מתרים)">
+                                ✏️ ערוך
+                            </button>
+                            <button class="btn btn-secondary btn-small" onclick="addDonorPayment(${donor.id})">הוסף תשלום</button>
+                            <button class="btn btn-secondary btn-small" onclick="toggleDonorHistory(${donor.id})">היסטוריה</button>
+                            <button class="btn btn-danger btn-small" onclick="deleteDonor(${donor.id})">מחק</button>
                         </div>
                         <div class="donor-history" id="donorHistory_${donor.id}">
                             ${historyHtml}
