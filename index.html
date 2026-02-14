@@ -22185,14 +22185,20 @@
                     }
                 };
                 
+                const bodyStr = JSON.stringify(dataToSave);
+                const bodySize = new Blob([bodyStr]).size;
+                const useKeepalive = bodySize < 60000;
+                if (!useKeepalive && bodySize > 0) {
+                    console.log('💾 [Google Sheets] payload גדול (' + Math.round(bodySize/1024) + 'KB) – בלי keepalive (מגבלה 64KB)');
+                }
                 const response = await fetch(url, {
                     method: 'POST',
                     redirect: 'follow',
-                    keepalive: true,
+                    keepalive: useKeepalive,
                     headers: {
                         'Content-Type': 'text/plain;charset=utf-8'
                     },
-                    body: JSON.stringify(dataToSave)
+                    body: bodyStr
                 });
                 
                 console.log('💾 [Google Sheets] תגובה מהשרת:', response.status, response.statusText);
@@ -22267,14 +22273,17 @@
                     }
                 };
                 
+                const bodyStr = JSON.stringify(dataToSync);
+                const bodySize = new Blob([bodyStr]).size;
+                const useKeepalive = bodySize < 60000;
                 const response = await fetch(url, {
                     method: 'POST',
                     redirect: 'follow',
-                    keepalive: true,
+                    keepalive: useKeepalive,
                     headers: {
                         'Content-Type': 'text/plain;charset=utf-8'
                     },
-                    body: JSON.stringify(dataToSync)
+                    body: bodyStr
                 });
                 
                 const result = await response.json();
