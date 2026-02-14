@@ -13793,8 +13793,10 @@
                 list.style.display = 'block';
                 list.querySelectorAll('.manual-donor-autocomplete-item').forEach((el, idx) => {
                     el.addEventListener('click', () => {
-                        selectPairsDonor(slot, matches[idx]);
-                        input.value = '';
+                        const donor = matches[idx];
+                        const name = (donor.displayName || donor.name || '').trim();
+                        input.value = name;
+                        selectPairsDonor(slot, donor);
                         list.style.display = 'none';
                         list.innerHTML = '';
                     });
