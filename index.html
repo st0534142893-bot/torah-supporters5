@@ -18233,13 +18233,14 @@
                 }, 120000);
             } else {
                 setTimeout(() => recentlyUpdatedDonors.delete(donorId), 120000);
-                // גם בלי גליון – שולח לנדרים פלוס (דרך Netlify אם יש)
+                // גם בלי גליון – שולח לנדרים פלוס (דרך Netlify אם יש) – await כדי שהשליחה תסתיים לפני סגירת הדף
                 if (actualDelta !== 0 && donor.nedarimMatrimId && typeof uploadOfflineDonation === 'function') {
                     const group = groups.find(g => g.id === donor.groupId);
                     const groupName = group ? group.name : '';
-                    uploadOfflineDonation(donor.originalName || donor.name, 'תרומה מהמערכת', actualDelta, note, groupName, donor.nedarimMatrimId).then(r => {
+                    try {
+                        const r = await uploadOfflineDonation(donor.originalName || donor.name, 'תרומה מהמערכת', actualDelta, note, groupName, donor.nedarimMatrimId);
                         if (r && r.success) showNotification(`✅ עודכן בנדרים פלוס: ${donorDisplayName} - ${Math.abs(actualDelta).toLocaleString()} ₪`, 'success');
-                    }).catch(() => {});
+                    } catch (e) {}
                 }
             }
             
@@ -18938,6 +18939,7 @@
 
                     const response = await fetch(proxyUrl, {
                         method: 'POST',
+                        keepalive: true,
                         headers: {
                             'Content-Type': 'application/json'
                         },
@@ -22186,6 +22188,7 @@
                 const response = await fetch(url, {
                     method: 'POST',
                     redirect: 'follow',
+                    keepalive: true,
                     headers: {
                         'Content-Type': 'text/plain;charset=utf-8'
                     },
@@ -22267,6 +22270,7 @@
                 const response = await fetch(url, {
                     method: 'POST',
                     redirect: 'follow',
+                    keepalive: true,
                     headers: {
                         'Content-Type': 'text/plain;charset=utf-8'
                     },
@@ -22613,12 +22617,13 @@
                     }
                 }
                 
-                // ניסיון 1: Direct fetch
+                // ניסיון 1: Direct fetch (keepalive: true – הבקשה תסתיים גם אם המשתמש סוגר את הדף)
                 let response;
                 try {
                     response = await fetch(url, {
                         method: 'POST',
                         redirect: 'follow',
+                        keepalive: true,
                         headers: {
                             'Content-Type': 'text/plain;charset=utf-8'
                         },
