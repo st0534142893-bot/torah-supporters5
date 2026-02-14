@@ -13274,7 +13274,7 @@
             runLiveViewUpdateDuring().catch(function() {});
         }
 
-        /** אחרי סיום גלילה מלאה – עוצר גלילה, מציג overlay או כרטיסיה בצד, מריץ עדכון לפי ההגדרה, ואז ממשיך גלילה (רק כשההגדרה "בסיום מחזור") */
+        /** אחרי סיום גלילה מלאה – מציג overlay או כרטיסיה בצד, מריץ עדכון. במצב sidepanel הגלילה ממשיכה ברקע */
         async function onDonorsScrollCycleComplete() {
             if (typeof isLiveViewActive !== 'function' || !isLiveViewActive()) return;
             if (!liveViewSettings.enableAutoScroll) return;
@@ -13287,10 +13287,12 @@
             const showMode = liveViewSettings.liveViewUpdateShow || 'loading';
             const updateType = liveViewSettings.liveViewUpdateType || 'all';
 
-            stopAutoScroll('donors');
-            stopAutoScroll('leaders');
-            donorsScrollIsRunning = false;
-            leadersScrollIsRunning = false;
+            if (showMode !== 'sidepanel') {
+                stopAutoScroll('donors');
+                stopAutoScroll('leaders');
+                donorsScrollIsRunning = false;
+                leadersScrollIsRunning = false;
+            }
 
             if (showMode === 'sidepanel') {
                 liveViewSidePanelUpdateInProgress = true;
@@ -13359,8 +13361,10 @@
             }
             if (showMode !== 'sidepanel') { stopSidePanelSmoothProgress(); liveViewSidePanelUpdateInProgress = false; }
             if (typeof hideLiveViewSyncProgress === 'function') hideLiveViewSyncProgress();
-            if (typeof restartDonorsAutoScroll === 'function') restartDonorsAutoScroll();
-            if (typeof restartLeadersAutoScroll === 'function' && isLiveViewActive()) setTimeout(() => restartLeadersAutoScroll({ immediate: true }), 50);
+            if (showMode !== 'sidepanel') {
+                if (typeof restartDonorsAutoScroll === 'function') restartDonorsAutoScroll();
+                if (typeof restartLeadersAutoScroll === 'function' && isLiveViewActive()) setTimeout(() => restartLeadersAutoScroll({ immediate: true }), 50);
+            }
         }
         
         function triggerLiveViewUpdateByTimer() {
