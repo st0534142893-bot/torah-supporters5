@@ -6541,7 +6541,7 @@
                                 </div>
                                 <div>
                                     <label for="pairsAmountInput" class="manual-search-label">סה״כ סכום שנאסף (₪)</label>
-                                    <input type="number" id="pairsAmountInput" placeholder="למשל: 1800" min="0.01" step="0.01" style="padding: 14px 18px; font-size: 18px; border: 2px solid var(--border); border-radius: 10px; width: 100%; max-width: 200px;">
+                                    <input type="number" id="pairsAmountInput" placeholder="למשל: 1800" min="1" step="1" style="padding: 14px 18px; font-size: 18px; border: 2px solid var(--border); border-radius: 10px; width: 100%; max-width: 200px;">
                                     <p id="pairsSplitPreview" style="margin-top: 8px; font-size: 13px; color: var(--muted);"></p>
                                 </div>
                                 <div style="display: flex; gap: 12px; flex-wrap: wrap;">
@@ -8290,8 +8290,7 @@
                     }
                 }
             }
-            const amt = parseFloat(donor.amount) || 0;
-            donor.amount = Math.max(0, amt >= 0 ? Math.floor(amt) : Math.ceil(amt));
+            donor.amount = Math.max(0, Math.round((parseFloat(donor.amount) || 0) * 100) / 100);
             donor.personalGoal = Math.max(0, Math.round(parseFloat(donor.personalGoal) || defaultDonorGoal));
             donor.createdAt = donor.createdAt || donor.date || new Date().toISOString();
             donor.history = Array.isArray(donor.history) ? donor.history : [];
@@ -8307,8 +8306,7 @@
                 });
             }
             alignBreakdownToAmount(donor, donor.amount);
-            const amt2 = donor.amount || 0;
-            donor.amount = Math.max(0, amt2 >= 0 ? Math.floor(amt2) : Math.ceil(amt2));
+            donor.amount = Math.max(0, Math.round((donor.amount || 0) * 100) / 100);
             return donor;
         }
         function ensureDonorsNormalized() {
@@ -15002,11 +15000,11 @@
                 return;
             }
 
-            const amountStored = Math.max(0, Math.floor(amountInput || 0));
+            const amountRounded = Math.max(0, Math.round((amountInput || 0) * 100) / 100);
             const donor = {
                 id: Date.now(),
                 name: name,
-                amount: amountStored,
+                amount: amountRounded,
                 groupId: groupId,
                 personalGoal: Math.max(0, Math.round(goalInput)) || defaultDonorGoal,
                 createdAt: new Date().toISOString(),
@@ -15058,11 +15056,11 @@
                 return;
             }
             
-            const amountStored = Math.max(0, Math.floor(amountValue || 0));
+            const amountRounded = Math.max(0, Math.round((amountValue || 0) * 100) / 100);
             const donor = {
                 id: Date.now(),
                 name: name,
-                amount: amountStored,
+                amount: amountRounded,
                 groupId: groupId,
                 personalGoal: defaultDonorGoal,
                 createdAt: new Date().toISOString(),
@@ -15305,7 +15303,7 @@
                                 </div>
                                 <div class="donor-edit-field">
                                     <label for="editAmount_${donor.id}">סה"כ נאסף</label>
-                                    <input type="number" id="editAmount_${donor.id}" value="${donor.amount}" min="0" step="0.01">
+                                    <input type="number" id="editAmount_${donor.id}" value="${donor.amount}" min="0" step="1">
                                 </div>
                                 <div class="donor-edit-field">
                                     <label for="editGoal_${donor.id}">יעד אישי</label>
@@ -15318,8 +15316,8 @@
                                     </select>
                                 </div>
                                 <div class="donor-edit-field">
-                                    <label for="editDelta_${donor.id}">שינוי סכום (אפשר אגורות, למשל 100.5 או -50)</label>
-                                    <input type="number" id="editDelta_${donor.id}" placeholder="+250 או -500" step="0.01">
+                                    <label for="editDelta_${donor.id}">שינוי סכום (אפשר להוסיף או להפחית)</label>
+                                    <input type="number" id="editDelta_${donor.id}" placeholder="+250 או -500">
                                 </div>
                             </div>
                             <div class="donor-edit-actions">
@@ -15928,7 +15926,7 @@
                 }
             }
 
-            const parsedAmount = amountInput ? (parseFloat(amountInput.value) || 0) : (donor.amount || 0);
+            const parsedAmount = amountInput ? Math.max(0, Math.round((parseFloat(amountInput.value) || 0) * 100) / 100) : (donor.amount || 0);
             const parsedGoal = goalInput ? Math.max(0, Math.round(parseFloat(goalInput.value) || 0)) : (donor.personalGoal || defaultDonorGoal);
             let selectedGroup = groupSelect ? groupSelect.value : donor.groupId;
             if (!selectedGroup && groups.length) {
@@ -15936,15 +15934,14 @@
             }
 
             const deltaRaw = deltaInput ? deltaInput.value.trim() : '';
-            const manualDelta = deltaRaw ? (parseFloat(deltaRaw) || 0) : 0;
+            const manualDelta = deltaRaw ? Math.round((parseFloat(deltaRaw) || 0) * 100) / 100 : 0;
 
-            let finalAmountRaw = parsedAmount;
+            let finalAmount = parsedAmount;
             if (manualDelta) {
-                finalAmountRaw = Math.max(0, parsedAmount + manualDelta);
+                finalAmount = Math.max(0, parsedAmount + manualDelta);
             }
             const oldAmount = donor.amount || 0;
-            const storedAmount = finalAmountRaw >= 0 ? Math.floor(finalAmountRaw) : Math.ceil(finalAmountRaw);
-            const amountDelta = storedAmount - oldAmount;
+            const amountDelta = finalAmount - oldAmount;
 
             let changed = false;
             const oldDisplayName = donor.displayName || donor.name;
@@ -15978,7 +15975,7 @@
                 changed = true;
             }
             const previousBreakdown = getDonorDailyBreakdown(donor).slice();
-            donor.amount = storedAmount;
+            donor.amount = finalAmount;
             alignBreakdownToAmount(donor, donor.amount);
             const afterBreakdown = donor.dailyBreakdown;
             const breakdownChanged = afterBreakdown.some((val, index) => val !== previousBreakdown[index]);
@@ -16005,7 +16002,7 @@
                 try {
                     const donorsStr = JSON.stringify(donors);
                     localStorage.setItem('donors', donorsStr);
-                    console.log('✅ שמירה מיידית ב-localStorage:', donorId, 'סכום:', storedAmount);
+                    console.log('✅ שמירה מיידית ב-localStorage:', donorId, 'סכום:', finalAmount);
                 } catch (e) {
                     console.error('❌ שגיאה בשמירה ב-localStorage:', e);
                 }
@@ -22929,8 +22926,7 @@
             const manualIdInput = document.getElementById('updateByApiMatrimIdManual');
             const amountInput = document.getElementById('updateByApiAmount');
             const commentsInput = document.getElementById('updateByApiComments');
-            const amountRaw = parseFloat(amountInput && amountInput.value) || 0;
-            const amount = amountRaw >= 0 ? Math.floor(amountRaw) : Math.ceil(amountRaw);
+            const amount = Math.round(parseFloat(amountInput && amountInput.value) || 0);
             if (amount === 0) {
                 setResult('נא להזין סכום (שונה מ-0). חיובי = תוספת, שלילי = הפחתה.', true);
                 return;
@@ -22964,7 +22960,7 @@
                 setResult('✅ העדכון נשלח בהצלחה לנדרים פלוס.', false);
                 if (amountInput) amountInput.value = '';
                 if (commentsInput) commentsInput.value = '';
-                // עדכון הסכום בתוכנה ובגליון – תואם בדיוק לנציג בנדרים (עיגול כלפי מטה)
+                // עדכון הסכום גם בתוכנה ובגליון כדי שיתאים לנדרים פלוס
                 if (selectedId && donor && typeof donor.id !== 'undefined') {
                     const d = (donors || []).find(x => x.id === donor.id || String(x.id) === String(donor.id));
                     if (d) {
@@ -23007,8 +23003,7 @@
             const donorSelect = document.getElementById('nedarimCorrectionDonorSelect');
             const manualIdInput = document.getElementById('nedarimCorrectionMatrimIdManual');
             const amountInput = document.getElementById('nedarimCorrectionAmount');
-            const amountRaw = parseFloat(amountInput && amountInput.value) || 0;
-            const amount = amountRaw > 0 ? Math.floor(amountRaw) : 0;
+            const amount = Math.round(parseFloat(amountInput && amountInput.value) || 0);
             if (amount <= 0) {
                 setResult('נא להזין סכום להפחתה (מספר חיובי).', true);
                 return;
