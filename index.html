@@ -13293,6 +13293,24 @@
                     }
                     if (sheetSyncSaveEnabled && typeof saveToGoogleSheets === 'function') await saveToGoogleSheets();
                 }
+                if (url && typeof fetchAppsScript === 'function') {
+                    try {
+                        var gr = await fetchAppsScript(url, { action: 'getAllNoDonors', _: Date.now() }, { retries: 1, timeout: 8000 });
+                        if (gr && gr.success && gr.groups && Array.isArray(gr.groups) && gr.groups.length > 0) {
+                            var now = Date.now();
+                            var curGroups = groups;
+                            groups = gr.groups.map(function(sg) {
+                                var local = curGroups.find(function(g) { return groupIdsMatch(g.id, sg.id); });
+                                var lastUp = local ? recentlyUpdatedGroups.get(local.id) : null;
+                                if (local && lastUp != null && (now - lastUp < 35000)) {
+                                    return Object.assign({}, sg, { name: local.name, goal: local.goal, orderNumber: local.orderNumber, showInLiveView: local.showInLiveView, updatedAt: local.updatedAt });
+                                }
+                                return Object.assign({}, sg);
+                            });
+                            if (typeof saveData === 'function') saveData();
+                        }
+                    } catch (e) { console.warn('⚠️ [תצוגת לייב] רענון שמות קבוצות:', e); }
+                }
                 if (typeof syncAllDataToDatabase === 'function') await syncAllDataToDatabase();
                 if (typeof updateLiveView === 'function') updateLiveView(true, true); // forceFromScheduled – עדכון מתוזמן
                 if (typeof updateLeadersList === 'function') updateLeadersList(true);
@@ -13389,6 +13407,26 @@
                     if (r && r.success && typeof notifyDataChanged === 'function') notifyDataChanged();
                 } else if (updateType === 'loadMatrim' && typeof loadMatrimFromNedarim === 'function') {
                     await loadMatrimFromNedarim(true);
+                }
+                if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'מרענן שמות קבוצות');
+                var sheetUrl = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').toString().trim();
+                if (sheetUrl && typeof fetchAppsScript === 'function') {
+                    try {
+                        var groupsResult = await fetchAppsScript(sheetUrl, { action: 'getAllNoDonors', _: Date.now() }, { retries: 1, timeout: 8000 });
+                        if (groupsResult && groupsResult.success && groupsResult.groups && Array.isArray(groupsResult.groups) && groupsResult.groups.length > 0) {
+                            var now = Date.now();
+                            var currentGroups = groups;
+                            groups = groupsResult.groups.map(function(sg) {
+                                var local = currentGroups.find(function(g) { return groupIdsMatch(g.id, sg.id); });
+                                var lastUp = local ? recentlyUpdatedGroups.get(local.id) : null;
+                                if (local && lastUp != null && (now - lastUp < 35000)) {
+                                    return Object.assign({}, sg, { name: local.name, goal: local.goal, orderNumber: local.orderNumber, showInLiveView: local.showInLiveView, updatedAt: local.updatedAt });
+                                }
+                                return Object.assign({}, sg);
+                            });
+                            if (typeof saveData === 'function') saveData();
+                        }
+                    } catch (e) { console.warn('⚠️ [תצוגת לייב] לא הצלחתי לרענן שמות קבוצות:', e); }
                 }
                 if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'עדכון תצוגה');
                 if (typeof syncAllDataToDatabase === 'function') await syncAllDataToDatabase();
@@ -16513,7 +16551,9 @@
 
             groupRenderOrder.forEach(groupId => {
                 const group = groups.find(g => groupIdsMatch(g.id, groupId));
-                const groupName = group ? group.name : 'ללא קבוצה';
+                const firstDonorInGroup = (donorsByGroup.get(groupId) || [])[0];
+                const donorGroupName = firstDonorInGroup && firstDonorInGroup.groupName ? firstDonorInGroup.groupName : null;
+                const groupName = (group && (group.name || '').toString().trim()) || (donorGroupName && donorGroupName.toString().trim()) || (group ? 'קבוצה ' + (group.id || '') : 'ללא קבוצה');
                 let donorsInGroup = donorsByGroup.get(groupId) || [];
                 if (!donorsInGroup.length) return;
 
@@ -16578,7 +16618,7 @@
                 donorsInGroup.forEach(donor => {
                     const percentage = donor.personalGoal > 0 ? (donor.amount / donor.personalGoal) * 100 : 0;
                     const uniqueId = `donor_${donor.id}_${itemCounter++}`;
-                    const groupLabel = group ? group.name : 'ללא קבוצה';
+                    const groupLabel = groupName;
 
                     const donorDisplayName = getDonorDisplayName(donor);
                     htmlParts.push(`
@@ -16612,9 +16652,10 @@
             donorsWithNames.forEach(donor => {
                 const groupObj = groups.find(g => groupIdsMatch(g.id, donor.groupId)) || null;
                 const percentage = donor.personalGoal > 0 ? (donor.amount / donor.personalGoal) * 100 : 0;
+                const dn = (groupObj && (groupObj.name || '').toString().trim()) || (donor.groupName && donor.groupName.toString().trim()) || (groupObj ? 'קבוצה ' + (groupObj.id || '') : '') || 'ללא קבוצה';
                 donorDataMap.set(String(donor.id), {
                     name: getDonorDisplayName(donor),
-                    groupName: groupObj ? groupObj.name : 'ללא קבוצה',
+                    groupName: dn,
                     amount: donor.amount,
                     goal: donor.personalGoal,
                     percentage
@@ -21647,7 +21688,7 @@
                 if (result.groups && Array.isArray(result.groups) && result.groups.length > 0) {
                     const now = Date.now();
                     const mergedGroups = result.groups.map(sheetGroup => {
-                        const localGroup = groups.find(g => g.id === sheetGroup.id);
+                        const localGroup = groups.find(g => groupIdsMatch(g.id, sheetGroup.id));
                         const lastUpdate = localGroup ? recentlyUpdatedGroups.get(sheetGroup.id) : null;
                         if (localGroup && lastUpdate != null && (now - lastUpdate < 35000)) {
                             return { ...sheetGroup, name: localGroup.name, goal: localGroup.goal, orderNumber: localGroup.orderNumber, showInLiveView: localGroup.showInLiveView, updatedAt: localGroup.updatedAt };
@@ -22375,7 +22416,7 @@
                 if (result.groups && Array.isArray(result.groups)) {
                     const now = Date.now();
                     groups = result.groups.map(sg => {
-                        const local = groups.find(g => g.id === sg.id);
+                        const local = groups.find(g => groupIdsMatch(g.id, sg.id));
                         const lastUp = local ? recentlyUpdatedGroups.get(sg.id) : null;
                         if (local && lastUp != null && (now - lastUp < PROTECTION_WINDOW_MS)) {
                             return { ...sg, name: local.name, goal: local.goal, orderNumber: local.orderNumber, showInLiveView: local.showInLiveView, updatedAt: local.updatedAt };
@@ -22455,7 +22496,7 @@
                 if (result.groups && Array.isArray(result.groups) && result.groups.length > 0) {
                     const now = Date.now();
                     const merged = result.groups.map(sg => {
-                        const local = groups.find(g => g.id === sg.id);
+                        const local = groups.find(g => groupIdsMatch(g.id, sg.id));
                         const lastUp = local ? recentlyUpdatedGroups.get(sg.id) : null;
                         if (local && lastUp != null && (now - lastUp < PROTECTION_WINDOW_MS)) {
                             return { ...sg, name: local.name, goal: local.goal, orderNumber: local.orderNumber, showInLiveView: local.showInLiveView, updatedAt: local.updatedAt };
