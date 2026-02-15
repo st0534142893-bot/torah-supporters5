@@ -6541,7 +6541,7 @@
                                 </div>
                                 <div>
                                     <label for="pairsAmountInput" class="manual-search-label">סה״כ סכום שנאסף (₪)</label>
-                                    <input type="number" id="pairsAmountInput" placeholder="למשל: 1800" min="1" step="1" style="padding: 14px 18px; font-size: 18px; border: 2px solid var(--border); border-radius: 10px; width: 100%; max-width: 200px;">
+                                    <input type="number" id="pairsAmountInput" placeholder="למשל: 1800" min="0.01" step="0.01" style="padding: 14px 18px; font-size: 18px; border: 2px solid var(--border); border-radius: 10px; width: 100%; max-width: 200px;">
                                     <p id="pairsSplitPreview" style="margin-top: 8px; font-size: 13px; color: var(--muted);"></p>
                                 </div>
                                 <div style="display: flex; gap: 12px; flex-wrap: wrap;">
@@ -8290,7 +8290,8 @@
                     }
                 }
             }
-            donor.amount = Math.max(0, Math.round(parseFloat(donor.amount) || 0));
+            const amt = parseFloat(donor.amount) || 0;
+            donor.amount = Math.max(0, amt >= 0 ? Math.floor(amt) : Math.ceil(amt));
             donor.personalGoal = Math.max(0, Math.round(parseFloat(donor.personalGoal) || defaultDonorGoal));
             donor.createdAt = donor.createdAt || donor.date || new Date().toISOString();
             donor.history = Array.isArray(donor.history) ? donor.history : [];
@@ -8306,7 +8307,8 @@
                 });
             }
             alignBreakdownToAmount(donor, donor.amount);
-            donor.amount = Math.max(0, Math.round(donor.amount || 0));
+            const amt2 = donor.amount || 0;
+            donor.amount = Math.max(0, amt2 >= 0 ? Math.floor(amt2) : Math.ceil(amt2));
             return donor;
         }
         function ensureDonorsNormalized() {
@@ -15000,10 +15002,11 @@
                 return;
             }
 
+            const amountStored = Math.max(0, Math.floor(amountInput || 0));
             const donor = {
                 id: Date.now(),
                 name: name,
-                amount: Math.max(0, Math.round(amountInput)),
+                amount: amountStored,
                 groupId: groupId,
                 personalGoal: Math.max(0, Math.round(goalInput)) || defaultDonorGoal,
                 createdAt: new Date().toISOString(),
@@ -15055,10 +15058,11 @@
                 return;
             }
             
+            const amountStored = Math.max(0, Math.floor(amountValue || 0));
             const donor = {
                 id: Date.now(),
                 name: name,
-                amount: Math.max(0, Math.round(amountValue)),
+                amount: amountStored,
                 groupId: groupId,
                 personalGoal: defaultDonorGoal,
                 createdAt: new Date().toISOString(),
@@ -15301,7 +15305,7 @@
                                 </div>
                                 <div class="donor-edit-field">
                                     <label for="editAmount_${donor.id}">סה"כ נאסף</label>
-                                    <input type="number" id="editAmount_${donor.id}" value="${donor.amount}" min="0" step="1">
+                                    <input type="number" id="editAmount_${donor.id}" value="${donor.amount}" min="0" step="0.01">
                                 </div>
                                 <div class="donor-edit-field">
                                     <label for="editGoal_${donor.id}">יעד אישי</label>
@@ -15314,8 +15318,8 @@
                                     </select>
                                 </div>
                                 <div class="donor-edit-field">
-                                    <label for="editDelta_${donor.id}">שינוי סכום (אפשר להוסיף או להפחית)</label>
-                                    <input type="number" id="editDelta_${donor.id}" placeholder="+250 או -500">
+                                    <label for="editDelta_${donor.id}">שינוי סכום (אפשר אגורות, למשל 100.5 או -50)</label>
+                                    <input type="number" id="editDelta_${donor.id}" placeholder="+250 או -500" step="0.01">
                                 </div>
                             </div>
                             <div class="donor-edit-actions">
@@ -15924,7 +15928,7 @@
                 }
             }
 
-            const parsedAmount = amountInput ? Math.max(0, Math.round(parseFloat(amountInput.value) || 0)) : (donor.amount || 0);
+            const parsedAmount = amountInput ? (parseFloat(amountInput.value) || 0) : (donor.amount || 0);
             const parsedGoal = goalInput ? Math.max(0, Math.round(parseFloat(goalInput.value) || 0)) : (donor.personalGoal || defaultDonorGoal);
             let selectedGroup = groupSelect ? groupSelect.value : donor.groupId;
             if (!selectedGroup && groups.length) {
@@ -15932,14 +15936,15 @@
             }
 
             const deltaRaw = deltaInput ? deltaInput.value.trim() : '';
-            const manualDelta = deltaRaw ? Math.round(parseFloat(deltaRaw) || 0) : 0;
+            const manualDelta = deltaRaw ? (parseFloat(deltaRaw) || 0) : 0;
 
-            let finalAmount = parsedAmount;
+            let finalAmountRaw = parsedAmount;
             if (manualDelta) {
-                finalAmount = Math.max(0, parsedAmount + manualDelta);
+                finalAmountRaw = Math.max(0, parsedAmount + manualDelta);
             }
             const oldAmount = donor.amount || 0;
-            const amountDelta = finalAmount - oldAmount;
+            const storedAmount = finalAmountRaw >= 0 ? Math.floor(finalAmountRaw) : Math.ceil(finalAmountRaw);
+            const amountDelta = storedAmount - oldAmount;
 
             let changed = false;
             const oldDisplayName = donor.displayName || donor.name;
@@ -15973,7 +15978,7 @@
                 changed = true;
             }
             const previousBreakdown = getDonorDailyBreakdown(donor).slice();
-            donor.amount = finalAmount;
+            donor.amount = storedAmount;
             alignBreakdownToAmount(donor, donor.amount);
             const afterBreakdown = donor.dailyBreakdown;
             const breakdownChanged = afterBreakdown.some((val, index) => val !== previousBreakdown[index]);
@@ -16000,7 +16005,7 @@
                 try {
                     const donorsStr = JSON.stringify(donors);
                     localStorage.setItem('donors', donorsStr);
-                    console.log('✅ שמירה מיידית ב-localStorage:', donorId, 'סכום:', finalAmount);
+                    console.log('✅ שמירה מיידית ב-localStorage:', donorId, 'סכום:', storedAmount);
                 } catch (e) {
                     console.error('❌ שגיאה בשמירה ב-localStorage:', e);
                 }
@@ -16273,12 +16278,13 @@
 
             updateHomeDonorBreakdown();
         }
-        // עדכון תצוגה בלייב עם debouncing
+        // עדכון תצוגה בלייב עם debouncing – מונע קפיצות וריצוד
         let updateLiveViewTimeout = null;
         let isUpdatingLiveView = false;
         let lastLiveViewUpdateWhenActive = 0;
         let updateLiveViewScheduledWhenActive = null;
         const LIVE_VIEW_BACKGROUND_UPDATE_INTERVAL_MS = 60000; // בתצוגת לייב – עדכון רקע לכל היותר כל 60 שניות (גלילה חלקה, ללא קפיצות)
+        const LIVE_VIEW_DEBOUNCE_MS = 150; // debounce ארוך יותר – מונע קפיצות מעדכונים רצופים
         function updateLiveView(immediate = false, forceFromScheduled = false) {
             // 🛡️ במצב עדכון מתוזמן – חסימת עדכונים מבחוץ. רק העדכון המתוזמן (סיום גלילה / כל X דקות) מעדכן.
             if (typeof isLiveViewScheduledUpdatesOnly === 'function' && isLiveViewScheduledUpdatesOnly() && !forceFromScheduled) return;
@@ -16292,12 +16298,12 @@
             }
             
             if (isUpdatingLiveView && !immediate) {
-                updateLiveViewTimeout = setTimeout(() => updateLiveView(true), 100);
+                updateLiveViewTimeout = setTimeout(() => updateLiveView(true), LIVE_VIEW_DEBOUNCE_MS);
                 return;
             }
             
             if (!immediate && updateLiveViewTimeout === null) {
-                updateLiveViewTimeout = setTimeout(() => updateLiveView(true), 50);
+                updateLiveViewTimeout = setTimeout(() => updateLiveView(true), LIVE_VIEW_DEBOUNCE_MS);
                 return;
             }
             
@@ -16642,7 +16648,7 @@
                     goalValueEl.dataset.goal = data.goal;
                 }
                 const progressWrapper = card.querySelector('.live-donor-progress-circle-wrapper');
-                if (progressWrapper && Math.abs(prev.percentage - data.percentage) > 0.1) {
+                if (progressWrapper && Math.abs(prev.percentage - data.percentage) > 0.5) {
                     progressWrapper.innerHTML = createProgressCircle(Math.min(data.percentage, 100), `donor_${donorId}`, data.percentage);
                 }
             };
@@ -16702,7 +16708,9 @@
                 isUpdatingLiveView = false;
             });
         }
-        // עדכון רשימת מובילים
+        // עדכון רשימת מובילים – עם debounce להקטנת קפיצות (עדכון מתוזמן לא מתעכב)
+        let updateLeadersListTimeout = null;
+        const LEADERS_LIST_DEBOUNCE_MS = 80;
         function updateLeadersList(forceFromScheduled = false) {
             // 🛡️ במצב עדכון מתוזמן – חסימת עדכונים מבחוץ
             if (typeof isLiveViewScheduledUpdatesOnly === 'function' && isLiveViewScheduledUpdatesOnly() && !forceFromScheduled) return;
@@ -16710,6 +16718,18 @@
             if (typeof isLiveViewActive === 'function' && isLiveViewActive() && (liveViewSettings.liveViewUpdateShow || 'loading') === 'sidepanel' && !liveViewSidePanelUpdateInProgress) {
                 return;
             }
+            // debounce – עדכון מתוזמן רץ מיד
+            if (!forceFromScheduled && typeof isLiveViewActive === 'function' && isLiveViewActive()) {
+                if (updateLeadersListTimeout) clearTimeout(updateLeadersListTimeout);
+                updateLeadersListTimeout = setTimeout(() => {
+                    updateLeadersListTimeout = null;
+                    updateLeadersListCore();
+                }, LEADERS_LIST_DEBOUNCE_MS);
+                return;
+            }
+            updateLeadersListCore();
+        }
+        function updateLeadersListCore() {
             const leadersList = document.getElementById('leadersList');
             if (!leadersList) return;
             
@@ -16817,7 +16837,9 @@
             const existingLeaders = leadersList.querySelectorAll('.leader-item[data-donor-id]');
             const existingGroupCards = leadersList.querySelectorAll('.leader-target-card[data-group-id]');
             const existingSummary = leadersList.querySelector('.leader-summary-card');
-            const canIncremental = existingLeaders.length > 0 || existingGroupCards.length > 0;
+            const canIncremental = existingLeaders.length > 0 || existingGroupCards.length > 0 || existingSummary;
+            // תמיד עדכון חלקי כשיש מבנה קיים – מונע קפיצות בעמודת המובילים (innerHTML גורם לריצוד)
+            const useIncremental = canIncremental && (existingGroupCards.length > 0 || existingSummary || existingLeaders.length > 0);
 
             function updateLeaderItem(el, donor, rank) {
                 if (!el) return;
@@ -16832,7 +16854,7 @@
                 el.classList.add('rank-' + Math.min(rank, 5));
             }
 
-            if (canIncremental && (existingLeaders.length >= 1 || (sortedDonors.length === 0 && existingSummary))) {
+            if (useIncremental) {
                 // עדכון חלקי – רק מספרים ורכיבים, בלי להחליף DOM
                 const leadersContainer = leadersList.querySelector('.leaders-list') || leadersList;
                 const firstLeaderParent = existingLeaders[0] && existingLeaders[0].parentNode;
@@ -16902,7 +16924,7 @@
             if (isLiveViewActive() && liveViewSettings.enableAutoScroll) {
                 if (!leadersScrollIsRunning) {
                     setTimeout(() => restartLeadersAutoScroll({ immediate: true }), 100);
-                } else if (!canIncremental) {
+                } else if (!useIncremental) {
                     syncLeadersCloneToPrimary(leadersList);
                 }
             }
@@ -18206,13 +18228,13 @@
 
             let roundedDelta;
             if (typeof overrideAmount === 'number' && Number.isFinite(overrideAmount)) {
-                roundedDelta = Math.round(overrideAmount);
+                roundedDelta = Math.round(overrideAmount * 100) / 100;
                 if (!roundedDelta) {
                     if (!silent) showNotification('סכום לא תקין, אנא נסה שוב');
                     return;
                 }
             } else {
-                const amountInput = prompt('הזן סכום תשלום חדש (₪, אפשר להקיש ערך שלילי להפחתה):');
+                const amountInput = prompt('הזן סכום תשלום חדש (₪, אפשר אגורות – למשל 100.5, אפשר שלילי להפחתה):');
                 if (amountInput === null) return;
                 const sanitizedAmount = amountInput.toString().replace(/[^\d.,-]/g, '').replace(',', '.').trim();
                 const isNegative = sanitizedAmount.includes('-');
@@ -18223,7 +18245,7 @@
                     return;
                 }
                 const signedValue = isNegative ? -parsedValue : parsedValue;
-                roundedDelta = Math.round(signedValue);
+                roundedDelta = Math.round(signedValue * 100) / 100;
                 if (!roundedDelta) {
                     showNotification('סכום לא תקין, אנא נסה שוב');
                     return;
@@ -18896,8 +18918,9 @@
         // 🔐 כל הקריאות עוברות דרך השרת - הסודות לא חשופים ללקוח!
         async function uploadOfflineDonation(matrimName, clientName, amount, comments = '', groupName = '', matrimId = null) {
             try {
-                // בודק שהסכום תקין (מאפשר גם שלילי להפחתות)
-                const validAmount = Math.round(parseFloat(amount) || 0);
+                // עיגול כלפי מטה (חיובי) או כלפי מעלה (שלילי) – לא להוסיף/להפחית יותר מהסכום הממשי
+                const raw = parseFloat(amount) || 0;
+                const validAmount = raw >= 0 ? Math.floor(raw) : Math.ceil(raw);
                 if (validAmount === 0) {
                     throw new Error('סכום התרומה חייב להיות שונה מ-0');
                 }
@@ -22906,7 +22929,8 @@
             const manualIdInput = document.getElementById('updateByApiMatrimIdManual');
             const amountInput = document.getElementById('updateByApiAmount');
             const commentsInput = document.getElementById('updateByApiComments');
-            const amount = Math.round(parseFloat(amountInput && amountInput.value) || 0);
+            const amountRaw = parseFloat(amountInput && amountInput.value) || 0;
+            const amount = amountRaw >= 0 ? Math.floor(amountRaw) : Math.ceil(amountRaw);
             if (amount === 0) {
                 setResult('נא להזין סכום (שונה מ-0). חיובי = תוספת, שלילי = הפחתה.', true);
                 return;
@@ -22940,7 +22964,7 @@
                 setResult('✅ העדכון נשלח בהצלחה לנדרים פלוס.', false);
                 if (amountInput) amountInput.value = '';
                 if (commentsInput) commentsInput.value = '';
-                // עדכון הסכום גם בתוכנה ובגליון כדי שיתאים לנדרים פלוס
+                // עדכון הסכום בתוכנה ובגליון – תואם בדיוק לנציג בנדרים (עיגול כלפי מטה)
                 if (selectedId && donor && typeof donor.id !== 'undefined') {
                     const d = (donors || []).find(x => x.id === donor.id || String(x.id) === String(donor.id));
                     if (d) {
@@ -22983,7 +23007,8 @@
             const donorSelect = document.getElementById('nedarimCorrectionDonorSelect');
             const manualIdInput = document.getElementById('nedarimCorrectionMatrimIdManual');
             const amountInput = document.getElementById('nedarimCorrectionAmount');
-            const amount = Math.round(parseFloat(amountInput && amountInput.value) || 0);
+            const amountRaw = parseFloat(amountInput && amountInput.value) || 0;
+            const amount = amountRaw > 0 ? Math.floor(amountRaw) : 0;
             if (amount <= 0) {
                 setResult('נא להזין סכום להפחתה (מספר חיובי).', true);
                 return;
