@@ -7905,7 +7905,7 @@
         let donorSearchTerm = '';
         let manualDonorSearchTerm = '';
         let addresses = [];
-        let semiFinalSettings = { durationMinutes: 30, videoUrl: 'https://drive.google.com/file/d/1sConNr3wigMOyjm2CCT94ssNIzGJ84mb/view?usp=sharing' };
+        let semiFinalSettings = { durationMinutes: 30, videoUrl: 'https://drive.google.com/file/d/1sConNr3wigMOyjm2CCT94ssNIzGJ84mb/view?usp=drive_link' };
         let groups = [
             { id: 'group1', name: 'קבוצה 1', goal: defaultGroupGoal, orderNumber: 1 },
             { id: 'group2', name: 'קבוצה 2', goal: defaultGroupGoal, orderNumber: 2 },
@@ -10905,7 +10905,7 @@
             const elDuration = document.getElementById('semifinalDuration');
             const elUrl = document.getElementById('semifinalVideoUrl');
             if (elDuration) elDuration.value = semiFinalSettings.durationMinutes || 30;
-            if (elUrl) elUrl.value = semiFinalSettings.videoUrl || 'https://drive.google.com/file/d/1sConNr3wigMOyjm2CCT94ssNIzGJ84mb/view?usp=sharing';
+            if (elUrl) elUrl.value = semiFinalSettings.videoUrl || 'https://drive.google.com/file/d/1sConNr3wigMOyjm2CCT94ssNIzGJ84mb/view?usp=drive_link';
         }
         function playSemifinalVideo() {
             const embedUrl = getEmbedUrlFromDriveUrl(semiFinalSettings.videoUrl);
