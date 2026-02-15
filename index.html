@@ -4620,7 +4620,7 @@
             user-select: none;
         }
 
-        /* חצי הגמר */
+        /* חגיגת ניצחון */
         .semifinal-section { background: rgba(255, 255, 255, 0.5); }
         .semifinal-panel {
             display: flex;
@@ -5981,10 +5981,10 @@
             <p class="app-lock-contact-note">במקרה ונתקלת בנעילה ואתה לקוח של תוכנה זו – ניתן ליצור קשר עם <strong>S.C. פיתוח אתרים ותוכנות</strong> בדוא"ל <a href="mailto:s0534142893@gmail.com">s0534142893@gmail.com</a>. נשתדל לחזור אליכם בהקדם.</p>
         </div>
     </div>
-    <!-- overlay סרטון חצי הגמר – מסך מלא -->
+    <!-- overlay סרטון חגיגת הניצחון – מסך מלא -->
     <div class="semifinal-video-overlay" id="semifinalVideoOverlay">
         <div class="semifinal-video-header">
-            <span>חצי הגמר</span>
+            <span>חגיגת ניצחון</span>
             <button class="semifinal-close-btn" onclick="closeSemifinalVideo()">✕ סגור</button>
         </div>
         <iframe id="semifinalVideoIframe" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
@@ -6027,9 +6027,9 @@
                 <button class="nav-item" data-section="planning">תכנון קמפיין לשנים הבאות</button>
                 <button class="nav-item" data-section="groomGrant">מענק לחתנים</button>
                 <button class="nav-item" data-section="grants">קבלת מענקים למתרמים</button>
-                <button class="nav-item" data-section="semifinal">חצי הגמר</button>          
+                <button class="nav-item" data-section="semifinal">חגיגת ניצחון</button>          
                 <button class="nav-item" data-section="addresses">כתובות</button>
-                <button class="nav-item" data-section="instructions">הוראות שימוש בתוכנה</button>
+                <button class="nav-item" data-section="instructions">אודות התוכנה</button>
                 </div>
         </nav>
 
@@ -6088,15 +6088,15 @@
                 </div>
             </section>
 
-            <!-- חצי הגמר -->
+            <!-- חגיגת ניצחון -->
             <section class="content-section semifinal-section" id="semifinalSection">
                 <div class="instructions-panel">
-                    <h2>חצי הגמר</h2>
-                    <p>לחץ על הכפתור להצגת סרטון חצי הגמר במסך מלא:</p>
+                    <h2>חגיגת ניצחון</h2>
+                    <p>לחץ על הכפתור להצגת סרטון חגיגת הניצחון במסך מלא:</p>
                     <div class="external-action-card">
                         <div class="external-action-content">
                             <span class="external-action-label">צפייה בסרטון</span>
-                            <strong class="external-action-title">סרטון חצי הגמר</strong>
+                            <strong class="external-action-title">סרטון חגיגת הניצחון</strong>
                             <p class="external-action-note">הסרטון יופעל במסך מלא. ניתן לשנות את הקישור בהגדרות למטה.</p>
                         </div>
                         <a class="external-action-button" href="#" onclick="playSemifinalVideo(); return false;">
@@ -7435,11 +7435,11 @@
                     </div>
                 </div>
             </section>
-            <!-- הוראות שימוש -->
+            <!-- אודות התוכנה -->
             <section class="content-section instructions-section" id="instructionsSection">
                 <div class="instructions-panel">
                     <div class="instructions-hero">
-                        <h1>🎯 מערכת ניהול קמפיין גיוס כספים</h1>
+                        <h1>🎯 אודות התוכנה – מערכת ניהול קמפיין גיוס כספים</h1>
                         <p>מערכת מתקדמת ומקיפה לניהול קמפיין גיוס כספים, המאפשרת ניהול מלא של מתרימים, קבוצות, סנכרון עם מערכות חיצוניות ותצוגת נתונים בזמן אמת. המערכת מספקת כלים מקצועיים לניהול יעיל ומסודר של כל תהליך הגיוס.</p>
                     </div>
 
@@ -7591,7 +7591,7 @@
                             </div>
 
                             <div class="instructions-card">
-                                <h3>חצי הגמר</h3>
+                                <h3>חגיגת ניצחון</h3>
                                 <ul>
                                     <li>הצגת סרטון במסך מלא כשמגיעים לרגע חגיגי</li>
                                     <li>קישור לסרטון מ-Google Drive</li>
@@ -7673,70 +7673,6 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <div>
-                        <h2>הוראות הפעלה מפורטות</h2>
-                        
-                        <div class="instructions-card">
-                            <h3>התחלת עבודה ראשונית</h3>
-                            <ol>
-                                <li><strong>הגדרת חיבור ל-API:</strong> עברו למדור "ניהול" → "עדכונים" והזינו את ה-URL של Google Apps Script שלכם</li>
-                                <li><strong>הגדרת Google Sheets:</strong> הזינו את מזהה הגליון (Sheet ID) ואת שם הגליון</li>
-                                <li><strong>הגדרת נדרים פלוס:</strong> הזינו את פרטי החיבור ל-API של נדרים פלוס</li>
-                                <li><strong>יצירת קבוצות:</strong> עברו ל"ניהול קבוצות" ויצרו את הקבוצות הראשונות</li>
-                            </ol>
-                        </div>
-
-                        <div class="instructions-card">
-                            <h3>הפעלת תצוגת לייב</h3>
-                            <ol>
-                                <li>עברו למדור "תצוגה בלייב"</li>
-                                <li>התאימו את העיצוב והגדרות התצוגה לפי הצורך</li>
-                                <li>לחצו על "הפעל תצוגת לייב"</li>
-                                <li>פתחו את הקישור בחלון נפרד או העתיקו את ה-URL למקרן</li>
-                                <li>התצוגה תתעדכן אוטומטית עם כל שינוי בנתונים</li>
-                            </ol>
-                        </div>
-
-                        <div class="instructions-card">
-                            <h3>סנכרון ידני</h3>
-                            <ol>
-                                <li><strong>סנכרון עם נדרים פלוס:</strong> עברו ל"ניהול" → "עדכונים" ולחצו על "סנכרון תרומות לנדרים פלוס"</li>
-                                <li><strong>בדיקת סכום מ-API:</strong> לחצו על "בדוק סכום כולל מ-API" לקבלת נתונים מעודכנים</li>
-                                <li><strong>טעינה מגליון:</strong> לחצו על "טען מגליון" לייבוא נתונים מ-Google Sheets</li>
-                                <li><strong>שמירה לגליון:</strong> לחצו על "שמור לגליון" לייצוא נתונים ל-Google Sheets</li>
-                            </ol>
-                        </div>
-
-                        <div class="instructions-card">
-                            <h3>ייצוא דוחות</h3>
-                            <ol>
-                                <li><strong>דוח כספי:</strong> עברו ל"חישוב לכל השנה" ולחצו על "ייצוא לאקסל"</li>
-                                <li><strong>היסטוריית מתרימים:</strong> במדור "ניהול" → "ניהול מתרימים", פתחו פרטי מתרים ולחצו "ייצוא היסטוריה לאקסל"</li>
-                                <li>הקבצים יורדו אוטומטית למחשב שלכם</li>
-                            </ol>
-                        </div>
-                    </div>
-
-                    <div class="instructions-note">
-                        <strong>💡 טיפים חשובים:</strong>
-                        <ul style="margin-top: 10px; padding-right: 20px;">
-                            <li>בצעו גיבוי שבועי של הנתונים באמצעות ייצוא ל-Excel</li>
-                            <li>ודאו שהיעדים מעודכנים לפני אירועים גדולים</li>
-                            <li>עדכנו את תצוגת הלייב לאחר כל שינוי משמעותי בנתונים</li>
-                            <li>בדקו את חיבור ה-API לפני שימוש בתכונות הסנכרון</li>
-                        </ul>
-                    </div>
-
-                    <div class="instructions-note">
-                        <strong>🔧 פתרון תקלות נפוצות:</strong>
-                        <ul style="margin-top: 10px; padding-right: 20px;">
-                            <li><strong>שגיאת ייבוא:</strong> ודאו שהעמודות ממוספרות נכון, שאין תווים מיותרים בכותרות, ושמרו את הקובץ בפורמט .xlsx</li>
-                            <li><strong>בעיית סנכרון:</strong> בדקו את חיבור ה-API והגדרות Google Sheets במדור "עדכונים"</li>
-                            <li><strong>תצוגת לייב לא מתעדכנת:</strong> עדכנו ידנית במדור &quot;עדכונים&quot; או ודאו שהעדכון האוטומטי בתצוגת לייב פעיל</li>
-                            <li><strong>בעיית הרשאות:</strong> בדקו את הגדרות הסיסמה והרשאות במדור "הגדרת סיסמה"</li>
-                        </ul>
                     </div>
 
                     <div class="support-section">
@@ -7969,7 +7905,7 @@
         let donorSearchTerm = '';
         let manualDonorSearchTerm = '';
         let addresses = [];
-        let semiFinalSettings = { durationMinutes: 30, videoUrl: 'https://drive.google.com/file/d/1HqEWgthH8jceOP5R5VFwntL5N1jHhf1K/view?usp=sharing' };
+        let semiFinalSettings = { durationMinutes: 30, videoUrl: 'https://drive.google.com/file/d/1sConNr3wigMOyjm2CCT94ssNIzGJ84mb/view?usp=sharing' };
         let groups = [
             { id: 'group1', name: 'קבוצה 1', goal: defaultGroupGoal, orderNumber: 1 },
             { id: 'group2', name: 'קבוצה 2', goal: defaultGroupGoal, orderNumber: 2 },
@@ -8155,7 +8091,7 @@
         const SECTION_OPTIONS = [
             { id: 'addresses', label: 'כתובות' },
             { id: 'home', label: 'דף הבית' },
-            { id: 'semifinal', label: 'חצי הגמר' },
+            { id: 'semifinal', label: 'חגיגת ניצחון' },
             { id: 'breakdown', label: 'פילוח נתונים' },
             { id: 'management', label: 'ניהול (כל המדור)' },
             { id: 'management-groups', label: 'ניהול → ניהול קבוצות' },
@@ -8175,7 +8111,7 @@
             { id: 'planning', label: 'תכנון קמפיין לשנים הבאות' },
             { id: 'groomGrant', label: 'מענק לחתנים' },
             { id: 'grants', label: 'קבלת מענקים למתרמים' },
-            { id: 'instructions', label: 'הוראות שימוש בתוכנה' }
+            { id: 'instructions', label: 'אודות התוכנה' }
         ];
         let campaignPlanning = {
             campaignName: '',
@@ -10945,7 +10881,7 @@
             }
         }
 
-        // ——— חצי הגמר: המרת קישור Google Drive ל-embed ———
+        // ——— חגיגת ניצחון: המרת קישור Google Drive ל-embed ———
         function getEmbedUrlFromDriveUrl(url) {
             if (!url || typeof url !== 'string') return '';
             const m = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
@@ -10956,7 +10892,7 @@
             const url = (document.getElementById('semifinalVideoUrl')?.value || '').trim();
             semiFinalSettings = { durationMinutes: Math.max(1, Math.min(60, duration)), videoUrl: url || semiFinalSettings.videoUrl };
             try { localStorage.setItem('semiFinalSettings', JSON.stringify(semiFinalSettings)); } catch (e) {}
-            if (typeof showNotification === 'function') showNotification('הגדרות חצי הגמר נשמרו');
+            if (typeof showNotification === 'function') showNotification('הגדרות חגיגת הניצחון נשמרו');
         }
         function loadSemifinalSettings() {
             try {
@@ -10969,7 +10905,7 @@
             const elDuration = document.getElementById('semifinalDuration');
             const elUrl = document.getElementById('semifinalVideoUrl');
             if (elDuration) elDuration.value = semiFinalSettings.durationMinutes || 30;
-            if (elUrl) elUrl.value = semiFinalSettings.videoUrl || 'https://drive.google.com/file/d/1HqEWgthH8jceOP5R5VFwntL5N1jHhf1K/view?usp=sharing';
+            if (elUrl) elUrl.value = semiFinalSettings.videoUrl || 'https://drive.google.com/file/d/1sConNr3wigMOyjm2CCT94ssNIzGJ84mb/view?usp=sharing';
         }
         function playSemifinalVideo() {
             const embedUrl = getEmbedUrlFromDriveUrl(semiFinalSettings.videoUrl);
@@ -14324,11 +14260,11 @@
             };
             step();
         }
-        // סכום לתצוגה: כשהמקומי נמוך משמעותית מ-API (למשל 101 vs 139k) – משתמשים ב-API כדי לא להציג נתון שגוי
+        // סכום לתצוגה: כשסכום נדרים פלוס (API) גבוה מהמקומי – משתמשים ב-API (מציג את הסכום האמיתי, לא רק מה שנוסף ידנית)
         function getDisplayTotal() {
             const localSum = donors.reduce((sum, d) => sum + (d.amount || 0), 0);
             if (NEDARIM_CONFIG.apiDataLoaded && NEDARIM_CONFIG.totalDonatedFromAPI != null && 
-                NEDARIM_CONFIG.totalDonatedFromAPI > localSum + 1000) {
+                NEDARIM_CONFIG.totalDonatedFromAPI > localSum) {
                 return NEDARIM_CONFIG.totalDonatedFromAPI;
             }
             return localSum;
