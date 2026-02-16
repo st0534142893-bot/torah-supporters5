@@ -13296,7 +13296,10 @@
                 if (url && typeof fetchAppsScript === 'function') {
                     try {
                         var gr = await fetchAppsScript(url, { action: 'getAllNoDonors', _: Date.now() }, { retries: 1, timeout: 8000 });
+                        if (!gr || !gr.success || !gr.groups) gr = await fetchAppsScript(url, { action: 'getGroups', _: Date.now() }, { retries: 1, timeout: 8000 });
                         if (gr && gr.success && gr.groups && Array.isArray(gr.groups) && gr.groups.length > 0) {
+                            var groupsWithEmptyName = gr.groups.filter(function(g) { return !g.name || !String(g.name).trim(); });
+                            if (groupsWithEmptyName.length > 0) console.warn('[קבוצות] התקבלו מהגליון', gr.groups.length, 'קבוצות, מתוכן', groupsWithEmptyName.length, 'ללא שם:', groupsWithEmptyName.map(function(g) { return g.id; }));
                             var now = Date.now();
                             var curGroups = groups;
                             groups = gr.groups.map(function(sg) {
@@ -23247,7 +23250,7 @@
                 const source = document.getElementById('historySourceFilter')?.value;
                 const actionType = document.getElementById('historyActionFilter')?.value;
                 
-                if (source) params.append('source', source);
+שׂ                if (source) params.appenׂd('source', source);
                 if (actionType) params.append('actionType', actionType);
                 
                 const response = await fetch(googleSheetsWebAppUrl + '?' + params.toString(), {
