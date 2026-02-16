@@ -6717,12 +6717,23 @@
                                 </select>
                             </div>
                             
-                            <!-- תאריך – יום ספציפי -->
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <label style="color: #666; font-size: 14px;">יום:</label>
-                                <input type="date" id="historyDateFilter" style="
-                                    padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px;
-                                    font-size: 14px; cursor: pointer;">
+                            <!-- תאריך – בחירת תצוגה: יום / שבוע / חודש -->
+                            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                <label style="color: #666; font-size: 14px;">הצג לפי:</label>
+                                <div style="display: flex; gap: 4px;">
+                                    <button type="button" class="history-view-btn active" data-view="day" style="padding: 6px 14px; border: 1px solid #ddd; border-radius: 6px; background: #4285f4; color: white; cursor: pointer; font-size: 13px;">יום</button>
+                                    <button type="button" class="history-view-btn" data-view="week" style="padding: 6px 14px; border: 1px solid #ddd; border-radius: 6px; background: white; color: #666; cursor: pointer; font-size: 13px;">שבוע</button>
+                                    <button type="button" class="history-view-btn" data-view="month" style="padding: 6px 14px; border: 1px solid #ddd; border-radius: 6px; background: white; color: #666; cursor: pointer; font-size: 13px;">חודש</button>
+                                </div>
+                                <div id="historyDatePickerContainer" style="display: flex; align-items: center; gap: 8px;">
+                                    <label id="historyDatePickerLabel" style="color: #666; font-size: 14px;">יום:</label>
+                                    <input type="date" id="historyDateFilter" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; cursor: pointer;">
+                                </div>
+                                <div id="historyMonthPickerContainer" style="display: none; align-items: center; gap: 8px;">
+                                    <label style="color: #666; font-size: 14px;">חודש:</label>
+                                    <input type="month" id="historyMonthFilter" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; cursor: pointer;">
+                                </div>
+                                <div id="historyWeekRangeLabel" style="font-size: 13px; color: #666; display: none;"></div>
                             </div>
                             <!-- חיפוש מתרים -->
                             <div style="display: flex; align-items: center; gap: 8px;">
@@ -12857,8 +12868,8 @@
         }
 
         function escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/[&<>"']/g, match => {
+            if (str == null || str === undefined) return '';
+            return String(str).replace(/[&<>"']/g, match => {
                 switch (match) {
                     case '&': return '&amp;';
                     case '<': return '&lt;';
@@ -23310,14 +23321,44 @@
             showHistoryStatus('🔄 טוען היסטוריה...', 'info');
             
             try {
-                // בניית פרמטרים לסינון
+                // בניית פרמטרים לסינון – חישוב טווח לפי תצוגה (יום/שבוע/חודש)
                 let params = new URLSearchParams();
                 params.append('action', 'getHistory');
                 
-                const dateFilter = document.getElementById('historyDateFilter')?.value;
-                if (dateFilter) {
-                    params.append('startDate', dateFilter);
-                    params.append('endDate', dateFilter);
+                const viewMode = document.querySelector('.history-view-btn.active')?.dataset?.view || 'day';
+                let startDate = '', endDate = '';
+                
+                if (viewMode === 'day') {
+                    const dateFilter = document.getElementById('historyDateFilter')?.value;
+                    if (dateFilter) {
+                        startDate = endDate = dateFilter;
+                    }
+                } else if (viewMode === 'week') {
+                    const dateFilter = document.getElementById('historyDateFilter')?.value;
+                    if (dateFilter) {
+                        const d = new Date(dateFilter + 'T12:00:00');
+                        const day = d.getDay();
+                        const diffToSun = day === 0 ? 0 : day;
+                        const sun = new Date(d);
+                        sun.setDate(sun.getDate() - diffToSun);
+                        const sat = new Date(sun);
+                        sat.setDate(sat.getDate() + 6);
+                        startDate = sun.toISOString().slice(0, 10);
+                        endDate = sat.toISOString().slice(0, 10);
+                    }
+                } else if (viewMode === 'month') {
+                    const monthFilter = document.getElementById('historyMonthFilter')?.value;
+                    if (monthFilter) {
+                        const [y, m] = monthFilter.split('-').map(Number);
+                        startDate = `${y}-${String(m).padStart(2,'0')}-01`;
+                        const lastDay = new Date(y, m, 0);
+                        endDate = lastDay.toISOString().slice(0, 10);
+                    }
+                }
+                
+                if (startDate) {
+                    params.append('startDate', startDate);
+                    params.append('endDate', endDate);
                 }
                 const donorFilter = document.getElementById('historyDonorFilter')?.value?.trim();
                 if (donorFilter) params.append('entityName', donorFilter);
@@ -23476,15 +23517,92 @@
         // ניקוי סינון
         function clearHistoryFilters() {
             const dateFilter = document.getElementById('historyDateFilter');
+            const monthFilter = document.getElementById('historyMonthFilter');
             const donorFilter = document.getElementById('historyDonorFilter');
             const source = document.getElementById('historySourceFilter');
             const action = document.getElementById('historyActionFilter');
             
             if (dateFilter) dateFilter.value = '';
+            if (monthFilter) monthFilter.value = '';
             if (donorFilter) donorFilter.value = '';
             if (source) source.value = '';
             if (action) action.value = '';
+            
+            document.querySelectorAll('.history-view-btn').forEach(btn => {
+                if (btn.dataset.view === 'day') btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+            updateHistoryDatePickerVisibility();
         }
+        
+        // עדכון תצוגת בורר התאריך לפי בחירת יום/שבוע/חודש
+        function updateHistoryDatePickerVisibility() {
+            const viewMode = document.querySelector('.history-view-btn.active')?.dataset?.view || 'day';
+            const container = document.getElementById('historyDatePickerContainer');
+            const monthContainer = document.getElementById('historyMonthPickerContainer');
+            const dateLabel = document.getElementById('historyDatePickerLabel');
+            const weekLabel = document.getElementById('historyWeekRangeLabel');
+            const dateInput = document.getElementById('historyDateFilter');
+            const monthInput = document.getElementById('historyMonthFilter');
+            
+            if (viewMode === 'day') {
+                if (container) container.style.display = 'flex';
+                if (dateLabel) dateLabel.textContent = 'יום:';
+                if (monthContainer) monthContainer.style.display = 'none';
+                if (weekLabel) weekLabel.style.display = 'none';
+            } else if (viewMode === 'week') {
+                if (container) container.style.display = 'flex';
+                if (dateLabel) dateLabel.textContent = 'תאריך בשבוע:';
+                if (monthContainer) monthContainer.style.display = 'none';
+                if (weekLabel) weekLabel.style.display = 'inline';
+                if (dateInput?.value) updateHistoryWeekRangeLabel();
+            } else {
+                if (container) container.style.display = 'none';
+                if (monthContainer) {
+                    monthContainer.style.display = 'flex';
+                }
+                if (weekLabel) weekLabel.style.display = 'none';
+                if (monthInput && !monthInput.value) {
+                    const today = new Date();
+                    monthInput.value = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
+                }
+            }
+        }
+        
+        function updateHistoryWeekRangeLabel() {
+            const dateFilter = document.getElementById('historyDateFilter')?.value;
+            const label = document.getElementById('historyWeekRangeLabel');
+            if (!label || !dateFilter) return;
+            const d = new Date(dateFilter + 'T12:00:00');
+            const day = d.getDay();
+            const diffToSun = day === 0 ? 0 : day;
+            const sun = new Date(d);
+            sun.setDate(sun.getDate() - diffToSun);
+            const sat = new Date(sun);
+            sat.setDate(sat.getDate() + 6);
+            const fmt = d => d.toLocaleDateString('he-IL', { day: 'numeric', month: 'short', year: 'numeric' });
+            label.textContent = 'שבוע: ' + fmt(sun) + ' – ' + fmt(sat);
+        }
+        
+        // אתחול כפתורי תצוגת היסטוריה (יום/שבוע/חודש)
+        (function initHistoryViewButtons() {
+            document.querySelectorAll('.history-view-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.history-view-btn').forEach(b => {
+                        b.classList.remove('active');
+                        b.style.background = 'white';
+                        b.style.color = '#666';
+                    });
+                    this.classList.add('active');
+                    this.style.background = '#4285f4';
+                    this.style.color = 'white';
+                    updateHistoryDatePickerVisibility();
+                });
+            });
+            document.getElementById('historyDateFilter')?.addEventListener('change', updateHistoryWeekRangeLabel);
+            document.getElementById('historyMonthFilter')?.addEventListener('change', function() { if (document.querySelector('.history-view-btn.active')?.dataset?.view === 'month') loadHistory(); });
+            updateHistoryDatePickerVisibility();
+        })();
         
         // ייצוא היסטוריה לאקסל
         function exportHistoryToExcel(sourceFilter = null) {
