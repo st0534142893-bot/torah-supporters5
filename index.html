@@ -18311,7 +18311,8 @@
                     return;
                 }
             } else {
-                const amountInput = prompt('הזן סכום תשלום חדש (₪, אפשר אגורות – למשל 100.5, אפשר שלילי להפחתה):');
+                const donorName = getDonorDisplayName(donor);
+                const amountInput = prompt('הזן סכום להוספה למתרים ' + donorName + ' (₪):');
                 if (amountInput === null) return;
                 const sanitizedAmount = amountInput.toString().replace(/[^\d.,-]/g, '').replace(',', '.').trim();
                 const isNegative = sanitizedAmount.includes('-');
@@ -18327,6 +18328,10 @@
                     showNotification('סכום לא תקין, אנא נסה שוב');
                     return;
                 }
+                const confirmMsg = roundedDelta > 0
+                    ? 'להוסיף ' + Math.abs(roundedDelta).toLocaleString() + ' ₪ למתרים ' + donorName + '?'
+                    : 'להפחית ' + Math.abs(roundedDelta).toLocaleString() + ' ₪ מהמתרים ' + donorName + '?';
+                if (!confirm(confirmMsg)) return;
             }
 
             const oldAmount = donor.amount || 0;
@@ -18339,13 +18344,7 @@
             
             recentlyUpdatedDonors.set(donorId, Date.now() + 120000);
 
-            let note;
-            if (typeof overrideNote === 'string') {
-                note = overrideNote;
-            } else {
-                const noteInput = prompt('הזן הערה לעדכון (לא חובה):');
-                note = noteInput && noteInput.trim() ? noteInput.trim() : '';
-            }
+            const note = typeof overrideNote === 'string' ? overrideNote : '';
             
             const donorDisplayName = getDonorDisplayName(donor);
             const paymentDate = new Date();
@@ -21723,6 +21722,14 @@
             try {
                 const result = await fetchAppsScript(url, { action: 'getAllNoDonors', _: Date.now() }, { retries: 2, timeout: 15000 });
                 if (!result?.success || result.error) throw new Error(result?.error || 'שגיאה בטעינה');
+                if (result.totalDonated != null || result.goal != null) {
+                    if (typeof NEDARIM_CONFIG !== 'undefined') {
+                        NEDARIM_CONFIG.totalDonatedFromAPI = result.totalDonated != null ? Number(result.totalDonated) : NEDARIM_CONFIG.totalDonatedFromAPI;
+                        NEDARIM_CONFIG.goalFromAPI = result.goal != null ? Number(result.goal) : NEDARIM_CONFIG.goalFromAPI;
+                        NEDARIM_CONFIG.apiDataLoaded = true;
+                        if (!silent) console.log('📊 [גליון] סכום כולל נטען:', (result.totalDonated || 0).toLocaleString(), 'ש"ח');
+                    }
+                }
                 let loadedGroups = 0;
                 if (result.groups && Array.isArray(result.groups) && result.groups.length > 0) {
                     const now = Date.now();
@@ -21858,6 +21865,16 @@
                 
                 if (!result.success && result.error) {
                     throw new Error(result.error);
+                }
+                
+                // סכום כולל מהגליון – נטען גם במחשב חדש (אין localStorage)
+                if (result.totalDonated != null || result.goal != null) {
+                    if (typeof NEDARIM_CONFIG !== 'undefined') {
+                        NEDARIM_CONFIG.totalDonatedFromAPI = result.totalDonated != null ? Number(result.totalDonated) : NEDARIM_CONFIG.totalDonatedFromAPI;
+                        NEDARIM_CONFIG.goalFromAPI = result.goal != null ? Number(result.goal) : NEDARIM_CONFIG.goalFromAPI;
+                        NEDARIM_CONFIG.apiDataLoaded = true;
+                        if (!silent) console.log('📊 [גליון] סכום כולל נטען:', (result.totalDonated || 0).toLocaleString(), 'ש"ח');
+                    }
                 }
                 
                 // 🛡️ מניעת הבהוב: לא להחיל טעינה שחזרה אחרי עדכון מקומי או טעינה חדשה יותר
