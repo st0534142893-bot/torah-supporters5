@@ -6051,7 +6051,10 @@
                 </button>
                 <div id="entrySheetUrlPanel" class="entry-sheet-url-panel hidden">
                     <label style="display: block; font-weight: 600; margin-bottom: 10px; font-size: 14px; color: var(--brown-dark);">קישור לשרת (אם החלפת גליון – הזן כאן את הקישור החדש):</label>
-                    <input type="url" id="entryCodeSheetUrlInput" class="app-lock-password-input" placeholder="https://script.google.com/macros/s/xxxx/exec" style="width: 100%; margin-bottom: 12px; font-size: 14px; padding: 14px 18px;">
+                    <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: stretch;">
+                        <input type="url" id="entryCodeSheetUrlInput" class="app-lock-password-input" placeholder="https://script.google.com/macros/s/xxxx/exec" style="flex: 1; font-size: 14px; padding: 14px 18px;">
+                        <button type="button" class="btn" onclick="pasteIntoInput('entryCodeSheetUrlInput')" style="font-size: 14px; padding: 12px 20px; white-space: nowrap;" title="הדבק קישור מהלוח">📋 הדבק</button>
+                    </div>
                     <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                         <button type="button" class="btn" onclick="saveEntryCodeSheetUrl()" style="font-size: 14px; padding: 12px 24px;">שמור קישור</button>
                         <span id="entryCodeUrlSavedMsg" style="display: none; color: var(--success); font-size: 14px; font-weight: 600;">✓ נשמר</span>
@@ -7280,7 +7283,10 @@
                             
                             <div class="sync-input-group" style="margin-bottom: 20px;">
                                 <label style="display: block; margin-bottom: 8px; font-weight: 500;">כתובת Web App של Google Apps Script:</label>
-                                <input type="text" id="googleSheetsWebAppUrl" placeholder="https://script.google.com/macros/s/xxxx/exec" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px;" onchange="saveGoogleSheetsSettings(); applySheetSyncSettings();">
+                                <div style="display: flex; gap: 8px; align-items: stretch;">
+                                    <input type="text" id="googleSheetsWebAppUrl" placeholder="https://script.google.com/macros/s/xxxx/exec" style="flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px;" onchange="saveGoogleSheetsSettings(); applySheetSyncSettings();">
+                                    <button type="button" class="btn btn-secondary" onclick="pasteIntoInput('googleSheetsWebAppUrl'); saveGoogleSheetsSettings(); applySheetSyncSettings();" style="white-space: nowrap;" title="הדבק קישור מהלוח">📋 הדבק</button>
+                                </div>
                                 <small style="display: block; margin-top: 5px; color: var(--muted);">
                                     ה-URL שמתקבל אחרי פריסת הקוד ב-Google Apps Script.
                                 </small>
@@ -9328,6 +9334,19 @@
             const arr = document.getElementById('entrySheetUrlBtnArrow');
             if (arr) arr.textContent = '▼';
             setTimeout(() => input.focus(), 100);
+        }
+
+        async function pasteIntoInput(inputId) {
+            const el = document.getElementById(inputId);
+            if (!el) return;
+            try {
+                const text = await navigator.clipboard.readText();
+                if (text != null) el.value = String(text).trim();
+                if (typeof showNotification === 'function') showNotification('הודבק');
+            } catch (e) {
+                console.warn('הדבקה נכשלה:', e);
+                if (typeof showNotification === 'function') showNotification('לא ניתן להדביק – בדוק הרשאות לוח או השתמש ב־Ctrl+V', 'error');
+            }
         }
 
         function saveEntryCodeSheetUrl() {
