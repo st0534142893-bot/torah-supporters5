@@ -3098,8 +3098,9 @@
 
         /* פרוגרס ומעקב עדכונים ב-overlay */
         #liveViewUpdateProgressBar[style*="display: block"] { display: block !important; }
-        .live-view-update-donors-preview-item { padding: 4px 8px; animation: donorPreviewFade 0.5s ease; }
-        @keyframes donorPreviewFade { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .live-view-update-donors-preview-item { padding: 4px 8px; -webkit-animation: donorPreviewFade 0.5s ease; animation: donorPreviewFade 0.5s ease; }
+        @-webkit-keyframes donorPreviewFade { from { opacity: 0; -webkit-transform: translate3d(0, -10px, 0); transform: translate3d(0, -10px, 0); } to { opacity: 1; -webkit-transform: translate3d(0, 0, 0); transform: translate3d(0, 0, 0); } }
+        @keyframes donorPreviewFade { from { opacity: 0; transform: translate3d(0, -10px, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
 
         /* שכבת overlay בזמן עדכון אוטומטי (סיום גלילה) */
         .live-view-update-overlay {
@@ -3163,7 +3164,11 @@
             border: 4px solid var(--cream-dark);
             border-top-color: var(--primary-gold);
             border-radius: 50%;
+            -webkit-animation: liveViewSpinner 0.8s linear infinite;
             animation: liveViewSpinner 0.8s linear infinite;
+        }
+        @-webkit-keyframes liveViewSpinner {
+            to { -webkit-transform: rotate(360deg); transform: rotate(360deg); }
         }
         @keyframes liveViewSpinner {
             to { transform: rotate(360deg); }
@@ -3302,6 +3307,7 @@
             padding: 6px 12px;
             border-radius: 8px;
             font-size: 14px;
+            -webkit-animation: donorPreviewFade 0.4s ease;
             animation: donorPreviewFade 0.4s ease;
         }
         .live-view-section::before {
@@ -3383,6 +3389,20 @@
             box-shadow: 0 9px 28px rgba(212, 175, 55, 0.45);
         }
 
+        body.tv-mode .back-home-btn:focus,
+        body.tv-mode .fullscreen-btn:focus {
+            background: var(--primary-gold);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 9px 28px rgba(212, 175, 55, 0.45);
+        }
+
+        body.tv-mode .back-home-btn:focus-visible,
+        body.tv-mode .fullscreen-btn:focus-visible {
+            outline: 4px solid var(--primary-gold);
+            outline-offset: 3px;
+        }
+
         .fullscreen-btn.active {
             background: var(--primary-gold);
             color: white;
@@ -3412,6 +3432,7 @@
             max-width: 100%;
             height: 100vh;
             contain: paint;
+            content-visibility: auto;
             overflow: hidden;
             position: relative;
             background: none;
@@ -3438,7 +3459,12 @@
             transform: translateZ(0); /* שכבת GPU נפרדת – גלילה חלקה במסכים גדולים */
         }
         .live-donors-scroll[data-scroll-animation] {
+            -webkit-animation: donorsScrollUp var(--scroll-duration, 90s) linear infinite;
             animation: donorsScrollUp var(--scroll-duration, 90s) linear infinite;
+        }
+        @-webkit-keyframes donorsScrollUp {
+            0% { -webkit-transform: translate3d(0, 0, 0); transform: translate3d(0, 0, 0); }
+            100% { -webkit-transform: translate3d(0, -50%, 0); transform: translate3d(0, -50%, 0); }
         }
         @keyframes donorsScrollUp {
             0% { transform: translate3d(0, 0, 0); }
@@ -4086,7 +4112,7 @@
         .amount-value, .goal-value {
             min-width: 8ch;
             font-variant-numeric: tabular-nums;
-            contain: layout;
+            contain: paint;
         }
 
         /* אזור מובילים בצד - רוחב קבוע באחוזים */
@@ -4196,13 +4222,21 @@
             overflow-x: hidden;
             height: 100%;
             contain: paint;
+            content-visibility: auto;
         }
 
         .live-leaders-scroll-inner[data-leaders-scroll] {
+            -webkit-animation: leadersScrollUp var(--leaders-scroll-duration, 60s) linear infinite;
             animation: leadersScrollUp var(--leaders-scroll-duration, 60s) linear infinite;
             will-change: transform;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
         }
 
+        @-webkit-keyframes leadersScrollUp {
+            0% { -webkit-transform: translate3d(0, 0, 0); transform: translate3d(0, 0, 0); }
+            100% { -webkit-transform: translate3d(0, calc(-1 * var(--leaders-scroll-distance, 500px)), 0); transform: translate3d(0, calc(-1 * var(--leaders-scroll-distance, 500px)), 0); }
+        }
         @keyframes leadersScrollUp {
             0% { transform: translate3d(0, 0, 0); }
             100% { transform: translate3d(0, calc(-1 * var(--leaders-scroll-distance, 500px)), 0); }
@@ -4483,7 +4517,7 @@
             color: var(--primary-gold-dark);
             min-width: 10ch;
             font-variant-numeric: tabular-nums;
-            contain: layout;
+            contain: paint;
         }
 
         .leader-item.rank-1 .leader-total {
@@ -4642,7 +4676,7 @@
             white-space: nowrap;
             min-width: 14ch;
             font-variant-numeric: tabular-nums;
-            contain: layout;
+            contain: paint;
         }
         /* הודעות */
         .notification {
@@ -5335,36 +5369,96 @@
                 max-width: 25% !important;
             }
         }
-        /* תמיכה במסכי טלוויזיה גדולים - Android TV */
+        /* תמיכה במסכי טלוויזיה – מופעל רק כשמצב טלוויזיה מסומן */
         @media (min-width: 1920px) {
-            .sidebar-nav {
+            body.tv-mode {
+                font-size: 20px;
+            }
+            body.tv-mode h1, body.tv-mode .home-title, body.tv-mode .section-header {
+                font-size: 32px !important;
+            }
+            body.tv-mode h2, body.tv-mode .instructions-hero h1 {
+                font-size: 28px !important;
+            }
+            body.tv-mode .sidebar-nav {
                 max-width: 360px;
                 min-width: 320px;
             }
-            
-            .nav-item {
+            body.tv-mode .nav-item {
                 padding: 28px 40px;
                 font-size: 26px;
                 min-height: 70px;
             }
-            
-            .btn {
+            body.tv-mode .btn, body.tv-mode .external-action-button, body.tv-mode .support-button {
                 padding: 20px 40px;
-                font-size: 22px;
-                min-height: 60px;
+                font-size: 20px;
+                min-height: 48px;
                 min-width: 140px;
             }
-            
-            .content-section {
+            body.tv-mode .content-section {
                 padding: 60px;
             }
-            
-            .form-group input,
-            .form-group select {
+            body.tv-mode .form-group input,
+            body.tv-mode .form-group select {
                 padding: 18px;
                 font-size: 20px;
                 min-height: 56px;
             }
+            body.tv-mode .back-home-btn,
+            body.tv-mode .fullscreen-btn {
+                min-width: 48px;
+                min-height: 48px;
+            }
+        }
+
+        /* מתג מצב טלוויזיה – בדף הכניסה */
+        .tv-mode-toggle-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding: 12px 16px;
+            background: rgba(212, 175, 55, 0.08);
+            border-radius: 12px;
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            cursor: pointer;
+        }
+        .tv-mode-toggle-wrap label {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--brown-dark);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .tv-mode-switch {
+            position: relative;
+            width: 52px;
+            height: 28px;
+            background: rgba(139, 111, 71, 0.35);
+            border-radius: 28px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .tv-mode-switch.on {
+            background: var(--primary-gold);
+        }
+        .tv-mode-switch::before {
+            content: '';
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+        .tv-mode-switch.on::before {
+            transform: translateX(-24px);
         }
 
         @media (min-width: 2560px) {
@@ -5372,24 +5466,20 @@
                 max-width: 400px;
                 min-width: 360px;
             }
-            
             .nav-item {
                 padding: 32px 48px;
                 font-size: 28px;
                 min-height: 80px;
             }
-            
             .btn {
                 padding: 24px 48px;
                 font-size: 24px;
                 min-height: 68px;
                 min-width: 160px;
             }
-            
             .content-section {
                 padding: 80px;
             }
-            
             .form-group input,
             .form-group select {
                 padding: 20px;
@@ -6051,6 +6141,9 @@
     </style>
 </head>
 <body>
+    <script>
+        (function(){ try { if (localStorage.getItem('tvModeEnabled') === '1') document.body.classList.add('tv-mode'); } catch(e) {} })();
+    </script>
     <div class="app-lock-overlay" id="entryCodeOverlay" role="dialog" aria-modal="true" aria-labelledby="entryCodeTitle">
         <div class="app-lock-dialog">
             <div class="app-lock-logo"><img src="https://i.postimg.cc/ZRMCLxgW/wgw-t-t-dhws.png" alt="לוגו" style="height:64px;"></div>
@@ -6080,6 +6173,10 @@
                     <input type="checkbox" id="entryCodeShowCheckbox" onchange="toggleEntryCodeVisibility(this.checked)" style="width: 18px; height: 18px; cursor: pointer;">
                     <span>הצג קוד</span>
                 </label>
+            </div>
+            <div class="tv-mode-toggle-wrap" onclick="toggleTvMode()" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); toggleTvMode(); }" aria-pressed="false" aria-label="מצב טלוויזיה">
+                <span class="tv-mode-switch" id="tvModeSwitch"></span>
+                <span>📺 התאם לטלוויזיה</span>
             </div>
             <div class="app-lock-actions">
                 <button class="btn btn-primary" type="button" onclick="handleEntryCodeSubmit()">כניסה</button>
@@ -9346,6 +9443,7 @@
             if (panel) panel.classList.add('hidden');
             const arr = document.getElementById('entrySheetUrlBtnArrow');
             if (arr) arr.textContent = '▼';
+            initTvModeToggle();
             setTimeout(() => input.focus(), 100);
         }
 
@@ -9511,6 +9609,23 @@
         function toggleEntryCodeVisibility(show) {
             const input = document.getElementById('entryCodeInput');
             if (input) input.type = show ? 'text' : 'password';
+        }
+
+        function toggleTvMode() {
+            const isOn = document.body.classList.toggle('tv-mode');
+            try { localStorage.setItem('tvModeEnabled', isOn ? '1' : '0'); } catch(e) {}
+            const sw = document.getElementById('tvModeSwitch');
+            const wrap = document.querySelector('.tv-mode-toggle-wrap');
+            if (sw) { sw.classList.toggle('on', isOn); sw.setAttribute('aria-checked', isOn); }
+            if (wrap) wrap.setAttribute('aria-pressed', isOn);
+        }
+
+        function initTvModeToggle() {
+            const isOn = document.body.classList.contains('tv-mode');
+            const sw = document.getElementById('tvModeSwitch');
+            const wrap = document.querySelector('.tv-mode-toggle-wrap');
+            if (sw) { sw.classList.toggle('on', isOn); }
+            if (wrap) wrap.setAttribute('aria-pressed', isOn);
         }
 
         function toggleAppLockVisibility(show) {
