@@ -14072,7 +14072,7 @@
                             </div>
                         </div>
                         <div class="donor-actions">
-                            <button class="btn btn-primary btn-small" onclick="addDonorPayment(${donor.id})">הוסף תשלום</button>
+                            <button class="btn btn-primary btn-small" onclick="addDonorPayment(${JSON.stringify(donor.id)})">הוסף תשלום</button>
                         </div>
                     </div>
                 `;
@@ -15044,7 +15044,7 @@
                                     <span class="group-donor-amount">₪${d.amount.toLocaleString()}</span>
                                 </div>
                                 <div class="group-donor-actions">
-                                    <button class="group-donor-payment" onclick="addDonorPayment(${d.id})">הוסף תשלום</button>
+                                    <button class="group-donor-payment" onclick="addDonorPayment(${JSON.stringify(d.id)})">הוסף תשלום</button>
                                     <button class="group-donor-delete" onclick="removeDonor(${d.id})">מחק</button>
                                 </div>
                             </div>
@@ -15535,7 +15535,7 @@
                             <div class="donor-item-compact-main">
                                 <span class="donor-item-compact-name">${escapeHtml(displayName)}</span>
                                 <span class="donor-item-compact-amount">₪${(donor.amount || 0).toLocaleString()}</span>
-                                <button class="btn btn-primary btn-small donor-item-compact-btn" onclick="addDonorPayment(${donor.id})">הוסף תשלום</button>
+                                <button class="btn btn-primary btn-small donor-item-compact-btn" onclick="addDonorPayment(${JSON.stringify(donor.id)})">הוסף תשלום</button>
                             </div>
                             <div class="donor-item-compact-details">${details}</div>
                         </div>
@@ -15621,7 +15621,7 @@
                         </div>
                         </div>
                         <div class="donor-actions">
-                            <button class="btn btn-secondary btn-small" onclick="addDonorPayment(${donor.id})">הוסף תשלום</button>
+                            <button class="btn btn-secondary btn-small" onclick="addDonorPayment(${JSON.stringify(donor.id)})">הוסף תשלום</button>
                             <button class="btn btn-danger btn-small" onclick="deleteDonor(${donor.id})">מחק</button>
                         </div>
                         <div class="donor-history" id="donorHistory_${donor.id}">
