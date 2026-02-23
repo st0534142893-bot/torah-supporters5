@@ -16293,8 +16293,8 @@
                             if (totalData && totalData.Donated > 0) {
                                 console.log(`✅ סכום כולל עודכן: ${totalData.Donated.toLocaleString()} ש"ח`);
                                 updateHomeStats();
-                                updateLeadersList();
-                                updateLiveTargets();
+                                updateLeadersList(true);  // forceFromScheduled – כדי שהסיכום בתצוגת לייב יתעדכן
+                                updateLiveTargets(true);
                                 // עדכון מיידי של Live View
                                 if (typeof updateLiveView === 'function') {
                                     updateLiveView(true); // immediate = true
@@ -16356,8 +16356,8 @@
             updateGroupsDisplay();
             updateHomeStats();
             if (typeof updateLiveView === 'function') updateLiveView(true);
-            if (typeof updateLeadersList === 'function') updateLeadersList();
-            if (typeof updateLiveTargets === 'function') updateLiveTargets();
+            if (typeof updateLeadersList === 'function') updateLeadersList(true);  // forceFromScheduled – סיכום לייב
+            if (typeof updateLiveTargets === 'function') updateLiveTargets(true);
             
             // מסיר את הסימון רק אחרי 2 דקות – מונע שטעינה מהגליון תדרוס את הסכום שעודכן
             setTimeout(() => {
@@ -18587,8 +18587,8 @@
             updateGroupsDisplay();
             updateHomeStats();
             if (typeof updateLiveView === 'function') updateLiveView(true);
-            if (typeof updateLeadersList === 'function') updateLeadersList();
-            if (typeof updateLiveTargets === 'function') updateLiveTargets();
+            if (typeof updateLeadersList === 'function') updateLeadersList(true);  // forceFromScheduled – סיכום לייב
+            if (typeof updateLiveTargets === 'function') updateLiveTargets(true);
             if (!silent) {
                 const message = actualDelta > 0
                     ? `תשלום של ${Math.abs(actualDelta).toLocaleString()} ₪ נוסף ל-${donorDisplayName} (${paymentDate.toLocaleDateString('he-IL')})`
@@ -18742,8 +18742,8 @@
             updateGroupsDisplay();
             updateHomeStats();
             if (typeof updateLiveView === 'function') updateLiveView(true);
-            if (typeof updateLeadersList === 'function') updateLeadersList();
-            if (typeof updateLiveTargets === 'function') updateLiveTargets();
+            if (typeof updateLeadersList === 'function') updateLeadersList(true);  // forceFromScheduled – סיכום לייב
+            if (typeof updateLiveTargets === 'function') updateLiveTargets(true);
             showNotification(`הסכום של ${donor.name} עודכן ל-${donor.amount.toLocaleString()} ₪`);
         }
 
@@ -20883,8 +20883,8 @@
                     const totalData = await fetchTotalFromMatchPlus();
                     if (totalData) {
                         updateHomeStats();
-                        updateLeadersList();
-                        updateLiveTargets();
+                        updateLeadersList(true);   // forceFromScheduled – סיכום לייב
+                        updateLiveTargets(true);
                         if (typeof updateLiveView === 'function') updateLiveView(false);
                     }
                 } else {
@@ -20895,8 +20895,8 @@
                 if (totalData) {
                     console.log(`✅ עדכנו סכום כולל מ-API: ${totalData.Donated.toLocaleString()} ש"ח, יעד: ${totalData.Goal.toLocaleString()} ש"ח`);
                     updateHomeStats();
-                    updateLeadersList();
-                    updateLiveTargets();
+                    updateLeadersList(true);   // forceFromScheduled – סיכום לייב
+                    updateLiveTargets(true);
                     if (typeof updateLiveView === 'function') updateLiveView(false);
                 } else {
                     console.log('ℹ️ ה-API לא החזיר נתונים - נשתמש בסכום מהתרימים אחרי הסנכרון');
@@ -21253,8 +21253,8 @@
                 // מעדכן את הסכום הכולל מ-API (ברקע)
                 fetchTotalFromMatchPlus().then(() => {
                     updateHomeStats();
-                    updateLeadersList();
-                    updateLiveTargets();
+                    updateLeadersList(true);   // forceFromScheduled – סיכום לייב
+                    updateLiveTargets(true);
                 });
             }
             lastDataHash = currentHash;
@@ -21298,8 +21298,8 @@
                     if (totalData) {
                         console.log('✅ [אוטומטי] הסכום עודכן:', totalData);
                         updateHomeStats();
-                        updateLeadersList();
-                        updateLiveTargets();
+                        updateLeadersList(true);   // forceFromScheduled – סיכום לייב
+                        updateLiveTargets(true);
                     }
                 } catch (error) {
                     console.error('❌ [אוטומטי] שגיאה בעדכון סכום כולל:', error);
@@ -21363,8 +21363,8 @@
                     if (totalData) {
                         console.log('✅ [אתחול] הסכום הכולל עודכן בהצלחה:', totalData);
                         if (typeof updateHomeStats === 'function') updateHomeStats();
-                        if (typeof updateLeadersList === 'function') updateLeadersList();
-                        if (typeof updateLiveTargets === 'function') updateLiveTargets();
+                        if (typeof updateLeadersList === 'function') updateLeadersList(true);   // forceFromScheduled
+                        if (typeof updateLiveTargets === 'function') updateLiveTargets(true);
                     }
                     
                     // סנכרון ראשוני: רק משיכה (ללא דחיפה!) – מונע שליחת סכומים שגויים לנדרים בטעינת דף
@@ -21943,8 +21943,8 @@
                 updateGroupsDisplay();
                 updateHomeStats();
                 if (typeof updateLiveView === 'function') updateLiveView(true);
-                updateLeadersList();
-                updateLiveTargets();
+                updateLeadersList(true);   // forceFromScheduled – סיכום לייב יתעדכן עם סכום מהגליון/API
+                updateLiveTargets(true);
                 const totalAmount = donors.reduce((sum, d) => sum + (d.amount || 0), 0);
                 if (!silent) {
                     showNotification(`✅ נטען מנדרים פלוס: ${donors.length} מתרימים, ${loadedGroups} קבוצות | ${totalAmount.toLocaleString()} ש"ח`, 'success');
@@ -22319,8 +22319,8 @@
                 updateGroupsDisplay();
                 updateHomeStats();
                 updateLiveView(true);
-                updateLeadersList();
-                updateLiveTargets();
+                updateLeadersList(true);   // forceFromScheduled – סיכום לייב עם סכום מהגליון
+                updateLiveTargets(true);
                 
                 const totalAmount = donors.reduce((sum, d) => sum + (d.amount || 0), 0);
                 
