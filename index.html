@@ -4504,6 +4504,8 @@
             font-weight: 600;
             color: var(--brown-dark);
             margin-bottom: 2px;
+            word-break: keep-all;
+            overflow-wrap: normal;
         }
 
         .leader-amount {
@@ -9435,7 +9437,9 @@
             if (showCb) showCb.checked = false;
             if (error) error.textContent = '';
             if (urlInput && typeof localStorage !== 'undefined') {
-                urlInput.value = localStorage.getItem('googleSheetsWebAppUrl') || '';
+                var url = localStorage.getItem('googleSheetsWebAppUrl') || (typeof DEFAULT_GOOGLE_SHEETS_URL !== 'undefined' ? DEFAULT_GOOGLE_SHEETS_URL : '') || '';
+                urlInput.value = url;
+                if (!localStorage.getItem('googleSheetsWebAppUrl') && url) localStorage.setItem('googleSheetsWebAppUrl', url);
             }
             const urlBtnText = document.getElementById('entrySheetUrlBtnText');
             if (urlBtnText) urlBtnText.textContent = (urlInput && urlInput.value.trim()) ? 'קישור לשרת (הוגדר) – לחץ לעריכה' : 'הגדר קישור לשרת (גליון)';
@@ -13486,16 +13490,14 @@
             if (displayMode !== 'none') startDuringUpdateOverlay(displayMode);
             console.log('🔄 [תצוגת לייב] עדכון תוך כדי גלילה' + (displayMode !== 'none' ? ' (עם מסך ' + displayMode + ')' : '') + '...');
             try {
+                var url = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').trim();
+                if (url && typeof loadFromGoogleSheets === 'function') {
+                    var r = await loadFromGoogleSheets(true, true);
+                    if (r && r.success && typeof notifyDataChanged === 'function') notifyDataChanged(true);
+                }
                 await syncWithNedarimPlus(true, false, true);
                 await checkTotalAmountFromAPI(true, true);
-                var url = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').trim();
-                if (url && googleSheetsSyncEnabled) {
-                    if (sheetSyncLoadEnabled && typeof loadFromGoogleSheets === 'function') {
-                        var r = await loadFromGoogleSheets(true);
-                        if (r && r.success && typeof notifyDataChanged === 'function') notifyDataChanged(true);
-                    }
-                    if (sheetSyncSaveEnabled && typeof saveToGoogleSheets === 'function') await saveToGoogleSheets();
-                }
+                if (url && typeof saveToGoogleSheets === 'function') await saveToGoogleSheets();
                 if (url && typeof fetchAppsScript === 'function') {
                     try {
                         var gr = await fetchAppsScript(url, { action: 'getAllNoDonors', _: Date.now() }, { retries: 1, timeout: 8000 });
@@ -13561,7 +13563,7 @@
             if (!liveViewSettings.enableAutoScroll) return;
             if ((liveViewSettings.liveViewUpdateWhen || 'end') === 'during' || (liveViewSettings.liveViewUpdateWhen || 'end') === 'custom') return;
             if (!donorsScrollIsRunning) return;
-            console.log('🔄 [תצוגת לייב] סיום מחזור גלילה – מציג overlay ומריץ עדכון...');
+            console.log('🔄 [תצוגת לייב] סיום מחזור גלילה – מציג overlay ומריץ עדכון (טעינה→סנכרון→סכום→שמירה)...');
             lastLiveViewUpdateAt = Date.now();
             const overlay = document.getElementById('liveViewUpdateOverlay');
             const sidePanel = document.getElementById('liveViewUpdateSidePanel');
@@ -13594,29 +13596,30 @@
             }
 
             try {
+                var url = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || (typeof DEFAULT_GOOGLE_SHEETS_URL !== 'undefined' ? DEFAULT_GOOGLE_SHEETS_URL : '') || '').trim();
+                if (updateType === 'all' && url) {
+                    if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'טעינה מהגליון');
+                    if (typeof loadFromGoogleSheets === 'function') {
+                        var r = await loadFromGoogleSheets(true, true);
+                        if (r && r.success && typeof notifyDataChanged === 'function') notifyDataChanged();
+                    }
+                }
                 if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'סנכרון תרומות');
                 await syncWithNedarimPlus(true, false, true);
                 if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'בדיקת סכום');
                 await checkTotalAmountFromAPI(true, true);
-                if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'טעינת נתונים');
-                if (updateType === 'all') {
-                    // בתצוגת לייב – רק העדכון המתוזמן (sync + checkTotal + load + save). בלי performAutoRefresh – מונע כפילות
-                    var url = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').trim();
-                    if (url && googleSheetsSyncEnabled) {
-                        if (sheetSyncLoadEnabled && typeof loadFromGoogleSheets === 'function') {
-                            var r = await loadFromGoogleSheets(true);
-                            if (r && r.success && typeof notifyDataChanged === 'function') notifyDataChanged();
-                        }
-                        if (sheetSyncSaveEnabled && typeof saveToGoogleSheets === 'function') await saveToGoogleSheets();
-                    }
-                } else if (updateType === 'loadSheet' && typeof loadFromGoogleSheets === 'function') {
+                if (updateType === 'all' && url) {
+                    if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'שמירה לגליון');
+                    if (typeof saveToGoogleSheets === 'function') await saveToGoogleSheets();
+                }
+                if (updateType === 'loadSheet' && typeof loadFromGoogleSheets === 'function') {
                     var r = await loadFromGoogleSheets(true);
                     if (r && r.success && typeof notifyDataChanged === 'function') notifyDataChanged();
                 } else if (updateType === 'loadMatrim' && typeof loadMatrimFromNedarim === 'function') {
                     await loadMatrimFromNedarim(true);
                 }
                 if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'מרענן שמות קבוצות');
-                var sheetUrl = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').toString().trim();
+                var sheetUrl = (url || googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || (typeof DEFAULT_GOOGLE_SHEETS_URL !== 'undefined' ? DEFAULT_GOOGLE_SHEETS_URL : '') || '').toString().trim();
                 if (sheetUrl && typeof fetchAppsScript === 'function') {
                     try {
                         var groupsResult = await fetchAppsScript(sheetUrl, { action: 'getAllNoDonors', _: Date.now() }, { retries: 1, timeout: 8000 });
@@ -21701,17 +21704,18 @@
         // טעינת הגדרות Google Sheets
         function loadGoogleSheetsSettings() {
             try {
-                const savedUrl = localStorage.getItem('googleSheetsWebAppUrl');
-                googleSheetsWebAppUrl = savedUrl || DEFAULT_GOOGLE_SHEETS_URL || '';
+                var savedUrl = localStorage.getItem('googleSheetsWebAppUrl');
+                if (!savedUrl && DEFAULT_GOOGLE_SHEETS_URL) {
+                    localStorage.setItem('googleSheetsWebAppUrl', DEFAULT_GOOGLE_SHEETS_URL);
+                    savedUrl = DEFAULT_GOOGLE_SHEETS_URL;
+                }
+                googleSheetsWebAppUrl = (savedUrl || DEFAULT_GOOGLE_SHEETS_URL || '').trim();
                 var savedSync = localStorage.getItem('googleSheetsSyncEnabled');
-                googleSheetsSyncEnabled = savedSync === 'true' || (savedSync === null && (googleSheetsWebAppUrl || '').trim().length > 0);
+                googleSheetsSyncEnabled = savedSync === 'true' || (savedSync === null && googleSheetsWebAppUrl.length > 0);
                 sheetSyncIntervalMinutes = Math.max(1, parseInt(localStorage.getItem('sheetSyncIntervalMinutes')) || 5);
                 sheetSyncLoadEnabled = localStorage.getItem('sheetSyncLoadEnabled') !== 'false';
                 sheetSyncSaveEnabled = localStorage.getItem('sheetSyncSaveEnabled') !== 'false';
                 sheetSyncSaveOnChange = localStorage.getItem('sheetSyncSaveOnChange') !== 'false';
-                if (DEFAULT_GOOGLE_SHEETS_URL && !savedUrl) {
-                    localStorage.setItem('googleSheetsWebAppUrl', DEFAULT_GOOGLE_SHEETS_URL);
-                }
                 const urlInput = document.getElementById('googleSheetsWebAppUrl');
                 const autoSyncCheckbox = document.getElementById('autoGoogleSheetsSyncCheckbox');
                 const intervalInput = document.getElementById('sheetSyncIntervalInput');
@@ -21939,7 +21943,7 @@
 
         // טעינת נתונים מ-Google Sheets (מלא – כולל מתרימים מהגליון. לסנכרון אוטומטי משתמשים ב-loadFromNedarimAndSheetGroups)
         // silent: true = ללא הודעות (לסנכרון אוטומטי בתצוגת לייב)
-        async function loadFromGoogleSheets(silent = false) {
+        async function loadFromGoogleSheets(silent = false, forceLoadWhenScheduled = false) {
             const loadSeq = ++_loadFromSheetsSeq;
             const loadStartTime = Date.now();
             const urlInput = document.getElementById('googleSheetsWebAppUrl');
@@ -21960,9 +21964,9 @@
                 return { success: false };
             }
             
-            // לא לטעון מהגליון אם עכשיו סיימנו שמירה – מונע דריסת תרומות ושינויים מקומיים
+            // לא לטעון מהגליון אם עכשיו סיימנו שמירה – מונע דריסת תרומות ושינויים מקומיים (מעקף בעדכון מתוזמן)
             const SKIP_LOAD_AFTER_SAVE_MS = 25000;
-            if (lastSaveToSheetsTime && (Date.now() - lastSaveToSheetsTime) < SKIP_LOAD_AFTER_SAVE_MS) {
+            if (!forceLoadWhenScheduled && lastSaveToSheetsTime && (Date.now() - lastSaveToSheetsTime) < SKIP_LOAD_AFTER_SAVE_MS) {
                 if (!silent) console.log('📥 [Google Sheets] דילוג על טעינה – שמירה לאחרונה, לא לדרוס שינויים מקומיים');
                 return { success: true, skipped: true };
             }
