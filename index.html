@@ -13582,6 +13582,13 @@
             }
             if (displayMode !== 'none') stopDuringUpdateOverlay();
             isLiveViewUpdateDuringRunning = false;
+            // וידוא שהגלילה רצה – אם נעצרה אחרי עדכון DOM, מפעילים מחדש כדי למנוע תקיעה
+            setTimeout(() => {
+                if (liveViewSettings.enableAutoScroll && isLiveViewActive()) {
+                    if (!donorsScrollIsRunning && typeof restartDonorsAutoScroll === 'function') restartDonorsAutoScroll();
+                    if (!leadersScrollIsRunning && typeof restartLeadersAutoScroll === 'function') restartLeadersAutoScroll({ immediate: true });
+                }
+            }, 150);
         }
 
         function triggerLiveViewUpdateDuring() {
@@ -13716,9 +13723,10 @@
             }
             if (showMode !== 'sidepanel') { stopSidePanelSmoothProgress(); liveViewSidePanelUpdateInProgress = false; }
             if (typeof hideLiveViewSyncProgress === 'function') hideLiveViewSyncProgress();
-            if (showMode !== 'sidepanel') {
-                if (typeof restartDonorsAutoScroll === 'function') restartDonorsAutoScroll();
-                if (typeof restartLeadersAutoScroll === 'function' && isLiveViewActive()) setTimeout(() => restartLeadersAutoScroll({ immediate: true }), 50);
+            // וידוא שהגלילה רצה – גם במצב sidepanel (גם overlay) – אם נעצרה אחרי עדכון DOM, מפעילים מחדש
+            if (liveViewSettings.enableAutoScroll && isLiveViewActive()) {
+                if (!donorsScrollIsRunning && typeof restartDonorsAutoScroll === 'function') restartDonorsAutoScroll();
+                if (!leadersScrollIsRunning && typeof restartLeadersAutoScroll === 'function') setTimeout(() => restartLeadersAutoScroll({ immediate: true }), 50);
             }
         }
         
@@ -17301,14 +17309,11 @@
             }).join('');
 
             container.innerHTML = cardsHtml;
-            // לא מפעילים גלילה למובילים - עצירת גלילה והסרת קלון
-            if (typeof stopAutoScroll === 'function') {
-                stopAutoScroll('leaders');
-            }
-            const clone = document.getElementById('leadersScrollClone');
-            if (clone) {
-                clone.innerHTML = '';
-                clone.style.display = 'none';
+            // בתצוגת לייב פעילה – לא עוצרים גלילת מובילים (היא רצה ברקע). ה-watchdog ידאג אם נעצרה
+            if (!(typeof isLiveViewActive === 'function' && isLiveViewActive())) {
+                if (typeof stopAutoScroll === 'function') stopAutoScroll('leaders');
+                const clone = document.getElementById('leadersScrollClone');
+                if (clone) { clone.innerHTML = ''; clone.style.display = 'none'; }
             }
         }
 
