@@ -13006,9 +13006,18 @@
                         console.warn('⚠️ שגיאה בסנכרון לבסיס הנתונים:', err);
                     });
                     
-                    // ⚠️ שמירה לגליון לא מתבצעת כאן – רק בעדכון מתוזמן (סיום גלילה / כל X דקות) – מונע קפיצות בתצוגת לייב
+                    // עדכון ישיר לגליון: כל שינוי (שם, קבוצה, תרומה וכו') מעלה לגליון אחרי דיבאונס קצר
+                    if (typeof window._donorsGroupsToSheetDebounce === 'number') clearTimeout(window._donorsGroupsToSheetDebounce);
+                    window._donorsGroupsToSheetDebounce = setTimeout(function() {
+                        window._donorsGroupsToSheetDebounce = null;
+                        if (typeof saveDonorsAndGroupsToSheets === 'function') {
+                            saveDonorsAndGroupsToSheets().then(function(r) {
+                                if (r && r.success && typeof lastSaveToSheetsTime !== 'undefined') lastSaveToSheetsTime = Date.now();
+                            });
+                        }
+                    }, 400);
                     
-                    console.log('💾 נתונים נשמרו אוטומטית (מקומית)');
+                    console.log('💾 נתונים נשמרו אוטומטית (מקומית + יעלה לגליון)');
                 } catch (e) {
                     console.error('שגיאה בשמירת נתונים:', e);
                 }
