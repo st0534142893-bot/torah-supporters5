@@ -14643,12 +14643,15 @@
             };
             step();
         }
-        // סכום לתצוגה: כשסכום נדרים פלוס (API) גבוה מהמקומי – משתמשים ב-API (מציג את הסכום האמיתי, לא רק מה שנוסף ידנית)
+        // סכום לתצוגה – מקור יחיד לאמת: דף הבית ותצוגת לייב תמיד מציגים את אותו ערך
+        // כשה-API נטען – משתמשים בו (מקור האמת מנדרים פלוס/גליון). אחרת – סכום מקומי.
+        // כששניהם קיימים – לוקחים את הגבוה יותר (מבטיח שהמסך לא יציג פחות מהמציאות)
         function getDisplayTotal() {
-            const localSum = donors.reduce((sum, d) => sum + (d.amount || 0), 0);
-            if (NEDARIM_CONFIG.apiDataLoaded && NEDARIM_CONFIG.totalDonatedFromAPI != null && 
-                NEDARIM_CONFIG.totalDonatedFromAPI > localSum) {
-                return NEDARIM_CONFIG.totalDonatedFromAPI;
+            const localSum = (donors || []).reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
+            const apiVal = (typeof NEDARIM_CONFIG !== 'undefined' && NEDARIM_CONFIG.apiDataLoaded && 
+                NEDARIM_CONFIG.totalDonatedFromAPI != null) ? Number(NEDARIM_CONFIG.totalDonatedFromAPI) : null;
+            if (apiVal != null) {
+                return Math.max(apiVal, localSum);
             }
             return localSum;
         }
