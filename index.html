@@ -2612,25 +2612,6 @@
             transform: translateY(0);
         }
 
-        .btn-paste {
-            background: #e0f2fe;
-            color: #0369a1;
-            border: 2px solid #7dd3fc;
-            border-radius: 12px;
-            padding: 16px 32px;
-            min-height: 52px;
-            min-width: 120px;
-            font-weight: 600;
-            box-shadow: 0 2px 8px rgba(3, 105, 161, 0.15);
-            transition: all 0.25s ease;
-        }
-        .btn-paste:hover,
-        .btn-paste:focus {
-            background: #bae6fd;
-            border-color: #38bdf8;
-            box-shadow: 0 4px 12px rgba(3, 105, 161, 0.25);
-        }
-
         .btn-secondary {
             background: rgba(255, 255, 255, 0.9);
             color: var(--brown-dark);
@@ -4757,13 +4738,6 @@
             flex-direction: column;
         }
         .semifinal-video-overlay.show { display: flex !important; }
-        .semifinal-url-row {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-        .semifinal-url-row input { flex: 1; min-width: 0; }
-        .semifinal-url-row .btn-paste { flex-shrink: 0; white-space: nowrap; }
         .semifinal-video-header {
             display: flex;
             justify-content: space-between;
@@ -6183,11 +6157,11 @@
                 </button>
                 <div id="entrySheetUrlPanel" class="entry-sheet-url-panel hidden">
                     <label style="display: block; font-weight: 600; margin-bottom: 10px; font-size: 14px; color: var(--brown-dark);">קישור לשרת (אם החלפת גליון – הזן כאן את הקישור החדש):</label>
-                    <div style="margin-bottom: 12px;">
-                        <input type="url" id="entryCodeSheetUrlInput" class="app-lock-password-input" placeholder="https://script.google.com/macros/s/xxxx/exec" style="width: 100%; font-size: 14px; padding: 14px 18px; box-sizing: border-box;">
+                    <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: stretch;">
+                        <input type="url" id="entryCodeSheetUrlInput" class="app-lock-password-input" placeholder="https://script.google.com/macros/s/xxxx/exec" style="flex: 1; font-size: 14px; padding: 14px 18px;">
+                        <button type="button" class="btn" onclick="pasteIntoInput('entryCodeSheetUrlInput')" style="font-size: 14px; padding: 12px 20px; white-space: nowrap;" title="הדבק קישור מהלוח">📋 הדבק</button>
                     </div>
                     <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                        <button type="button" class="btn btn-paste" onclick="pasteIntoInput('entryCodeSheetUrlInput')" title="הדבק קישור מהלוח">📋 הדבק</button>
                         <button type="button" class="btn" onclick="saveEntryCodeSheetUrl()" style="font-size: 14px; padding: 12px 24px;">שמור קישור</button>
                         <span id="entryCodeUrlSavedMsg" style="display: none; color: var(--success); font-size: 14px; font-weight: 600;">✓ נשמר</span>
                     </div>
@@ -6344,10 +6318,7 @@
                         <div class="semifinal-form" style="margin-top: 16px; padding: 16px; background: rgba(0,0,0,0.03); border-radius: 12px;">
                             <div class="address-form-row">
                                 <label for="semifinalVideoUrl">קישור לסרטון (Google Drive):</label>
-                                <div class="semifinal-url-row">
-                                    <input type="text" id="semifinalVideoUrl" placeholder="https://drive.google.com/..." onchange="saveSemifinalSettings()">
-                                    <button type="button" class="btn btn-paste" onclick="pasteSemifinalVideoUrl()" title="הדבק קישור מהלוח">הדבק</button>
-                                </div>
+                                <input type="text" id="semifinalVideoUrl" placeholder="https://drive.google.com/..." onchange="saveSemifinalSettings()">
                             </div>
                             <div class="address-form-row">
                                 <label for="semifinalDuration">משך הצגה (דקות):</label>
@@ -7422,11 +7393,9 @@
                             
                             <div class="sync-input-group" style="margin-bottom: 20px;">
                                 <label style="display: block; margin-bottom: 8px; font-weight: 500;">כתובת Web App של Google Apps Script:</label>
-                                <div style="margin-bottom: 10px;">
-                                    <input type="text" id="googleSheetsWebAppUrl" placeholder="https://script.google.com/macros/s/xxxx/exec" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; box-sizing: border-box;" onchange="saveGoogleSheetsSettings(); applySheetSyncSettings();">
-                                </div>
-                                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                                    <button type="button" class="btn btn-paste" onclick="pasteIntoInput('googleSheetsWebAppUrl'); saveGoogleSheetsSettings(); applySheetSyncSettings();" title="הדבק קישור מהלוח">📋 הדבק</button>
+                                <div style="display: flex; gap: 8px; align-items: stretch;">
+                                    <input type="text" id="googleSheetsWebAppUrl" placeholder="https://script.google.com/macros/s/xxxx/exec" style="flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px;" onchange="saveGoogleSheetsSettings(); applySheetSyncSettings();">
+                                    <button type="button" class="btn btn-secondary" onclick="pasteIntoInput('googleSheetsWebAppUrl'); saveGoogleSheetsSettings(); applySheetSyncSettings();" style="white-space: nowrap;" title="הדבק קישור מהלוח">📋 הדבק</button>
                                 </div>
                                 <small style="display: block; margin-top: 5px; color: var(--muted);">
                                     ה-URL שמתקבל אחרי פריסת הקוד ב-Google Apps Script.
@@ -11203,25 +11172,6 @@
         }
 
         // ——— חגיגת ניצחון: המרת קישור Google Drive ל-embed ———
-        function pasteSemifinalVideoUrl() {
-            const input = document.getElementById('semifinalVideoUrl');
-            if (!input) return;
-            if (navigator.clipboard && navigator.clipboard.readText) {
-                navigator.clipboard.readText().then(function (text) {
-                    if (text && typeof text === 'string') {
-                        input.value = text.trim();
-                        input.dispatchEvent(new Event('change', { bubbles: true }));
-                        if (typeof showNotification === 'function') showNotification('הקישור הודבק');
-                    } else {
-                        if (typeof showNotification === 'function') showNotification('אין טקסט להדבקה בלוח', 'error');
-                    }
-                }).catch(function () {
-                    if (typeof showNotification === 'function') showNotification('לא ניתן לגשת ללוח. נסה להדביק ידנית (Ctrl+V).', 'error');
-                });
-            } else {
-                if (typeof showNotification === 'function') showNotification('הדפדפן לא תומך בהדבקה מלוח. השתמש ב־Ctrl+V בשדה.', 'error');
-            }
-        }
         function getEmbedUrlFromDriveUrl(url) {
             if (!url || typeof url !== 'string') return '';
             const m = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
@@ -13006,12 +12956,9 @@
                         console.warn('⚠️ שגיאה בסנכרון לבסיס הנתונים:', err);
                     });
                     
-                    // עדכון ישיר לגליון – מנגנון יחיד: כל saveData() מפעיל שמירה לגליון (דיבאונס 250ms, מונע כפילויות)
-                    if (window._donorsGroupsToSheetDebounce) clearTimeout(window._donorsGroupsToSheetDebounce);
-                    window._donorsGroupsToSheetDebounce = setTimeout(function() {
-                        window._donorsGroupsToSheetDebounce = null;
-                        if (typeof saveDonorsAndGroupsToSheets === 'function') saveDonorsAndGroupsToSheets().then(function(r) { if (r && r.success && typeof lastSaveToSheetsTime !== 'undefined') lastSaveToSheetsTime = Date.now(); });
-                    }, 250);
+                    // ⚠️ שמירה לגליון לא מתבצעת כאן – רק בעדכון מתוזמן (סיום גלילה / כל X דקות) – מונע קפיצות בתצוגת לייב
+                    
+                    console.log('💾 נתונים נשמרו אוטומטית (מקומית)');
                 } catch (e) {
                     console.error('שגיאה בשמירת נתונים:', e);
                 }
@@ -13539,8 +13486,8 @@
             if (displayMode !== 'none') startDuringUpdateOverlay(displayMode);
             console.log('🔄 [תצוגת לייב] עדכון תוך כדי גלילה' + (displayMode !== 'none' ? ' (עם מסך ' + displayMode + ')' : '') + '...');
             try {
-                await checkTotalAmountFromAPI(true);
                 await syncWithNedarimPlus(true);
+                await checkTotalAmountFromAPI(true);
                 var url = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').trim();
                 if (url && googleSheetsSyncEnabled) {
                     if (sheetSyncLoadEnabled && typeof loadFromGoogleSheets === 'function') {
@@ -13647,10 +13594,10 @@
             }
 
             try {
-                if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'בדיקת סכום');
-                await checkTotalAmountFromAPI(true);
                 if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'סנכרון תרומות');
                 await syncWithNedarimPlus(true);
+                if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'בדיקת סכום');
+                await checkTotalAmountFromAPI(true);
                 if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'טעינת נתונים');
                 if (updateType === 'all') {
                     if (autoSyncNedarimEnabled && typeof performAutoRefresh === 'function') await performAutoRefresh();
@@ -14075,7 +14022,7 @@
                             </div>
                         </div>
                         <div class="donor-actions">
-                            <button class="btn btn-primary btn-small" onclick='addDonorPayment(${JSON.stringify(donor.id)})'>הוסף תשלום</button>
+                            <button class="btn btn-primary btn-small" onclick="addDonorPayment(${donor.id})">הוסף תשלום</button>
                         </div>
                     </div>
                 `;
@@ -15047,7 +14994,7 @@
                                     <span class="group-donor-amount">₪${d.amount.toLocaleString()}</span>
                                 </div>
                                 <div class="group-donor-actions">
-                                    <button class="group-donor-payment" onclick='addDonorPayment(${JSON.stringify(d.id)})'>הוסף תשלום</button>
+                                    <button class="group-donor-payment" onclick="addDonorPayment(${d.id})">הוסף תשלום</button>
                                     <button class="group-donor-delete" onclick="removeDonor(${d.id})">מחק</button>
                                 </div>
                             </div>
@@ -15447,19 +15394,13 @@
             updateLeadersList();
             updateLiveTargets();
             
-            // שמירה מיידית לגליון (payload קטן – מתרימים וקבוצות בלבד) כדי שהשם לא יקפוץ בחזרה
-            if (typeof saveDonorsAndGroupsToSheets === 'function') {
-                saveDonorsAndGroupsToSheets().then((r) => {
-                    if (r && r.success) {
-                        if (typeof lastSaveToSheetsTime !== 'undefined') lastSaveToSheetsTime = Date.now();
-                        console.log('✅ שם תצוגה עודכן גם בגליון');
-                    } else {
-                        console.warn('⚠️ שגיאה בשמירת שם לגליון:', r && r.error);
-                        showNotification('השם נשמר בתוכנה אך שמירה לגליון נכשלה. נסה שמור לגליון ידנית.', 'warning');
-                    }
+            // שמירה מיידית לגליון (לא ממתינה ל-debounce)
+            const url = googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || DEFAULT_GOOGLE_SHEETS_URL || '';
+            if (url) {
+                saveToGoogleSheets().then(() => {
+                    console.log('✅ שם תצוגה עודכן גם בגליון');
                 }).catch(err => {
                     console.warn('⚠️ שגיאה בשמירת שם לגליון:', err);
-                    showNotification('השם נשמר בתוכנה אך שמירה לגליון נכשלה.', 'warning');
                 });
             }
             
@@ -15544,7 +15485,7 @@
                             <div class="donor-item-compact-main">
                                 <span class="donor-item-compact-name">${escapeHtml(displayName)}</span>
                                 <span class="donor-item-compact-amount">₪${(donor.amount || 0).toLocaleString()}</span>
-                                <button class="btn btn-primary btn-small donor-item-compact-btn" onclick='addDonorPayment(${JSON.stringify(donor.id)})'>הוסף תשלום</button>
+                                <button class="btn btn-primary btn-small donor-item-compact-btn" onclick="addDonorPayment(${donor.id})">הוסף תשלום</button>
                             </div>
                             <div class="donor-item-compact-details">${details}</div>
                         </div>
@@ -15630,7 +15571,7 @@
                         </div>
                         </div>
                         <div class="donor-actions">
-                            <button class="btn btn-secondary btn-small" onclick='addDonorPayment(${JSON.stringify(donor.id)})'>הוסף תשלום</button>
+                            <button class="btn btn-secondary btn-small" onclick="addDonorPayment(${donor.id})">הוסף תשלום</button>
                             <button class="btn btn-danger btn-small" onclick="deleteDonor(${donor.id})">מחק</button>
                         </div>
                         <div class="donor-history" id="donorHistory_${donor.id}">
@@ -16376,21 +16317,14 @@
                 updateLiveView(true); // immediate = true
             }
             
-            // שמירה לגליון מיד – רק מתרימים וקבוצות (payload קטן) כדי שהשם והשינויים ייכתבו לגליון ולא יקפצו בחזרה
+            // שמירה לגליון - חשוב! כדי שהשינויים (כולל מספר מתרים) יישמרו בגליון
             isUpdatingDonorForNedarim = true;
             try {
-                const sheetResult = typeof saveDonorsAndGroupsToSheets === 'function' ? await saveDonorsAndGroupsToSheets() : await saveToGoogleSheets();
-                if (sheetResult && sheetResult.success) {
-                    if (typeof lastSaveToSheetsTime !== 'undefined') lastSaveToSheetsTime = Date.now();
-                    console.log(`✅ נשמרו השינויים לגליון (כולל שם תצוגה ומספר מתרים: ${donor.nedarimMatrimId || 'ללא'})`);
-                } else {
-                    const errMsg = (sheetResult && sheetResult.error) ? sheetResult.error : 'שמירה נכשלה';
-                    console.warn('⚠️ שגיאה בשמירה לגליון:', errMsg);
-                    showNotification('העדכון נשמר בתוכנה אך שמירה לגליון נכשלה. נסה שוב או שמור לגליון ידנית.', 'warning');
-                }
+                await saveToGoogleSheets();
+                console.log(`✅ נשמרו השינויים לגליון (כולל מספר מתרים: ${donor.nedarimMatrimId || 'ללא'})`);
             } catch (error) {
                 console.warn('⚠️ שגיאה בשמירה לגליון:', error);
-                showNotification('העדכון נשמר בתוכנה אך שמירה לגליון נכשלה. נסה שוב או שמור לגליון ידנית.', 'warning');
+                // לא נציג שגיאה למשתמש כי העדכון כבר נשמר מקומית
             } finally {
                 isUpdatingDonorForNedarim = false;
             }
@@ -19536,11 +19470,13 @@
                 console.error('❌ שגיאה במשיכת סכום כולל דרך Google Sheets:', translateFetchError(error));
             }
             
-            // אם נכשל, ננסה לחשב מהמתרימים
-            console.log('ℹ️ מחשב סכום כולל מהמתרימים...');
+            // אם נכשל – משתמשים בסכום מחושב מהמתרימים (כולל עדכונים אחרי סנכרון)
             const totalFromDonors = donors.reduce((sum, d) => sum + (d.amount || 0), 0);
             if (totalFromDonors > 0) {
-                console.log(`📊 סכום מהתרימים: ${totalFromDonors.toLocaleString()} ש"ח`);
+                console.log(`ℹ️ שאיבת סכום כולל נכשלה – משתמש בסכום מהתרימים: ${totalFromDonors.toLocaleString()} ש"ח`);
+                NEDARIM_CONFIG.totalDonatedFromAPI = totalFromDonors;
+                NEDARIM_CONFIG.apiDataLoaded = true;
+                return { Goal: NEDARIM_CONFIG.goalFromAPI || 0, Donated: totalFromDonors };
             }
             
             return null;
@@ -22493,34 +22429,6 @@
             }
         }
         
-        /** שמירה רק של מתרימים וקבוצות לגליון – מנגנון יחיד לעדכון ישיר. כל שינוי (שם, קבוצה, תרומה) עולה לגליון. */
-        async function saveDonorsAndGroupsToSheets() {
-            if (window._donorsGroupsToSheetDebounce) { clearTimeout(window._donorsGroupsToSheetDebounce); window._donorsGroupsToSheetDebounce = null; }
-            const urlInput = document.getElementById('googleSheetsWebAppUrl');
-            const url = (urlInput ? urlInput.value.trim() : '') ||
-                        (typeof googleSheetsWebAppUrl !== 'undefined' ? googleSheetsWebAppUrl : '') ||
-                        (typeof localStorage !== 'undefined' ? localStorage.getItem('googleSheetsWebAppUrl') : '') ||
-                        (typeof DEFAULT_GOOGLE_SHEETS_URL !== 'undefined' ? DEFAULT_GOOGLE_SHEETS_URL : '') || '';
-            if (!url || !url.trim()) return { success: false, error: 'אין URL' };
-            const bodyStr = JSON.stringify({ action: 'saveDonors', donors: donors, groups: groups });
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    redirect: 'follow',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: bodyStr
-                });
-                const result = await response.json();
-                if (result && result.success) {
-                    if (typeof lastSaveToSheetsTime !== 'undefined') lastSaveToSheetsTime = Date.now();
-                    return { success: true };
-                }
-                return { success: false, error: (result && result.error) || 'שגיאה מהשרת' };
-            } catch (err) {
-                return { success: false, error: err && err.message ? err.message : String(err) };
-            }
-        }
-        
         // שמירת נתונים ל-Google Sheets
         async function saveToGoogleSheets() {
             // מבטל שמירה אוטומטית ממתינה – מונע שמירה כפולה (גליון מתעדכן מיד + אחרי 800ms)
@@ -23886,4 +23794,3 @@
     </script>
 </body>
 </html>
- 
