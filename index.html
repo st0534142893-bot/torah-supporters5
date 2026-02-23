@@ -14395,6 +14395,7 @@
                         }
                         if (typeof updateLiveView === 'function') updateLiveView(true, true);
                     })().catch(function() {});
+                    updateHomeStats(); // קודם עדכון דף הבית (מקור אמת) – כדי ש__homeDisplayTotal יהיה מעודכן
                     updateLiveView(true, true); // forceFromScheduled – עדכון ראשוני בכניסה (בינתיים עם הנתונים הקיימים)
                     updateLeadersList(true);
                     updateLiveTargets(true);
@@ -14636,6 +14637,11 @@
             }
             return localSum;
         }
+        /** מחזיר את הסכום שמוצג בדף הבית – מקור אמת יחיד לתצוגת הלייב */
+        function getHomeDisplayTotal() {
+            if (typeof window.__homeDisplayTotal === 'number') return window.__homeDisplayTotal;
+            return (typeof getDisplayTotal === 'function') ? getDisplayTotal() : 0;
+        }
         function updateHomeStats() {
             // יעד המצינג – מ-API אם נטען וערכו סביר, אחרת מהיעד המקומי
             const currentGoal = (NEDARIM_CONFIG.apiDataLoaded && 
@@ -14644,6 +14650,7 @@
                 ? NEDARIM_CONFIG.goalFromAPI 
                 : matchingGoal;
             const totalCollected = (typeof getDisplayTotal === 'function') ? getDisplayTotal() : donors.reduce((sum, d) => sum + (d.amount || 0), 0);
+            window.__homeDisplayTotal = totalCollected; // מקור אמת לתצוגת הלייב
             
             const matchingPercentage = currentGoal > 0 ? (totalCollected / currentGoal) * 100 : 0;
             const totalDonors = donors.length;
@@ -16979,7 +16986,7 @@
                 .sort((a, b) => (b.amount || 0) - (a.amount || 0))
                 .slice(0, 5);
             
-            const totalCollected = (typeof getDisplayTotal === 'function') ? getDisplayTotal() : donors.reduce((sum, donor) => sum + Math.max(0, donor.amount || 0), 0);
+            const totalCollected = (typeof getHomeDisplayTotal === 'function') ? getHomeDisplayTotal() : ((typeof getDisplayTotal === 'function') ? getDisplayTotal() : donors.reduce((sum, donor) => sum + Math.max(0, donor.amount || 0), 0));
             const goal = (NEDARIM_CONFIG.apiDataLoaded && 
                          NEDARIM_CONFIG.goalFromAPI !== null &&
                          NEDARIM_CONFIG.goalFromAPI > 0)
@@ -17190,7 +17197,7 @@
                 const text = overallContainer.querySelector('.leaders-overall-progress-text');
                 const note = overallContainer.querySelector('.leaders-overall-progress-note');
 
-                const totalCollected = (typeof getDisplayTotal === 'function') ? getDisplayTotal() : donors.reduce((sum, donor) => sum + Math.max(0, donor.amount || 0), 0);
+                const totalCollected = (typeof getHomeDisplayTotal === 'function') ? getHomeDisplayTotal() : ((typeof getDisplayTotal === 'function') ? getDisplayTotal() : donors.reduce((sum, donor) => sum + Math.max(0, donor.amount || 0), 0));
                 const goal = (NEDARIM_CONFIG.apiDataLoaded &&
                              NEDARIM_CONFIG.goalFromAPI !== null &&
                              NEDARIM_CONFIG.goalFromAPI > 0)
@@ -17913,6 +17920,9 @@
             if (typeof isLiveViewScheduledUpdatesOnly === 'function' && isLiveViewScheduledUpdatesOnly()) return;
             if (isLiveViewActive()) {
                 updateHomeStats();
+                // חשוב: לעדכן גם את תצוגת הלייב באותו סכום שמוצג בדף הבית
+                if (typeof updateLeadersList === 'function') updateLeadersList(true);
+                if (typeof updateLiveTargets === 'function') updateLiveTargets(true);
                 if (now - lastAutoUpdateTime > 60000) lastAutoUpdateTime = now;
             } else {
                 // לא בתצוגת לייב - עדכון רגיל
