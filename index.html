@@ -13006,12 +13006,9 @@
                         console.warn('⚠️ שגיאה בסנכרון לבסיס הנתונים:', err);
                     });
                     
-                    // עדכון ישיר לגליון – מנגנון יחיד: כל saveData() מפעיל שמירה לגליון (דיבאונס 250ms, מונע כפילויות)
-                    if (window._donorsGroupsToSheetDebounce) clearTimeout(window._donorsGroupsToSheetDebounce);
-                    window._donorsGroupsToSheetDebounce = setTimeout(function() {
-                        window._donorsGroupsToSheetDebounce = null;
-                        if (typeof saveDonorsAndGroupsToSheets === 'function') saveDonorsAndGroupsToSheets().then(function(r) { if (r && r.success && typeof lastSaveToSheetsTime !== 'undefined') lastSaveToSheetsTime = Date.now(); });
-                    }, 250);
+                    // ⚠️ שמירה לגליון לא מתבצעת כאן – רק בעדכון מתוזמן (סיום גלילה / כל X דקות) – מונע קפיצות בתצוגת לייב
+                    
+                    console.log('💾 נתונים נשמרו אוטומטית (מקומית)');
                 } catch (e) {
                     console.error('שגיאה בשמירת נתונים:', e);
                 }
@@ -14075,7 +14072,7 @@
                             </div>
                         </div>
                         <div class="donor-actions">
-                            <button class="btn btn-primary btn-small" onclick='addDonorPayment(${JSON.stringify(donor.id)})'>הוסף תשלום</button>
+                            <button class="btn btn-primary btn-small" onclick="addDonorPayment(${donor.id})">הוסף תשלום</button>
                         </div>
                     </div>
                 `;
@@ -15047,7 +15044,7 @@
                                     <span class="group-donor-amount">₪${d.amount.toLocaleString()}</span>
                                 </div>
                                 <div class="group-donor-actions">
-                                    <button class="group-donor-payment" onclick='addDonorPayment(${JSON.stringify(d.id)})'>הוסף תשלום</button>
+                                    <button class="group-donor-payment" onclick="addDonorPayment(${d.id})">הוסף תשלום</button>
                                     <button class="group-donor-delete" onclick="removeDonor(${d.id})">מחק</button>
                                 </div>
                             </div>
@@ -15447,19 +15444,13 @@
             updateLeadersList();
             updateLiveTargets();
             
-            // שמירה מיידית לגליון (payload קטן – מתרימים וקבוצות בלבד) כדי שהשם לא יקפוץ בחזרה
-            if (typeof saveDonorsAndGroupsToSheets === 'function') {
-                saveDonorsAndGroupsToSheets().then((r) => {
-                    if (r && r.success) {
-                        if (typeof lastSaveToSheetsTime !== 'undefined') lastSaveToSheetsTime = Date.now();
-                        console.log('✅ שם תצוגה עודכן גם בגליון');
-                    } else {
-                        console.warn('⚠️ שגיאה בשמירת שם לגליון:', r && r.error);
-                        showNotification('השם נשמר בתוכנה אך שמירה לגליון נכשלה. נסה שמור לגליון ידנית.', 'warning');
-                    }
+            // שמירה מיידית לגליון (לא ממתינה ל-debounce)
+            const url = googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || DEFAULT_GOOGLE_SHEETS_URL || '';
+            if (url) {
+                saveToGoogleSheets().then(() => {
+                    console.log('✅ שם תצוגה עודכן גם בגליון');
                 }).catch(err => {
                     console.warn('⚠️ שגיאה בשמירת שם לגליון:', err);
-                    showNotification('השם נשמר בתוכנה אך שמירה לגליון נכשלה.', 'warning');
                 });
             }
             
@@ -15544,7 +15535,7 @@
                             <div class="donor-item-compact-main">
                                 <span class="donor-item-compact-name">${escapeHtml(displayName)}</span>
                                 <span class="donor-item-compact-amount">₪${(donor.amount || 0).toLocaleString()}</span>
-                                <button class="btn btn-primary btn-small donor-item-compact-btn" onclick='addDonorPayment(${JSON.stringify(donor.id)})'>הוסף תשלום</button>
+                                <button class="btn btn-primary btn-small donor-item-compact-btn" onclick="addDonorPayment(${donor.id})">הוסף תשלום</button>
                             </div>
                             <div class="donor-item-compact-details">${details}</div>
                         </div>
@@ -15630,7 +15621,7 @@
                         </div>
                         </div>
                         <div class="donor-actions">
-                            <button class="btn btn-secondary btn-small" onclick='addDonorPayment(${JSON.stringify(donor.id)})'>הוסף תשלום</button>
+                            <button class="btn btn-secondary btn-small" onclick="addDonorPayment(${donor.id})">הוסף תשלום</button>
                             <button class="btn btn-danger btn-small" onclick="deleteDonor(${donor.id})">מחק</button>
                         </div>
                         <div class="donor-history" id="donorHistory_${donor.id}">
@@ -16376,21 +16367,14 @@
                 updateLiveView(true); // immediate = true
             }
             
-            // שמירה לגליון מיד – רק מתרימים וקבוצות (payload קטן) כדי שהשם והשינויים ייכתבו לגליון ולא יקפצו בחזרה
+            // שמירה לגליון - חשוב! כדי שהשינויים (כולל מספר מתרים) יישמרו בגליון
             isUpdatingDonorForNedarim = true;
             try {
-                const sheetResult = typeof saveDonorsAndGroupsToSheets === 'function' ? await saveDonorsAndGroupsToSheets() : await saveToGoogleSheets();
-                if (sheetResult && sheetResult.success) {
-                    if (typeof lastSaveToSheetsTime !== 'undefined') lastSaveToSheetsTime = Date.now();
-                    console.log(`✅ נשמרו השינויים לגליון (כולל שם תצוגה ומספר מתרים: ${donor.nedarimMatrimId || 'ללא'})`);
-                } else {
-                    const errMsg = (sheetResult && sheetResult.error) ? sheetResult.error : 'שמירה נכשלה';
-                    console.warn('⚠️ שגיאה בשמירה לגליון:', errMsg);
-                    showNotification('העדכון נשמר בתוכנה אך שמירה לגליון נכשלה. נסה שוב או שמור לגליון ידנית.', 'warning');
-                }
+                await saveToGoogleSheets();
+                console.log(`✅ נשמרו השינויים לגליון (כולל מספר מתרים: ${donor.nedarimMatrimId || 'ללא'})`);
             } catch (error) {
                 console.warn('⚠️ שגיאה בשמירה לגליון:', error);
-                showNotification('העדכון נשמר בתוכנה אך שמירה לגליון נכשלה. נסה שוב או שמור לגליון ידנית.', 'warning');
+                // לא נציג שגיאה למשתמש כי העדכון כבר נשמר מקומית
             } finally {
                 isUpdatingDonorForNedarim = false;
             }
@@ -17087,14 +17071,12 @@
             }).join('');
             
             if (sortedDonors.length === 0) {
-                // גם אם אין מובילים, נציג את הסיכום הכללי ואת כרטיסיות הקבוצות
+                // כרטיס סכום כולל – זהה לדף הבית (סכום שנאסף / מתוך יעד)
                 const summaryHtml = `
-                    <div class="leader-target-card">
-                        <div class="leader-target-title">סה"כ נאסף</div>
-                        <div class="leader-target-progress-bar">
-                            <div class="${progressClass}" style="width: ${progressWidth}%;"></div>
-                            <div class="leader-target-progress-text">${summaryText}</div>
-                        </div>
+                    <div class="leader-target-card leader-summary-card" data-summary="1">
+                        <div class="stat-label">סכום שנאסף</div>
+                        <div class="stat-value" data-live-total-value>₪${totalCollected.toLocaleString()}</div>
+                        <div class="stat-subvalue" data-live-total-goal>מתוך ${goal.toLocaleString()}</div>
                     </div>
                 `;
                 leadersList.innerHTML = groupsCardsHtml + summaryHtml;
@@ -17122,14 +17104,12 @@
                 `;
             }).join('');
 
-            // הוספת כרטיסית סיכום כללי
+            // כרטיס סכום כולל – זהה לדף הבית (סכום שנאסף / מתוך יעד)
             const summaryHtml = `
                 <div class="leader-target-card leader-summary-card" data-summary="1">
-                    <div class="leader-target-title">סה"כ נאסף</div>
-                    <div class="leader-target-progress-bar">
-                        <div class="${progressClass}" style="width: ${progressWidth}%;"></div>
-                        <div class="leader-target-progress-text">${summaryText}</div>
-                    </div>
+                    <div class="stat-label">סכום שנאסף</div>
+                    <div class="stat-value" data-live-total-value>₪${totalCollected.toLocaleString()}</div>
+                    <div class="stat-subvalue" data-live-total-goal>מתוך ${goal.toLocaleString()}</div>
                 </div>
             `;
 
@@ -17208,12 +17188,10 @@
                     }
                 });
                 if (existingSummary) {
-                    const fill = existingSummary.querySelector('.leader-target-progress-fill');
-                    const textEl = existingSummary.querySelector('.leader-target-progress-text');
-                    const meta = existingSummary.querySelector('.leader-target-meta');
-                    if (fill) fill.style.width = progressWidth + '%';
-                    if (textEl) textEl.textContent = summaryText;
-                    if (meta) meta.remove();
+                    const valueEl = existingSummary.querySelector('[data-live-total-value]');
+                    const goalEl = existingSummary.querySelector('[data-live-total-goal]');
+                    if (valueEl) valueEl.textContent = '₪' + totalCollected.toLocaleString();
+                    if (goalEl) goalEl.textContent = 'מתוך ' + goal.toLocaleString();
                 }
                 // סנכרון לקלון בלי innerHTML – רק עדכון טקסט/מבנה אלמנט-אלמנט (מונע קפיצות)
                 if (isLiveViewActive() && liveViewSettings.enableAutoScroll && leadersScrollIsRunning) {
@@ -21935,6 +21913,8 @@
                         NEDARIM_CONFIG.goalFromAPI = result.goal != null ? Number(result.goal) : NEDARIM_CONFIG.goalFromAPI;
                         NEDARIM_CONFIG.apiDataLoaded = true;
                         if (!silent) console.log('📊 [גליון] סכום כולל נטען:', (result.totalDonated || 0).toLocaleString(), 'ש"ח');
+                        if (typeof updateHomeStats === 'function') updateHomeStats();
+                        if (typeof updateLeadersList === 'function') updateLeadersList(true);
                     }
                 }
                 let loadedGroups = 0;
@@ -22081,6 +22061,8 @@
                         NEDARIM_CONFIG.goalFromAPI = result.goal != null ? Number(result.goal) : NEDARIM_CONFIG.goalFromAPI;
                         NEDARIM_CONFIG.apiDataLoaded = true;
                         if (!silent) console.log('📊 [גליון] סכום כולל נטען:', (result.totalDonated || 0).toLocaleString(), 'ש"ח');
+                        if (typeof updateHomeStats === 'function') updateHomeStats();
+                        if (typeof updateLeadersList === 'function') updateLeadersList(true);
                     }
                 }
                 
@@ -22490,34 +22472,6 @@
                 clearInterval(liveViewSyncIntervalId);
                 liveViewSyncIntervalId = null;
                 console.log('🛑 [סנכרון] סנכרון תקופתי הופסק');
-            }
-        }
-        
-        /** שמירה רק של מתרימים וקבוצות לגליון – מנגנון יחיד לעדכון ישיר. כל שינוי (שם, קבוצה, תרומה) עולה לגליון. */
-        async function saveDonorsAndGroupsToSheets() {
-            if (window._donorsGroupsToSheetDebounce) { clearTimeout(window._donorsGroupsToSheetDebounce); window._donorsGroupsToSheetDebounce = null; }
-            const urlInput = document.getElementById('googleSheetsWebAppUrl');
-            const url = (urlInput ? urlInput.value.trim() : '') ||
-                        (typeof googleSheetsWebAppUrl !== 'undefined' ? googleSheetsWebAppUrl : '') ||
-                        (typeof localStorage !== 'undefined' ? localStorage.getItem('googleSheetsWebAppUrl') : '') ||
-                        (typeof DEFAULT_GOOGLE_SHEETS_URL !== 'undefined' ? DEFAULT_GOOGLE_SHEETS_URL : '') || '';
-            if (!url || !url.trim()) return { success: false, error: 'אין URL' };
-            const bodyStr = JSON.stringify({ action: 'saveDonors', donors: donors, groups: groups });
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    redirect: 'follow',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: bodyStr
-                });
-                const result = await response.json();
-                if (result && result.success) {
-                    if (typeof lastSaveToSheetsTime !== 'undefined') lastSaveToSheetsTime = Date.now();
-                    return { success: true };
-                }
-                return { success: false, error: (result && result.error) || 'שגיאה מהשרת' };
-            } catch (err) {
-                return { success: false, error: err && err.message ? err.message : String(err) };
             }
         }
         
