@@ -3098,8 +3098,9 @@
 
         /* פרוגרס ומעקב עדכונים ב-overlay */
         #liveViewUpdateProgressBar[style*="display: block"] { display: block !important; }
-        .live-view-update-donors-preview-item { padding: 4px 8px; animation: donorPreviewFade 0.5s ease; }
-        @keyframes donorPreviewFade { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .live-view-update-donors-preview-item { padding: 4px 8px; -webkit-animation: donorPreviewFade 0.5s ease; animation: donorPreviewFade 0.5s ease; }
+        @-webkit-keyframes donorPreviewFade { from { opacity: 0; -webkit-transform: translate3d(0, -10px, 0); transform: translate3d(0, -10px, 0); } to { opacity: 1; -webkit-transform: translate3d(0, 0, 0); transform: translate3d(0, 0, 0); } }
+        @keyframes donorPreviewFade { from { opacity: 0; transform: translate3d(0, -10px, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
 
         /* שכבת overlay בזמן עדכון אוטומטי (סיום גלילה) */
         .live-view-update-overlay {
@@ -3163,7 +3164,11 @@
             border: 4px solid var(--cream-dark);
             border-top-color: var(--primary-gold);
             border-radius: 50%;
+            -webkit-animation: liveViewSpinner 0.8s linear infinite;
             animation: liveViewSpinner 0.8s linear infinite;
+        }
+        @-webkit-keyframes liveViewSpinner {
+            to { -webkit-transform: rotate(360deg); transform: rotate(360deg); }
         }
         @keyframes liveViewSpinner {
             to { transform: rotate(360deg); }
@@ -3302,6 +3307,7 @@
             padding: 6px 12px;
             border-radius: 8px;
             font-size: 14px;
+            -webkit-animation: donorPreviewFade 0.4s ease;
             animation: donorPreviewFade 0.4s ease;
         }
         .live-view-section::before {
@@ -3383,11 +3389,6 @@
             box-shadow: 0 9px 28px rgba(212, 175, 55, 0.45);
         }
 
-        .fullscreen-btn.active {
-            background: var(--primary-gold);
-            color: white;
-        }
-
         body.tv-mode .back-home-btn:focus,
         body.tv-mode .fullscreen-btn:focus {
             background: var(--primary-gold);
@@ -3400,6 +3401,11 @@
         body.tv-mode .fullscreen-btn:focus-visible {
             outline: 4px solid var(--primary-gold);
             outline-offset: 3px;
+        }
+
+        .fullscreen-btn.active {
+            background: var(--primary-gold);
+            color: white;
         }
 
         /* אזור מתרימים במרכז */
@@ -3426,6 +3432,7 @@
             max-width: 100%;
             height: 100vh;
             contain: paint;
+            content-visibility: auto;
             overflow: hidden;
             position: relative;
             background: none;
@@ -3452,7 +3459,12 @@
             transform: translateZ(0); /* שכבת GPU נפרדת – גלילה חלקה במסכים גדולים */
         }
         .live-donors-scroll[data-scroll-animation] {
+            -webkit-animation: donorsScrollUp var(--scroll-duration, 90s) linear infinite;
             animation: donorsScrollUp var(--scroll-duration, 90s) linear infinite;
+        }
+        @-webkit-keyframes donorsScrollUp {
+            0% { -webkit-transform: translate3d(0, 0, 0); transform: translate3d(0, 0, 0); }
+            100% { -webkit-transform: translate3d(0, -50%, 0); transform: translate3d(0, -50%, 0); }
         }
         @keyframes donorsScrollUp {
             0% { transform: translate3d(0, 0, 0); }
@@ -4100,7 +4112,7 @@
         .amount-value, .goal-value {
             min-width: 8ch;
             font-variant-numeric: tabular-nums;
-            contain: layout;
+            contain: paint;
         }
 
         /* אזור מובילים בצד - רוחב קבוע באחוזים */
@@ -4210,13 +4222,21 @@
             overflow-x: hidden;
             height: 100%;
             contain: paint;
+            content-visibility: auto;
         }
 
         .live-leaders-scroll-inner[data-leaders-scroll] {
+            -webkit-animation: leadersScrollUp var(--leaders-scroll-duration, 60s) linear infinite;
             animation: leadersScrollUp var(--leaders-scroll-duration, 60s) linear infinite;
             will-change: transform;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
         }
 
+        @-webkit-keyframes leadersScrollUp {
+            0% { -webkit-transform: translate3d(0, 0, 0); transform: translate3d(0, 0, 0); }
+            100% { -webkit-transform: translate3d(0, calc(-1 * var(--leaders-scroll-distance, 500px)), 0); transform: translate3d(0, calc(-1 * var(--leaders-scroll-distance, 500px)), 0); }
+        }
         @keyframes leadersScrollUp {
             0% { transform: translate3d(0, 0, 0); }
             100% { transform: translate3d(0, calc(-1 * var(--leaders-scroll-distance, 500px)), 0); }
@@ -4484,6 +4504,8 @@
             font-weight: 600;
             color: var(--brown-dark);
             margin-bottom: 2px;
+            word-break: keep-all;
+            overflow-wrap: normal;
         }
 
         .leader-amount {
@@ -4497,7 +4519,7 @@
             color: var(--primary-gold-dark);
             min-width: 10ch;
             font-variant-numeric: tabular-nums;
-            contain: layout;
+            contain: paint;
         }
 
         .leader-item.rank-1 .leader-total {
@@ -4656,7 +4678,7 @@
             white-space: nowrap;
             min-width: 14ch;
             font-variant-numeric: tabular-nums;
-            contain: layout;
+            contain: paint;
         }
         /* הודעות */
         .notification {
@@ -5349,36 +5371,96 @@
                 max-width: 25% !important;
             }
         }
-        /* תמיכה במסכי טלוויזיה גדולים - Android TV */
+        /* תמיכה במסכי טלוויזיה – מופעל רק כשמצב טלוויזיה מסומן */
         @media (min-width: 1920px) {
-            .sidebar-nav {
+            body.tv-mode {
+                font-size: 20px;
+            }
+            body.tv-mode h1, body.tv-mode .home-title, body.tv-mode .section-header {
+                font-size: 32px !important;
+            }
+            body.tv-mode h2, body.tv-mode .instructions-hero h1 {
+                font-size: 28px !important;
+            }
+            body.tv-mode .sidebar-nav {
                 max-width: 360px;
                 min-width: 320px;
             }
-            
-            .nav-item {
+            body.tv-mode .nav-item {
                 padding: 28px 40px;
                 font-size: 26px;
                 min-height: 70px;
             }
-            
-            .btn {
+            body.tv-mode .btn, body.tv-mode .external-action-button, body.tv-mode .support-button {
                 padding: 20px 40px;
-                font-size: 22px;
-                min-height: 60px;
+                font-size: 20px;
+                min-height: 48px;
                 min-width: 140px;
             }
-            
-            .content-section {
+            body.tv-mode .content-section {
                 padding: 60px;
             }
-            
-            .form-group input,
-            .form-group select {
+            body.tv-mode .form-group input,
+            body.tv-mode .form-group select {
                 padding: 18px;
                 font-size: 20px;
                 min-height: 56px;
             }
+            body.tv-mode .back-home-btn,
+            body.tv-mode .fullscreen-btn {
+                min-width: 48px;
+                min-height: 48px;
+            }
+        }
+
+        /* מתג מצב טלוויזיה – בדף הכניסה */
+        .tv-mode-toggle-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding: 12px 16px;
+            background: rgba(212, 175, 55, 0.08);
+            border-radius: 12px;
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            cursor: pointer;
+        }
+        .tv-mode-toggle-wrap label {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--brown-dark);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .tv-mode-switch {
+            position: relative;
+            width: 52px;
+            height: 28px;
+            background: rgba(139, 111, 71, 0.35);
+            border-radius: 28px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .tv-mode-switch.on {
+            background: var(--primary-gold);
+        }
+        .tv-mode-switch::before {
+            content: '';
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+        .tv-mode-switch.on::before {
+            transform: translateX(-24px);
         }
 
         @media (min-width: 2560px) {
@@ -5386,24 +5468,20 @@
                 max-width: 400px;
                 min-width: 360px;
             }
-            
             .nav-item {
                 padding: 32px 48px;
                 font-size: 28px;
                 min-height: 80px;
             }
-            
             .btn {
                 padding: 24px 48px;
                 font-size: 24px;
                 min-height: 68px;
                 min-width: 160px;
             }
-            
             .content-section {
                 padding: 80px;
             }
-            
             .form-group input,
             .form-group select {
                 padding: 20px;
@@ -6062,101 +6140,9 @@
         .raffle-section {
             background: linear-gradient(135deg, rgba(245, 230, 211, 0.95) 0%, rgba(255, 248, 220, 0.95) 100%);
         }
-
-        /* תמיכה במסכי טלוויזיה – מופעל רק כשמצב טלוויזיה מסומן */
-        @media (min-width: 1920px) {
-            body.tv-mode {
-                font-size: 20px;
-            }
-            body.tv-mode h1, body.tv-mode .home-title, body.tv-mode .section-header {
-                font-size: 32px !important;
-            }
-            body.tv-mode h2, body.tv-mode .instructions-hero h1 {
-                font-size: 28px !important;
-            }
-            body.tv-mode .sidebar-nav {
-                max-width: 360px;
-                min-width: 320px;
-            }
-            body.tv-mode .nav-item {
-                padding: 28px 40px;
-                font-size: 26px;
-                min-height: 70px;
-            }
-            body.tv-mode .btn, body.tv-mode .external-action-button, body.tv-mode .support-button {
-                padding: 20px 40px;
-                font-size: 20px;
-                min-height: 48px;
-                min-width: 140px;
-            }
-            body.tv-mode .content-section {
-                padding: 60px;
-            }
-            body.tv-mode .form-group input,
-            body.tv-mode .form-group select {
-                padding: 18px;
-                font-size: 20px;
-                min-height: 56px;
-            }
-            body.tv-mode .back-home-btn,
-            body.tv-mode .fullscreen-btn {
-                min-width: 48px;
-                min-height: 48px;
-            }
-        }
-
-        /* מתג מצב טלוויזיה – בדף הכניסה */
-        .tv-mode-toggle-wrap {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            margin-bottom: 20px;
-            padding: 12px 16px;
-            background: rgba(212, 175, 55, 0.08);
-            border-radius: 12px;
-            border: 1px solid rgba(212, 175, 55, 0.25);
-            cursor: pointer;
-        }
-        .tv-mode-toggle-wrap label {
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--brown-dark);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .tv-mode-switch {
-            position: relative;
-            width: 52px;
-            height: 28px;
-            background: rgba(139, 111, 71, 0.35);
-            border-radius: 28px;
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
-        .tv-mode-switch.on {
-            background: var(--primary-gold);
-        }
-        .tv-mode-switch::before {
-            content: '';
-            position: absolute;
-            top: 4px;
-            right: 4px;
-            width: 20px;
-            height: 20px;
-            background: white;
-            border-radius: 50%;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            transition: transform 0.3s ease;
-        }
-        .tv-mode-switch.on::before {
-            transform: translateX(-24px);
-        }
     </style>
 </head>
-<body lang="he" dir="rtl">
+<body>
     <script>
         (function(){ try { if (localStorage.getItem('tvModeEnabled') === '1') document.body.classList.add('tv-mode'); } catch(e) {} })();
     </script>
@@ -9451,7 +9437,9 @@
             if (showCb) showCb.checked = false;
             if (error) error.textContent = '';
             if (urlInput && typeof localStorage !== 'undefined') {
-                urlInput.value = localStorage.getItem('googleSheetsWebAppUrl') || '';
+                var url = localStorage.getItem('googleSheetsWebAppUrl') || (typeof DEFAULT_GOOGLE_SHEETS_URL !== 'undefined' ? DEFAULT_GOOGLE_SHEETS_URL : '') || '';
+                urlInput.value = url;
+                if (!localStorage.getItem('googleSheetsWebAppUrl') && url) localStorage.setItem('googleSheetsWebAppUrl', url);
             }
             const urlBtnText = document.getElementById('entrySheetUrlBtnText');
             if (urlBtnText) urlBtnText.textContent = (urlInput && urlInput.value.trim()) ? 'קישור לשרת (הוגדר) – לחץ לעריכה' : 'הגדר קישור לשרת (גליון)';
@@ -9462,26 +9450,6 @@
             initTvModeToggle();
             setTimeout(() => input.focus(), 100);
         }
-
-        function toggleTvMode() {
-            const isOn = document.body.classList.toggle('tv-mode');
-            try { localStorage.setItem('tvModeEnabled', isOn ? '1' : '0'); } catch(e) {}
-            const sw = document.getElementById('tvModeSwitch');
-            const wrap = document.querySelector('.tv-mode-toggle-wrap');
-            if (sw) { sw.classList.toggle('on', isOn); sw.setAttribute('aria-checked', isOn); }
-            if (wrap) wrap.setAttribute('aria-pressed', isOn);
-        }
-
-        function initTvModeToggle() {
-            const isOn = document.body.classList.contains('tv-mode');
-            const sw = document.getElementById('tvModeSwitch');
-            const wrap = document.querySelector('.tv-mode-toggle-wrap');
-            if (sw) { sw.classList.toggle('on', isOn); }
-            if (wrap) wrap.setAttribute('aria-pressed', isOn);
-        }
-
-        window.toggleTvMode = toggleTvMode;
-        window.initTvModeToggle = initTvModeToggle;
 
         async function pasteIntoInput(inputId) {
             const el = document.getElementById(inputId);
@@ -9645,6 +9613,23 @@
         function toggleEntryCodeVisibility(show) {
             const input = document.getElementById('entryCodeInput');
             if (input) input.type = show ? 'text' : 'password';
+        }
+
+        function toggleTvMode() {
+            const isOn = document.body.classList.toggle('tv-mode');
+            try { localStorage.setItem('tvModeEnabled', isOn ? '1' : '0'); } catch(e) {}
+            const sw = document.getElementById('tvModeSwitch');
+            const wrap = document.querySelector('.tv-mode-toggle-wrap');
+            if (sw) { sw.classList.toggle('on', isOn); sw.setAttribute('aria-checked', isOn); }
+            if (wrap) wrap.setAttribute('aria-pressed', isOn);
+        }
+
+        function initTvModeToggle() {
+            const isOn = document.body.classList.contains('tv-mode');
+            const sw = document.getElementById('tvModeSwitch');
+            const wrap = document.querySelector('.tv-mode-toggle-wrap');
+            if (sw) { sw.classList.toggle('on', isOn); }
+            if (wrap) wrap.setAttribute('aria-pressed', isOn);
         }
 
         function toggleAppLockVisibility(show) {
@@ -13505,16 +13490,15 @@
             if (displayMode !== 'none') startDuringUpdateOverlay(displayMode);
             console.log('🔄 [תצוגת לייב] עדכון תוך כדי גלילה' + (displayMode !== 'none' ? ' (עם מסך ' + displayMode + ')' : '') + '...');
             try {
-                await checkTotalAmountFromAPI(true);
-                await syncWithNedarimPlus(true);
                 var url = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').trim();
-                if (url && googleSheetsSyncEnabled) {
-                    if (sheetSyncLoadEnabled && typeof loadFromGoogleSheets === 'function') {
-                        var r = await loadFromGoogleSheets(true);
-                        if (r && r.success && typeof notifyDataChanged === 'function') notifyDataChanged(true);
-                    }
-                    if (sheetSyncSaveEnabled && typeof saveToGoogleSheets === 'function') await saveToGoogleSheets();
+                // פעולה ראשונה: בדיקת סכום כולל מ-API
+                await checkTotalAmountFromAPI(true, true);
+                if (url && typeof loadFromGoogleSheets === 'function') {
+                    var r = await loadFromGoogleSheets(true, true);
+                    if (r && r.success && typeof notifyDataChanged === 'function') notifyDataChanged(true);
                 }
+                await syncWithNedarimPlus(true, false, true);
+                if (url && typeof saveToGoogleSheets === 'function') await saveToGoogleSheets();
                 if (url && typeof fetchAppsScript === 'function') {
                     try {
                         var gr = await fetchAppsScript(url, { action: 'getAllNoDonors', _: Date.now() }, { retries: 1, timeout: 8000 });
@@ -13538,6 +13522,7 @@
                     } catch (e) { console.warn('⚠️ [תצוגת לייב] רענון שמות קבוצות:', e); }
                 }
                 if (typeof syncAllDataToDatabase === 'function') await syncAllDataToDatabase();
+                updateHomeStats(); // קודם מקור אמת – כדי שתצוגת הלייב תציג את הסכום העדכני
                 if (typeof updateLiveView === 'function') updateLiveView(true, true); // forceFromScheduled – עדכון מתוזמן
                 if (typeof updateLeadersList === 'function') updateLeadersList(true);
                 if (typeof updateLiveTargets === 'function') updateLiveTargets(true);
@@ -13580,7 +13565,7 @@
             if (!liveViewSettings.enableAutoScroll) return;
             if ((liveViewSettings.liveViewUpdateWhen || 'end') === 'during' || (liveViewSettings.liveViewUpdateWhen || 'end') === 'custom') return;
             if (!donorsScrollIsRunning) return;
-            console.log('🔄 [תצוגת לייב] סיום מחזור גלילה – מציג overlay ומריץ עדכון...');
+            console.log('🔄 [תצוגת לייב] סיום מחזור גלילה – מציג overlay ומריץ עדכון (בדיקת סכום→טעינה→סנכרון→שמירה)...');
             lastLiveViewUpdateAt = Date.now();
             const overlay = document.getElementById('liveViewUpdateOverlay');
             const sidePanel = document.getElementById('liveViewUpdateSidePanel');
@@ -13613,29 +13598,31 @@
             }
 
             try {
-                if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'בדיקת סכום');
-                await checkTotalAmountFromAPI(true);
-                if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'סנכרון תרומות');
-                await syncWithNedarimPlus(true);
-                if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'טעינת נתונים');
-                if (updateType === 'all') {
-                    if (autoSyncNedarimEnabled && typeof performAutoRefresh === 'function') await performAutoRefresh();
-                    var url = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').trim();
-                    if (url && googleSheetsSyncEnabled) {
-                        if (sheetSyncLoadEnabled && typeof loadFromGoogleSheets === 'function') {
-                            var r = await loadFromGoogleSheets(true);
-                            if (r && r.success && typeof notifyDataChanged === 'function') notifyDataChanged();
-                        }
-                        if (sheetSyncSaveEnabled && typeof saveToGoogleSheets === 'function') await saveToGoogleSheets();
+                var url = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || (typeof DEFAULT_GOOGLE_SHEETS_URL !== 'undefined' ? DEFAULT_GOOGLE_SHEETS_URL : '') || '').trim();
+                // פעולה ראשונה: בדיקת סכום כולל מ-API
+                if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'בדיקת סכום כולל');
+                await checkTotalAmountFromAPI(true, true);
+                if (updateType === 'all' && url) {
+                    if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'טעינה מהגליון');
+                    if (typeof loadFromGoogleSheets === 'function') {
+                        var r = await loadFromGoogleSheets(true, true);
+                        if (r && r.success && typeof notifyDataChanged === 'function') notifyDataChanged();
                     }
-                } else if (updateType === 'loadSheet' && typeof loadFromGoogleSheets === 'function') {
+                }
+                if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'סנכרון תרומות');
+                await syncWithNedarimPlus(true, false, true);
+                if (updateType === 'all' && url) {
+                    if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'שמירה לגליון');
+                    if (typeof saveToGoogleSheets === 'function') await saveToGoogleSheets();
+                }
+                if (updateType === 'loadSheet' && typeof loadFromGoogleSheets === 'function') {
                     var r = await loadFromGoogleSheets(true);
                     if (r && r.success && typeof notifyDataChanged === 'function') notifyDataChanged();
                 } else if (updateType === 'loadMatrim' && typeof loadMatrimFromNedarim === 'function') {
                     await loadMatrimFromNedarim(true);
                 }
                 if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'מרענן שמות קבוצות');
-                var sheetUrl = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').toString().trim();
+                var sheetUrl = (url || googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || (typeof DEFAULT_GOOGLE_SHEETS_URL !== 'undefined' ? DEFAULT_GOOGLE_SHEETS_URL : '') || '').toString().trim();
                 if (sheetUrl && typeof fetchAppsScript === 'function') {
                     try {
                         var groupsResult = await fetchAppsScript(sheetUrl, { action: 'getAllNoDonors', _: Date.now() }, { retries: 1, timeout: 8000 });
@@ -13657,6 +13644,7 @@
                 }
                 if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'עדכון תצוגה');
                 if (typeof syncAllDataToDatabase === 'function') await syncAllDataToDatabase();
+                updateHomeStats(); // קודם מקור אמת – כדי שתצוגת הלייב תציג את הסכום העדכני
                 if (typeof updateLiveView === 'function') updateLiveView(true, true); // forceFromScheduled – עדכון מתוזמן (סיום גלילה)
                 if (typeof updateLeadersList === 'function') updateLeadersList(true);
                 if (typeof updateLiveTargets === 'function') updateLiveTargets(true);
@@ -14411,6 +14399,7 @@
                         }
                         if (typeof updateLiveView === 'function') updateLiveView(true, true);
                     })().catch(function() {});
+                    updateHomeStats(); // קודם עדכון דף הבית – כדי שהתצוגה תהיה מעודכנת
                     updateLiveView(true, true); // forceFromScheduled – עדכון ראשוני בכניסה (בינתיים עם הנתונים הקיימים)
                     updateLeadersList(true);
                     updateLiveTargets(true);
@@ -14654,6 +14643,10 @@
                 return Math.max(apiVal, localSum);
             }
             return localSum;
+        }
+        /** מחזיר את הסכום שמוצג בדף הבית – מקור אמת יחיד לתצוגת הלייב (משתמש ב-getDisplayTotal) */
+        function getHomeDisplayTotal() {
+            return (typeof getDisplayTotal === 'function') ? getDisplayTotal() : 0;
         }
         function updateHomeStats() {
             // יעד המצינג – מ-API אם נטען וערכו סביר, אחרת מהיעד המקומי
@@ -16998,8 +16991,9 @@
                 .sort((a, b) => (b.amount || 0) - (a.amount || 0))
                 .slice(0, 5);
             
+            // סכום אמיתי – מ-API (נדרים פלוס) כשזמין, אחרת מסכום המתרימים
             const totalCollected = (typeof getDisplayTotal === 'function') ? getDisplayTotal() : donors.reduce((sum, donor) => sum + Math.max(0, donor.amount || 0), 0);
-            const goal = (NEDARIM_CONFIG.apiDataLoaded && 
+            const goal = (NEDARIM_CONFIG.apiDataLoaded &&
                          NEDARIM_CONFIG.goalFromAPI !== null &&
                          NEDARIM_CONFIG.goalFromAPI > 0)
                 ? NEDARIM_CONFIG.goalFromAPI
@@ -17182,7 +17176,8 @@
             if (isLiveViewActive() && liveViewSettings.enableAutoScroll) {
                 if (!leadersScrollIsRunning) {
                     setTimeout(() => restartLeadersAutoScroll({ immediate: true }), 100);
-                } else if (!useIncremental) {
+                } else {
+                    // סנכרון לקלון – כדי שהסכום המעודכן יוצג גם בגלילה
                     syncLeadersCloneToPrimary(leadersList);
                 }
             }
@@ -17209,7 +17204,7 @@
                 const text = overallContainer.querySelector('.leaders-overall-progress-text');
                 const note = overallContainer.querySelector('.leaders-overall-progress-note');
 
-                const totalCollected = (typeof getDisplayTotal === 'function') ? getDisplayTotal() : donors.reduce((sum, donor) => sum + Math.max(0, donor.amount || 0), 0);
+                const totalCollected = (typeof getHomeDisplayTotal === 'function') ? getHomeDisplayTotal() : ((typeof getDisplayTotal === 'function') ? getDisplayTotal() : donors.reduce((sum, donor) => sum + Math.max(0, donor.amount || 0), 0));
                 const goal = (NEDARIM_CONFIG.apiDataLoaded &&
                              NEDARIM_CONFIG.goalFromAPI !== null &&
                              NEDARIM_CONFIG.goalFromAPI > 0)
@@ -17932,6 +17927,9 @@
             if (typeof isLiveViewScheduledUpdatesOnly === 'function' && isLiveViewScheduledUpdatesOnly()) return;
             if (isLiveViewActive()) {
                 updateHomeStats();
+                // חשוב: לעדכן גם את תצוגת הלייב באותו סכום שמוצג בדף הבית
+                if (typeof updateLeadersList === 'function') updateLeadersList(true);
+                if (typeof updateLiveTargets === 'function') updateLiveTargets(true);
                 if (now - lastAutoUpdateTime > 60000) lastAutoUpdateTime = now;
             } else {
                 // לא בתצוגת לייב - עדכון רגיל
@@ -19492,11 +19490,13 @@
                 console.error('❌ שגיאה במשיכת סכום כולל דרך Google Sheets:', translateFetchError(error));
             }
             
-            // אם נכשל, ננסה לחשב מהמתרימים
-            console.log('ℹ️ מחשב סכום כולל מהמתרימים...');
+            // אם נכשל – משתמשים בסכום מחושב מהמתרימים (כולל עדכונים אחרי סנכרון)
             const totalFromDonors = donors.reduce((sum, d) => sum + (d.amount || 0), 0);
             if (totalFromDonors > 0) {
-                console.log(`📊 סכום מהתרימים: ${totalFromDonors.toLocaleString()} ש"ח`);
+                console.log(`ℹ️ שאיבת סכום כולל נכשלה – משתמש בסכום מהתרימים: ${totalFromDonors.toLocaleString()} ש"ח`);
+                NEDARIM_CONFIG.totalDonatedFromAPI = totalFromDonors;
+                NEDARIM_CONFIG.apiDataLoaded = true;
+                return { Goal: NEDARIM_CONFIG.goalFromAPI || 0, Donated: totalFromDonors };
             }
             
             return null;
@@ -21274,18 +21274,24 @@
             }
 
             // סנכרון אוטומטי מלא (דחיפה + משיכה) – אותה עמותה, תרומות מסליקה באשראי יסתנכרנו
+            // בתצוגת לייב – מדלגים. העדכון רץ רק בעדכון המתוזמן (כל X דקות)
             nedarimSyncTimer = setInterval(() => {
+                if (typeof isLiveViewActive === 'function' && isLiveViewActive()) return;
                 console.log('🔄 [אוטומטי] מסנכרן עם נדרים פלוס (סנכרון מלא)...');
                 runSequentialOp(() => syncWithNedarimPlus(true), 'סנכרון אוטומטי'); // silent – סנכרון מלא
             }, NEDARIM_CONFIG.autoSyncInterval);
 
             // מפעיל בדיקת שינויים בנתונים מקומיים כל 10 שניות
+            // בתצוגת לייב – מדלגים (העדכון המתוזמן מטפל)
             dataCheckTimer = setInterval(() => {
+                if (typeof isLiveViewActive === 'function' && isLiveViewActive()) return;
                 checkForLocalDataChanges();
             }, NEDARIM_CONFIG.dataCheckInterval);
 
             // מפעיל עדכון של הסכום הכולל מ-API כל 60 שניות (לא 30 - מונע הפרעות)
+            // בתצוגת לייב – מדלגים (העדכון המתוזמן מטפל)
             totalCheckTimer = setInterval(async () => {
+                if (typeof isLiveViewActive === 'function' && isLiveViewActive()) return;
                 console.log('📊 [אוטומטי] מעדכן סכום כולל מ-API...');
                 try {
                     const totalData = await fetchTotalFromMatchPlus();
@@ -21383,7 +21389,7 @@
         });
 
         // פונקציה לבדיקת הסכום הכולל מ-API
-        async function checkTotalAmountFromAPI(silent = false) {
+        async function checkTotalAmountFromAPI(silent = false, fromScheduledUpdate = false) {
             const btn = document.getElementById('checkTotalBtn');
             if (btn && !silent) {
                 btn.disabled = true;
@@ -21425,47 +21431,54 @@
                     console.log('📊 [מקומי] סכום שצריך להיות (מנדרים פלוס):', totalData.Donated.toLocaleString(), 'ש"ח');
                     console.log('📊 [מקומי] ההפרש:', (totalData.Donated - totalFromDonors).toLocaleString(), 'ש"ח');
                     console.log('📊 [API - חדש] יעד:', totalData.Goal.toLocaleString(), 'ש"ח');
-                    // מיד מרעננים את כל התצוגות – getDisplayTotal ישתמש ב-API כשהמקומי נמוך משמעותית
+                    // יש לנו סכום חדש מ-API – להציג בכל התצוגות (כולל לייב), כדי שדף הבית ותצוגת הלייב יציגו אותו סכום
+                    const forceDisplay = true;
                     updateHomeStats();
-                    updateLeadersList();
-                    updateLiveTargets();
-                    if (typeof updateLiveView === 'function') updateLiveView();
+                    updateLeadersList(forceDisplay);
+                    updateLiveTargets(forceDisplay);
+                    if (typeof updateLiveView === 'function') updateLiveView(true, forceDisplay);
                     const diff = totalData.Donated - totalFromDonors;
                     if (Math.abs(diff) > 0) {
-                        if (!isAutoCall) {
-                            showNedarimStatus('מסנכרן סכומים מנדרים פלוס לתוכנה...', 'loading');
-                        }
-                        // סנכרון משיכה: משיכת רשימת מתרימים מנדרים ועדכון הסכום של כל מתרים בתוכנה
-                        // forceSync=true: בדיקה ידנית – לא לדלג בגלל cooldown
-                        await syncWithNedarimPlus(true, true, true);
-                        // אימות: אחרי הסנכרון בודקים אם הסכום המקומי באמת תואם לנדרים
-                        const totalAfterSync = donors.reduce((s, d) => s + (d.amount || 0), 0);
-                        const nowMatch = Math.abs(totalAfterSync - totalData.Donated) <= 1;
-                        updateHomeStats();
-                        updateLeadersList();
-                        updateLiveTargets();
-                        if (typeof updateLiveView === 'function') updateLiveView();
-                        if (!isAutoCall) {
-                            if (nowMatch) {
-                                showNedarimStatus('התוכנה מסונכרנת עם נדרים פלוס', 'success');
-                                showNotification(`✅ סונכרן עם נדרים פלוס: הסכום תואם ${totalData.Donated.toLocaleString()} ש"ח`, 'success');
-                            } else {
-                                showNedarimStatus(`הסכומים לא תואמים: בתוכנה ${totalAfterSync.toLocaleString()} ש"ח | בנדרים ${totalData.Donated.toLocaleString()} ש"ח`, 'warning');
-                                showNotification(`⚠️ אחרי סנכרון עדיין יש הבדל: בתוכנה ${totalAfterSync.toLocaleString()} ש"ח, בנדרים פלוס ${totalData.Donated.toLocaleString()} ש"ח. ייתכן שמתרים לא מקושרים.`, 'warning');
+                        // בתצוגת לייב – לא מריצים סנכרון נוסף (מניעת עומס). העדכון המתוזמן כבר עשה sync.
+                        const inLiveView = typeof isLiveViewActive === 'function' && isLiveViewActive();
+                        if (!inLiveView) {
+                            if (!isAutoCall) {
+                                showNedarimStatus('מסנכרן סכומים מנדרים פלוס לתוכנה...', 'loading');
                             }
-                        } else if (nowMatch) {
-                            showNotification(`✅ סונכרן עם נדרים פלוס: ${totalData.Donated.toLocaleString()} ש"ח`, 'success');
+                            // סנכרון משיכה: משיכת רשימת מתרימים מנדרים ועדכון הסכום של כל מתרים בתוכנה
+                            // forceSync=true: בדיקה ידנית – לא לדלג בגלל cooldown
+                            await syncWithNedarimPlus(true, true, true);
+                            // אימות: אחרי הסנכרון בודקים אם הסכום המקומי באמת תואם לנדרים
+                            const totalAfterSync = donors.reduce((s, d) => s + (d.amount || 0), 0);
+                            const nowMatch = Math.abs(totalAfterSync - totalData.Donated) <= 1;
+                            updateHomeStats();
+                            updateLeadersList(forceDisplay);
+                            updateLiveTargets(forceDisplay);
+                            if (typeof updateLiveView === 'function') updateLiveView(true, forceDisplay);
+                            if (!isAutoCall) {
+                                if (nowMatch) {
+                                    showNedarimStatus('התוכנה מסונכרנת עם נדרים פלוס', 'success');
+                                    showNotification(`✅ סונכרן עם נדרים פלוס: הסכום תואם ${totalData.Donated.toLocaleString()} ש"ח`, 'success');
+                                } else {
+                                    showNedarimStatus(`הסכומים לא תואמים: בתוכנה ${totalAfterSync.toLocaleString()} ש"ח | בנדרים ${totalData.Donated.toLocaleString()} ש"ח`, 'warning');
+                                    showNotification(`⚠️ אחרי סנכרון עדיין יש הבדל: בתוכנה ${totalAfterSync.toLocaleString()} ש"ח, בנדרים פלוס ${totalData.Donated.toLocaleString()} ש"ח. ייתכן שמתרים לא מקושרים.`, 'warning');
+                                }
+                            } else if (nowMatch) {
+                                showNotification(`✅ סונכרן עם נדרים פלוס: ${totalData.Donated.toLocaleString()} ש"ח`, 'success');
+                            }
                         }
+                        // בתצוגת לייב – הסכום מ-API כבר עודכן למעלה (שורות 21407–21411), אין סנכרון נוסף
                     } else {
                         showNotification(`✅ הסכום כבר תואם: ${totalData.Donated.toLocaleString()} ש"ח`, 'success');
                     }
                 } else {
                     NEDARIM_CONFIG.totalDonatedFromAPI = totalFromDonors;
                     NEDARIM_CONFIG.apiDataLoaded = true;
+                    const forceDisplay = true;
                     updateHomeStats();
-                    updateLeadersList();
-                    updateLiveTargets();
-                    if (typeof updateLiveView === 'function') updateLiveView();
+                    updateLeadersList(forceDisplay);
+                    updateLiveTargets(forceDisplay);
+                    if (typeof updateLiveView === 'function') updateLiveView(true, forceDisplay);
                     console.log('ℹ️ [בדיקה] משתמש בסכום מהתרימים:', totalFromDonors.toLocaleString(), 'ש"ח');
                     showNotification(`✅ הסכום המוצג: ${totalFromDonors.toLocaleString()} ש"ח (מהרשימה המקומית)`);
                 }
@@ -21708,17 +21721,18 @@
         // טעינת הגדרות Google Sheets
         function loadGoogleSheetsSettings() {
             try {
-                const savedUrl = localStorage.getItem('googleSheetsWebAppUrl');
-                googleSheetsWebAppUrl = savedUrl || DEFAULT_GOOGLE_SHEETS_URL || '';
+                var savedUrl = localStorage.getItem('googleSheetsWebAppUrl');
+                if (!savedUrl && DEFAULT_GOOGLE_SHEETS_URL) {
+                    localStorage.setItem('googleSheetsWebAppUrl', DEFAULT_GOOGLE_SHEETS_URL);
+                    savedUrl = DEFAULT_GOOGLE_SHEETS_URL;
+                }
+                googleSheetsWebAppUrl = (savedUrl || DEFAULT_GOOGLE_SHEETS_URL || '').trim();
                 var savedSync = localStorage.getItem('googleSheetsSyncEnabled');
-                googleSheetsSyncEnabled = savedSync === 'true' || (savedSync === null && (googleSheetsWebAppUrl || '').trim().length > 0);
+                googleSheetsSyncEnabled = savedSync === 'true' || (savedSync === null && googleSheetsWebAppUrl.length > 0);
                 sheetSyncIntervalMinutes = Math.max(1, parseInt(localStorage.getItem('sheetSyncIntervalMinutes')) || 5);
                 sheetSyncLoadEnabled = localStorage.getItem('sheetSyncLoadEnabled') !== 'false';
                 sheetSyncSaveEnabled = localStorage.getItem('sheetSyncSaveEnabled') !== 'false';
                 sheetSyncSaveOnChange = localStorage.getItem('sheetSyncSaveOnChange') !== 'false';
-                if (DEFAULT_GOOGLE_SHEETS_URL && !savedUrl) {
-                    localStorage.setItem('googleSheetsWebAppUrl', DEFAULT_GOOGLE_SHEETS_URL);
-                }
                 const urlInput = document.getElementById('googleSheetsWebAppUrl');
                 const autoSyncCheckbox = document.getElementById('autoGoogleSheetsSyncCheckbox');
                 const intervalInput = document.getElementById('sheetSyncIntervalInput');
@@ -21946,7 +21960,7 @@
 
         // טעינת נתונים מ-Google Sheets (מלא – כולל מתרימים מהגליון. לסנכרון אוטומטי משתמשים ב-loadFromNedarimAndSheetGroups)
         // silent: true = ללא הודעות (לסנכרון אוטומטי בתצוגת לייב)
-        async function loadFromGoogleSheets(silent = false) {
+        async function loadFromGoogleSheets(silent = false, forceLoadWhenScheduled = false) {
             const loadSeq = ++_loadFromSheetsSeq;
             const loadStartTime = Date.now();
             const urlInput = document.getElementById('googleSheetsWebAppUrl');
@@ -21967,9 +21981,9 @@
                 return { success: false };
             }
             
-            // לא לטעון מהגליון אם עכשיו סיימנו שמירה – מונע דריסת תרומות ושינויים מקומיים
+            // לא לטעון מהגליון אם עכשיו סיימנו שמירה – מונע דריסת תרומות ושינויים מקומיים (מעקף בעדכון מתוזמן)
             const SKIP_LOAD_AFTER_SAVE_MS = 25000;
-            if (lastSaveToSheetsTime && (Date.now() - lastSaveToSheetsTime) < SKIP_LOAD_AFTER_SAVE_MS) {
+            if (!forceLoadWhenScheduled && lastSaveToSheetsTime && (Date.now() - lastSaveToSheetsTime) < SKIP_LOAD_AFTER_SAVE_MS) {
                 if (!silent) console.log('📥 [Google Sheets] דילוג על טעינה – שמירה לאחרונה, לא לדרוס שינויים מקומיים');
                 return { success: true, skipped: true };
             }
