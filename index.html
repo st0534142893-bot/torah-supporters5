@@ -15444,13 +15444,19 @@
             updateLeadersList();
             updateLiveTargets();
             
-            // שמירה מיידית לגליון (לא ממתינה ל-debounce)
-            const url = googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || DEFAULT_GOOGLE_SHEETS_URL || '';
-            if (url) {
-                saveToGoogleSheets().then(() => {
-                    console.log('✅ שם תצוגה עודכן גם בגליון');
+            // שמירה מיידית לגליון (payload קטן – מתרימים וקבוצות בלבד) כדי שהשם לא יקפוץ בחזרה
+            if (typeof saveDonorsAndGroupsToSheets === 'function') {
+                saveDonorsAndGroupsToSheets().then((r) => {
+                    if (r && r.success) {
+                        if (typeof lastSaveToSheetsTime !== 'undefined') lastSaveToSheetsTime = Date.now();
+                        console.log('✅ שם תצוגה עודכן גם בגליון');
+                    } else {
+                        console.warn('⚠️ שגיאה בשמירת שם לגליון:', r && r.error);
+                        showNotification('השם נשמר בתוכנה אך שמירה לגליון נכשלה. נסה שמור לגליון ידנית.', 'warning');
+                    }
                 }).catch(err => {
                     console.warn('⚠️ שגיאה בשמירת שם לגליון:', err);
+                    showNotification('השם נשמר בתוכנה אך שמירה לגליון נכשלה.', 'warning');
                 });
             }
             
@@ -16367,14 +16373,21 @@
                 updateLiveView(true); // immediate = true
             }
             
-            // שמירה לגליון - חשוב! כדי שהשינויים (כולל מספר מתרים) יישמרו בגליון
+            // שמירה לגליון מיד – רק מתרימים וקבוצות (payload קטן) כדי שהשם והשינויים ייכתבו לגליון ולא יקפצו בחזרה
             isUpdatingDonorForNedarim = true;
             try {
-                await saveToGoogleSheets();
-                console.log(`✅ נשמרו השינויים לגליון (כולל מספר מתרים: ${donor.nedarimMatrimId || 'ללא'})`);
+                const sheetResult = typeof saveDonorsAndGroupsToSheets === 'function' ? await saveDonorsAndGroupsToSheets() : await saveToGoogleSheets();
+                if (sheetResult && sheetResult.success) {
+                    if (typeof lastSaveToSheetsTime !== 'undefined') lastSaveToSheetsTime = Date.now();
+                    console.log(`✅ נשמרו השינויים לגליון (כולל שם תצוגה ומספר מתרים: ${donor.nedarimMatrimId || 'ללא'})`);
+                } else {
+                    const errMsg = (sheetResult && sheetResult.error) ? sheetResult.error : 'שמירה נכשלה';
+                    console.warn('⚠️ שגיאה בשמירה לגליון:', errMsg);
+                    showNotification('העדכון נשמר בתוכנה אך שמירה לגליון נכשלה. נסה שוב או שמור לגליון ידנית.', 'warning');
+                }
             } catch (error) {
                 console.warn('⚠️ שגיאה בשמירה לגליון:', error);
-                // לא נציג שגיאה למשתמש כי העדכון כבר נשמר מקומית
+                showNotification('העדכון נשמר בתוכנה אך שמירה לגליון נכשלה. נסה שוב או שמור לגליון ידנית.', 'warning');
             } finally {
                 isUpdatingDonorForNedarim = false;
             }
@@ -22474,6 +22487,33 @@
                 clearInterval(liveViewSyncIntervalId);
                 liveViewSyncIntervalId = null;
                 console.log('🛑 [סנכרון] סנכרון תקופתי הופסק');
+            }
+        }
+        
+        /** שמירה רק של מתרימים וקבוצות לגליון – payload קטן, מתאים לעדכון שם/פרטים בלי להיכשל (מגבלת 64KB). */
+        async function saveDonorsAndGroupsToSheets() {
+            const urlInput = document.getElementById('googleSheetsWebAppUrl');
+            const url = (urlInput ? urlInput.value.trim() : '') ||
+                        (typeof googleSheetsWebAppUrl !== 'undefined' ? googleSheetsWebAppUrl : '') ||
+                        (typeof localStorage !== 'undefined' ? localStorage.getItem('googleSheetsWebAppUrl') : '') ||
+                        (typeof DEFAULT_GOOGLE_SHEETS_URL !== 'undefined' ? DEFAULT_GOOGLE_SHEETS_URL : '') || '';
+            if (!url || !url.trim()) return { success: false, error: 'אין URL' };
+            const bodyStr = JSON.stringify({ action: 'saveDonors', donors: donors, groups: groups });
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: bodyStr
+                });
+                const result = await response.json();
+                if (result && result.success) {
+                    if (typeof lastSaveToSheetsTime !== 'undefined') lastSaveToSheetsTime = Date.now();
+                    return { success: true };
+                }
+                return { success: false, error: (result && result.error) || 'שגיאה מהשרת' };
+            } catch (err) {
+                return { success: false, error: err && err.message ? err.message : String(err) };
             }
         }
         
