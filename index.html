@@ -21486,7 +21486,7 @@
                         const totalAfterSync = donors.reduce((s, d) => s + (d.amount || 0), 0);
                         const nowMatch = Math.abs(totalAfterSync - totalData.Donated) <= 1;
                         updateHomeStats();
-                        updateLeadersList();
+                        updateLeadersList(true);
                         updateLiveTargets();
                         if (typeof updateLiveView === 'function') updateLiveView();
                         if (!isAutoCall) {
@@ -21507,7 +21507,7 @@
                     NEDARIM_CONFIG.totalDonatedFromAPI = totalFromDonors;
                     NEDARIM_CONFIG.apiDataLoaded = true;
                     updateHomeStats();
-                    updateLeadersList();
+                    updateLeadersList(true);
                     updateLiveTargets();
                     if (typeof updateLiveView === 'function') updateLiveView();
                     console.log('ℹ️ [בדיקה] משתמש בסכום מהתרימים:', totalFromDonors.toLocaleString(), 'ש"ח');
