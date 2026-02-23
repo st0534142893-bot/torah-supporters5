@@ -13486,8 +13486,8 @@
             if (displayMode !== 'none') startDuringUpdateOverlay(displayMode);
             console.log('🔄 [תצוגת לייב] עדכון תוך כדי גלילה' + (displayMode !== 'none' ? ' (עם מסך ' + displayMode + ')' : '') + '...');
             try {
-                await syncWithNedarimPlus(true);
-                await checkTotalAmountFromAPI(true);
+                await syncWithNedarimPlus(true, false, true);
+                await checkTotalAmountFromAPI(true, true);
                 var url = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').trim();
                 if (url && googleSheetsSyncEnabled) {
                     if (sheetSyncLoadEnabled && typeof loadFromGoogleSheets === 'function') {
@@ -13595,12 +13595,12 @@
 
             try {
                 if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'סנכרון תרומות');
-                await syncWithNedarimPlus(true);
+                await syncWithNedarimPlus(true, false, true);
                 if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'בדיקת סכום');
-                await checkTotalAmountFromAPI(true);
+                await checkTotalAmountFromAPI(true, true);
                 if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'טעינת נתונים');
                 if (updateType === 'all') {
-                    if (autoSyncNedarimEnabled && typeof performAutoRefresh === 'function') await performAutoRefresh();
+                    // בתצוגת לייב – רק העדכון המתוזמן (sync + checkTotal + load + save). בלי performAutoRefresh – מונע כפילות
                     var url = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').trim();
                     if (url && googleSheetsSyncEnabled) {
                         if (sheetSyncLoadEnabled && typeof loadFromGoogleSheets === 'function') {
@@ -21254,18 +21254,24 @@
             }
 
             // סנכרון אוטומטי מלא (דחיפה + משיכה) – אותה עמותה, תרומות מסליקה באשראי יסתנכרנו
+            // בתצוגת לייב – מדלגים. העדכון רץ רק בעדכון המתוזמן (כל X דקות)
             nedarimSyncTimer = setInterval(() => {
+                if (typeof isLiveViewActive === 'function' && isLiveViewActive()) return;
                 console.log('🔄 [אוטומטי] מסנכרן עם נדרים פלוס (סנכרון מלא)...');
                 runSequentialOp(() => syncWithNedarimPlus(true), 'סנכרון אוטומטי'); // silent – סנכרון מלא
             }, NEDARIM_CONFIG.autoSyncInterval);
 
             // מפעיל בדיקת שינויים בנתונים מקומיים כל 10 שניות
+            // בתצוגת לייב – מדלגים (העדכון המתוזמן מטפל)
             dataCheckTimer = setInterval(() => {
+                if (typeof isLiveViewActive === 'function' && isLiveViewActive()) return;
                 checkForLocalDataChanges();
             }, NEDARIM_CONFIG.dataCheckInterval);
 
             // מפעיל עדכון של הסכום הכולל מ-API כל 60 שניות (לא 30 - מונע הפרעות)
+            // בתצוגת לייב – מדלגים (העדכון המתוזמן מטפל)
             totalCheckTimer = setInterval(async () => {
+                if (typeof isLiveViewActive === 'function' && isLiveViewActive()) return;
                 console.log('📊 [אוטומטי] מעדכן סכום כולל מ-API...');
                 try {
                     const totalData = await fetchTotalFromMatchPlus();
@@ -21363,7 +21369,7 @@
         });
 
         // פונקציה לבדיקת הסכום הכולל מ-API
-        async function checkTotalAmountFromAPI(silent = false) {
+        async function checkTotalAmountFromAPI(silent = false, fromScheduledUpdate = false) {
             const btn = document.getElementById('checkTotalBtn');
             if (btn && !silent) {
                 btn.disabled = true;
@@ -21406,46 +21412,53 @@
                     console.log('📊 [מקומי] ההפרש:', (totalData.Donated - totalFromDonors).toLocaleString(), 'ש"ח');
                     console.log('📊 [API - חדש] יעד:', totalData.Goal.toLocaleString(), 'ש"ח');
                     // מיד מרעננים את כל התצוגות – getDisplayTotal ישתמש ב-API כשהמקומי נמוך משמעותית
+                    const force = !!fromScheduledUpdate;
                     updateHomeStats();
-                    updateLeadersList();
-                    updateLiveTargets();
-                    if (typeof updateLiveView === 'function') updateLiveView();
+                    updateLeadersList(force);
+                    updateLiveTargets(force);
+                    if (typeof updateLiveView === 'function') updateLiveView(true, force);
                     const diff = totalData.Donated - totalFromDonors;
                     if (Math.abs(diff) > 0) {
-                        if (!isAutoCall) {
-                            showNedarimStatus('מסנכרן סכומים מנדרים פלוס לתוכנה...', 'loading');
-                        }
-                        // סנכרון משיכה: משיכת רשימת מתרימים מנדרים ועדכון הסכום של כל מתרים בתוכנה
-                        // forceSync=true: בדיקה ידנית – לא לדלג בגלל cooldown
-                        await syncWithNedarimPlus(true, true, true);
-                        // אימות: אחרי הסנכרון בודקים אם הסכום המקומי באמת תואם לנדרים
-                        const totalAfterSync = donors.reduce((s, d) => s + (d.amount || 0), 0);
-                        const nowMatch = Math.abs(totalAfterSync - totalData.Donated) <= 1;
-                        updateHomeStats();
-                        updateLeadersList();
-                        updateLiveTargets();
-                        if (typeof updateLiveView === 'function') updateLiveView();
-                        if (!isAutoCall) {
-                            if (nowMatch) {
-                                showNedarimStatus('התוכנה מסונכרנת עם נדרים פלוס', 'success');
-                                showNotification(`✅ סונכרן עם נדרים פלוס: הסכום תואם ${totalData.Donated.toLocaleString()} ש"ח`, 'success');
-                            } else {
-                                showNedarimStatus(`הסכומים לא תואמים: בתוכנה ${totalAfterSync.toLocaleString()} ש"ח | בנדרים ${totalData.Donated.toLocaleString()} ש"ח`, 'warning');
-                                showNotification(`⚠️ אחרי סנכרון עדיין יש הבדל: בתוכנה ${totalAfterSync.toLocaleString()} ש"ח, בנדרים פלוס ${totalData.Donated.toLocaleString()} ש"ח. ייתכן שמתרים לא מקושרים.`, 'warning');
+                        // בתצוגת לייב – לא מריצים סנכרון נוסף (מניעת עומס). העדכון המתוזמן כבר עשה sync.
+                        const inLiveView = typeof isLiveViewActive === 'function' && isLiveViewActive();
+                        if (!inLiveView) {
+                            if (!isAutoCall) {
+                                showNedarimStatus('מסנכרן סכומים מנדרים פלוס לתוכנה...', 'loading');
                             }
-                        } else if (nowMatch) {
-                            showNotification(`✅ סונכרן עם נדרים פלוס: ${totalData.Donated.toLocaleString()} ש"ח`, 'success');
+                            // סנכרון משיכה: משיכת רשימת מתרימים מנדרים ועדכון הסכום של כל מתרים בתוכנה
+                            // forceSync=true: בדיקה ידנית – לא לדלג בגלל cooldown
+                            await syncWithNedarimPlus(true, true, true);
+                            // אימות: אחרי הסנכרון בודקים אם הסכום המקומי באמת תואם לנדרים
+                            const totalAfterSync = donors.reduce((s, d) => s + (d.amount || 0), 0);
+                            const nowMatch = Math.abs(totalAfterSync - totalData.Donated) <= 1;
+                            updateHomeStats();
+                            updateLeadersList(force);
+                            updateLiveTargets(force);
+                            if (typeof updateLiveView === 'function') updateLiveView(true, force);
+                            if (!isAutoCall) {
+                                if (nowMatch) {
+                                    showNedarimStatus('התוכנה מסונכרנת עם נדרים פלוס', 'success');
+                                    showNotification(`✅ סונכרן עם נדרים פלוס: הסכום תואם ${totalData.Donated.toLocaleString()} ש"ח`, 'success');
+                                } else {
+                                    showNedarimStatus(`הסכומים לא תואמים: בתוכנה ${totalAfterSync.toLocaleString()} ש"ח | בנדרים ${totalData.Donated.toLocaleString()} ש"ח`, 'warning');
+                                    showNotification(`⚠️ אחרי סנכרון עדיין יש הבדל: בתוכנה ${totalAfterSync.toLocaleString()} ש"ח, בנדרים פלוס ${totalData.Donated.toLocaleString()} ש"ח. ייתכן שמתרים לא מקושרים.`, 'warning');
+                                }
+                            } else if (nowMatch) {
+                                showNotification(`✅ סונכרן עם נדרים פלוס: ${totalData.Donated.toLocaleString()} ש"ח`, 'success');
+                            }
                         }
+                        // בתצוגת לייב – הסכום מ-API כבר עודכן למעלה (שורות 21407–21411), אין סנכרון נוסף
                     } else {
                         showNotification(`✅ הסכום כבר תואם: ${totalData.Donated.toLocaleString()} ש"ח`, 'success');
                     }
                 } else {
                     NEDARIM_CONFIG.totalDonatedFromAPI = totalFromDonors;
                     NEDARIM_CONFIG.apiDataLoaded = true;
+                    const force = !!fromScheduledUpdate;
                     updateHomeStats();
-                    updateLeadersList();
-                    updateLiveTargets();
-                    if (typeof updateLiveView === 'function') updateLiveView();
+                    updateLeadersList(force);
+                    updateLiveTargets(force);
+                    if (typeof updateLiveView === 'function') updateLiveView(true, force);
                     console.log('ℹ️ [בדיקה] משתמש בסכום מהתרימים:', totalFromDonors.toLocaleString(), 'ש"ח');
                     showNotification(`✅ הסכום המוצג: ${totalFromDonors.toLocaleString()} ש"ח (מהרשימה המקומית)`);
                 }
