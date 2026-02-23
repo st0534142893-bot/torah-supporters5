@@ -21414,12 +21414,12 @@
                     console.log('📊 [מקומי] סכום שצריך להיות (מנדרים פלוס):', totalData.Donated.toLocaleString(), 'ש"ח');
                     console.log('📊 [מקומי] ההפרש:', (totalData.Donated - totalFromDonors).toLocaleString(), 'ש"ח');
                     console.log('📊 [API - חדש] יעד:', totalData.Goal.toLocaleString(), 'ש"ח');
-                    // מיד מרעננים את כל התצוגות – getDisplayTotal ישתמש ב-API כשהמקומי נמוך משמעותית
-                    const force = !!fromScheduledUpdate;
+                    // יש לנו סכום חדש מ-API – להציג בכל התצוגות (כולל לייב), כדי שדף הבית ותצוגת הלייב יציגו אותו סכום
+                    const forceDisplay = true;
                     updateHomeStats();
-                    updateLeadersList(force);
-                    updateLiveTargets(force);
-                    if (typeof updateLiveView === 'function') updateLiveView(true, force);
+                    updateLeadersList(forceDisplay);
+                    updateLiveTargets(forceDisplay);
+                    if (typeof updateLiveView === 'function') updateLiveView(true, forceDisplay);
                     const diff = totalData.Donated - totalFromDonors;
                     if (Math.abs(diff) > 0) {
                         // בתצוגת לייב – לא מריצים סנכרון נוסף (מניעת עומס). העדכון המתוזמן כבר עשה sync.
@@ -21435,9 +21435,9 @@
                             const totalAfterSync = donors.reduce((s, d) => s + (d.amount || 0), 0);
                             const nowMatch = Math.abs(totalAfterSync - totalData.Donated) <= 1;
                             updateHomeStats();
-                            updateLeadersList(force);
-                            updateLiveTargets(force);
-                            if (typeof updateLiveView === 'function') updateLiveView(true, force);
+                            updateLeadersList(forceDisplay);
+                            updateLiveTargets(forceDisplay);
+                            if (typeof updateLiveView === 'function') updateLiveView(true, forceDisplay);
                             if (!isAutoCall) {
                                 if (nowMatch) {
                                     showNedarimStatus('התוכנה מסונכרנת עם נדרים פלוס', 'success');
@@ -21457,11 +21457,11 @@
                 } else {
                     NEDARIM_CONFIG.totalDonatedFromAPI = totalFromDonors;
                     NEDARIM_CONFIG.apiDataLoaded = true;
-                    const force = !!fromScheduledUpdate;
+                    const forceDisplay = true;
                     updateHomeStats();
-                    updateLeadersList(force);
-                    updateLiveTargets(force);
-                    if (typeof updateLiveView === 'function') updateLiveView(true, force);
+                    updateLeadersList(forceDisplay);
+                    updateLiveTargets(forceDisplay);
+                    if (typeof updateLiveView === 'function') updateLiveView(true, forceDisplay);
                     console.log('ℹ️ [בדיקה] משתמש בסכום מהתרימים:', totalFromDonors.toLocaleString(), 'ש"ח');
                     showNotification(`✅ הסכום המוצג: ${totalFromDonors.toLocaleString()} ש"ח (מהרשימה המקומית)`);
                 }
