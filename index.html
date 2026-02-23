@@ -13491,12 +13491,13 @@
             console.log('🔄 [תצוגת לייב] עדכון תוך כדי גלילה' + (displayMode !== 'none' ? ' (עם מסך ' + displayMode + ')' : '') + '...');
             try {
                 var url = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').trim();
+                // פעולה ראשונה: בדיקת סכום כולל מ-API
+                await checkTotalAmountFromAPI(true, true);
                 if (url && typeof loadFromGoogleSheets === 'function') {
                     var r = await loadFromGoogleSheets(true, true);
                     if (r && r.success && typeof notifyDataChanged === 'function') notifyDataChanged(true);
                 }
                 await syncWithNedarimPlus(true, false, true);
-                await checkTotalAmountFromAPI(true, true);
                 if (url && typeof saveToGoogleSheets === 'function') await saveToGoogleSheets();
                 if (url && typeof fetchAppsScript === 'function') {
                     try {
@@ -13563,7 +13564,7 @@
             if (!liveViewSettings.enableAutoScroll) return;
             if ((liveViewSettings.liveViewUpdateWhen || 'end') === 'during' || (liveViewSettings.liveViewUpdateWhen || 'end') === 'custom') return;
             if (!donorsScrollIsRunning) return;
-            console.log('🔄 [תצוגת לייב] סיום מחזור גלילה – מציג overlay ומריץ עדכון (טעינה→סנכרון→סכום→שמירה)...');
+            console.log('🔄 [תצוגת לייב] סיום מחזור גלילה – מציג overlay ומריץ עדכון (בדיקת סכום→טעינה→סנכרון→שמירה)...');
             lastLiveViewUpdateAt = Date.now();
             const overlay = document.getElementById('liveViewUpdateOverlay');
             const sidePanel = document.getElementById('liveViewUpdateSidePanel');
@@ -13597,6 +13598,9 @@
 
             try {
                 var url = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || (typeof DEFAULT_GOOGLE_SHEETS_URL !== 'undefined' ? DEFAULT_GOOGLE_SHEETS_URL : '') || '').trim();
+                // פעולה ראשונה: בדיקת סכום כולל מ-API
+                if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'בדיקת סכום כולל');
+                await checkTotalAmountFromAPI(true, true);
                 if (updateType === 'all' && url) {
                     if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'טעינה מהגליון');
                     if (typeof loadFromGoogleSheets === 'function') {
@@ -13606,8 +13610,6 @@
                 }
                 if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'סנכרון תרומות');
                 await syncWithNedarimPlus(true, false, true);
-                if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'בדיקת סכום');
-                await checkTotalAmountFromAPI(true, true);
                 if (updateType === 'all' && url) {
                     if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'שמירה לגליון');
                     if (typeof saveToGoogleSheets === 'function') await saveToGoogleSheets();
