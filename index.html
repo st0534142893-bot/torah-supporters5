@@ -4135,6 +4135,50 @@
         }
 
         /* אזור מובילים בצד - רוחב קבוע באחוזים */
+        /* פס סיכום כולל – מוצג כשעמודת המובילים מוסתרת */
+        .live-total-banner {
+            display: none;
+            position: absolute;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 50;
+            background: linear-gradient(135deg, rgba(212,175,55,0.97) 0%, rgba(180,140,30,0.97) 100%);
+            color: #fff;
+            border-radius: 16px;
+            padding: 10px 32px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.22);
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: 0.01em;
+            white-space: nowrap;
+            text-align: center;
+            pointer-events: none;
+            gap: 18px;
+            align-items: center;
+            flex-direction: row;
+        }
+        .live-total-banner.active {
+            display: flex;
+        }
+        .live-total-banner-amount {
+            font-size: 1.7rem;
+            font-weight: 900;
+            color: #fff;
+        }
+        .live-total-banner-label {
+            font-size: 1.1rem;
+            font-weight: 600;
+            opacity: 0.9;
+        }
+        .live-total-banner-percent {
+            font-size: 1.2rem;
+            font-weight: 700;
+            background: rgba(255,255,255,0.18);
+            border-radius: 8px;
+            padding: 2px 10px;
+        }
+
         .live-leaders-sidebar {
             position: relative;
             flex: 0 0 25% !important;
@@ -7226,6 +7270,13 @@
                                         <span class="switch-slider"></span>
                                     </label>
                                 </div>
+                                <div class="liveview-setting-row">
+                                    <label>הצג פס סיכום כולל כשעמודת מובילים מוסתרת:</label>
+                                    <label class="switch">
+                                        <input type="checkbox" id="liveviewShowTotalBanner" onchange="updateLiveViewSettings()">
+                                        <span class="switch-slider"></span>
+                                    </label>
+                                </div>
                             </div>
 
                             <div class="liveview-setting-group">
@@ -7498,6 +7549,13 @@
                         <path d="M3 10.5L12 3L21 10.5V20C21 20.55 20.55 21 20 21H15C14.45 21 14 20.55 14 20V15C14 14.45 13.55 14 13 14H11C10.45 14 10 14.45 10 15V20C10 20.55 9.55 21 9 21H4C3.45 21 3 20.55 3 20V10.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </button>
+                <!-- פס סיכום כולל – מוצג כשעמודת המובילים מוסתרת -->
+                <div class="live-total-banner" id="liveTotalBanner">
+                    <span class="live-total-banner-label">סה"כ נאסף:</span>
+                    <span class="live-total-banner-amount" id="liveTotalBannerAmount">₪0</span>
+                    <span class="live-total-banner-percent" id="liveTotalBannerPercent" style="display:none;"></span>
+                </div>
+
                 <div class="live-content">
                     <!-- אזור מובילים בצד -->
                     <div class="live-leaders-sidebar">
@@ -11771,6 +11829,7 @@
             showDonors: true,
             showSummary: true,
             hideLeadersColumn: false,
+            showTotalBanner: false,
             donorsScrollSpeed: 50,
             enableAnimations: true,
             enableAutoScroll: true,
@@ -12045,6 +12104,8 @@
             if (enableTransitions) enableTransitions.checked = liveViewSettings.enableTransitions !== false;
             const hideLeadersColumn = document.getElementById('liveviewHideLeadersColumn');
             if (hideLeadersColumn) hideLeadersColumn.checked = liveViewSettings.hideLeadersColumn === true;
+            const showTotalBannerEl = document.getElementById('liveviewShowTotalBanner');
+            if (showTotalBannerEl) showTotalBannerEl.checked = liveViewSettings.showTotalBanner === true;
             if (groupsSortBy) groupsSortBy.value = liveViewSettings.groupsSortBy || 'name';
             if (groupsFilter) groupsFilter.value = liveViewSettings.groupsFilter || 'all';
             if (donorsSortBy) donorsSortBy.value = liveViewSettings.donorsSortBy || 'name';
@@ -12260,6 +12321,7 @@
                 showDonors: showDonors ? showDonors.checked : liveViewSettings.showDonors,
                 showSummary: showSummary ? showSummary.checked : liveViewSettings.showSummary,
                 hideLeadersColumn: document.getElementById('liveviewHideLeadersColumn') ? document.getElementById('liveviewHideLeadersColumn').checked : liveViewSettings.hideLeadersColumn,
+                showTotalBanner: document.getElementById('liveviewShowTotalBanner') ? document.getElementById('liveviewShowTotalBanner').checked : liveViewSettings.showTotalBanner,
                 donorsScrollSpeed: donorsScrollSpeed ? parseInt(donorsScrollSpeed.value) : liveViewSettings.donorsScrollSpeed,
                 enableAnimations: enableAnimations ? enableAnimations.checked : liveViewSettings.enableAnimations,
                 enableAutoScroll: enableAutoScroll ? enableAutoScroll.checked : liveViewSettings.enableAutoScroll,
@@ -12361,6 +12423,7 @@
                 showDonors: true,
                 showSummary: true,
                 hideLeadersColumn: false,
+                showTotalBanner: false,
                 donorsScrollSpeed: 50,
                 enableAnimations: true,
                 enableAutoScroll: true,
@@ -12579,6 +12642,13 @@
                 ` : ''}
             `;
             document.head.appendChild(style);
+
+            // הצגה/הסתרה של פס הסיכום הכולל
+            const totalBanner = document.getElementById('liveTotalBanner');
+            if (totalBanner) {
+                const shouldShow = liveViewSettings.showTotalBanner && liveViewSettings.hideLeadersColumn;
+                totalBanner.classList.toggle('active', !!shouldShow);
+            }
 
             // עדכון מהירות גלילה - יישום יבוצע בעת הפעלת הגלילה
             // המהירות תשמר ב-liveViewSettings ותיושם בעת restart
@@ -17075,6 +17145,19 @@
                 ? `₪${totalCollected.toLocaleString()} מתוך ₪${goal.toLocaleString()} | ${percentDisplay}%`
                 : `₪${totalCollected.toLocaleString()} | ללא יעד מוגדר`;
             const totalDonorsCount = donors.filter(d => d.name && d.name.trim()).length;
+
+            // עדכון פס הסיכום הכולל (מוצג כשעמודת המובילים מוסתרת)
+            const bannerAmountEl = document.getElementById('liveTotalBannerAmount');
+            const bannerPercentEl = document.getElementById('liveTotalBannerPercent');
+            if (bannerAmountEl) bannerAmountEl.textContent = '₪' + totalCollected.toLocaleString();
+            if (bannerPercentEl) {
+                if (goal > 0) {
+                    bannerPercentEl.textContent = percentDisplay + '%';
+                    bannerPercentEl.style.display = '';
+                } else {
+                    bannerPercentEl.style.display = 'none';
+                }
+            }
             
             // יצירת כרטיסיות לכל קבוצה - רק קבוצות שמוצגות בלייב
             const visibleGroups = groups.filter(g => g.showInLiveView !== false);
