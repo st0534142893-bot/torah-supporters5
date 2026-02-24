@@ -13450,6 +13450,7 @@
             const durationSec = halfHeight / speed;
             const durationMs = Math.round(Math.max(20, durationSec * 1000));
             container.style.setProperty('--scroll-duration', durationMs + 'ms');
+            container.style.animation = ''; // מנקה כל inline override של אנימציה
             container.removeAttribute('data-scroll-animation');
             container.offsetHeight; // force reflow
             container.setAttribute('data-scroll-animation', '1');
@@ -16985,11 +16986,10 @@
                 if (needsFullRender) {
                     container.innerHTML = html + html;
                     lastLiveViewStructure = structureSignature;
+                    container.style.animation = ''; // מנקה inline override לפני restart
                     container.removeAttribute('data-scroll-animation');
-                    if (!wasScrolling && !donorsScrollIsRunning && liveViewSettings.enableAutoScroll) {
+                    if (liveViewSettings.enableAutoScroll) {
                         requestAnimationFrame(() => restartDonorsAutoScroll());
-                    } else if (donorsScrollIsRunning && liveViewSettings.enableAutoScroll) {
-                        requestAnimationFrame(() => { stopDonorsAutoScroll(); restartDonorsAutoScroll(); });
                     }
                 } else {
                     if (!donorsScrollIsRunning && liveViewSettings.enableAutoScroll) {
