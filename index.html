@@ -13640,6 +13640,14 @@
                     if (fillEl) fillEl.style.width = '0%';
                     startSidePanelSmoothProgress();
                 }
+                // הגנה: אם העדכון תקוע מעל 3 דקות – סוגר את הפאנל אוטומטית
+                var _sidepanelSafetyTimer = setTimeout(function() {
+                    console.warn('⚠️ [תצוגת לייב] עדכון תקוע מעל 3 דקות – סוגר כרטיסיה אוטומטית');
+                    stopSidePanelSmoothProgress();
+                    if (sidePanel) sidePanel.classList.remove('show');
+                    liveViewSidePanelUpdateInProgress = false;
+                }, 180000);
+                var _origSidepanelTimer = _sidepanelSafetyTimer;
             } else if (overlay) {
                 overlay.classList.remove('loading-only', 'grants-only', 'sidepanel-only');
                 overlay.classList.add(showMode === 'grants' ? 'grants-only' : 'loading-only');
@@ -13667,7 +13675,7 @@
                 if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'בדיקת סכום');
                 await checkTotalAmountFromAPI(true);
                 if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'סנכרון תרומות');
-                await syncWithNedarimPlus(true);
+                await syncWithNedarimPlus(true, true, true); // pullOnly=true – עדכון תצוגה בלבד, ללא דחיפה לנדרים (מהיר יותר)
                 if (url && googleSheetsSyncEnabled && updateType === 'all') {
                     if (sheetSyncSaveEnabled && typeof saveToGoogleSheets === 'function') await saveToGoogleSheets();
                 }
@@ -13700,8 +13708,16 @@
                 if (typeof notifyDataChanged === 'function') notifyDataChanged();
                 if (showMode === 'sidepanel') updateLiveViewEndProgress(100, 'הושלם');
                 console.log('✅ [תצוגת לייב] עדכון הושלם');
+                if (typeof _sidepanelSafetyTimer !== 'undefined' && _sidepanelSafetyTimer) {
+                    clearTimeout(_sidepanelSafetyTimer);
+                    _sidepanelSafetyTimer = null;
+                }
             } catch (err) {
                 console.warn('⚠️ [תצוגת לייב] שגיאה בעדכון:', err);
+                if (typeof _sidepanelSafetyTimer !== 'undefined' && _sidepanelSafetyTimer) {
+                    clearTimeout(_sidepanelSafetyTimer);
+                    _sidepanelSafetyTimer = null;
+                }
                 if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'שגיאה');
             }
 
@@ -17297,15 +17313,6 @@
             }).join('');
 
             container.innerHTML = cardsHtml;
-            // לא מפעילים גלילה למובילים - עצירת גלילה והסרת קלון
-            if (typeof stopAutoScroll === 'function') {
-                stopAutoScroll('leaders');
-            }
-            const clone = document.getElementById('leadersScrollClone');
-            if (clone) {
-                clone.innerHTML = '';
-                clone.style.display = 'none';
-            }
         }
 
         function triggerGroupExcelUpload(groupId) {
@@ -23873,7 +23880,6 @@
                 console.log('ℹ️ [אתחול] אין כתובת גליון – משתמש בנתונים מקומיים');
             }
         });
-
         
         // פונקציה ליצירת קשר עם המפתח
         function contactDeveloper() {
