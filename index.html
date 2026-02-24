@@ -3478,8 +3478,8 @@
             transform: translateZ(0); /* שכבת GPU נפרדת – גלילה חלקה במסכים גדולים */
         }
         .live-donors-scroll[data-scroll-animation] {
-            -webkit-animation: donorsScrollUp var(--scroll-duration, 90s) linear infinite;
-            animation: donorsScrollUp var(--scroll-duration, 90s) linear infinite;
+            -webkit-animation: donorsScrollUp var(--scroll-duration, 90s) var(--scroll-resume-delay, 0ms) linear infinite;
+            animation: donorsScrollUp var(--scroll-duration, 90s) var(--scroll-resume-delay, 0ms) linear infinite;
         }
         @-webkit-keyframes donorsScrollUp {
             0% { -webkit-transform: translate3d(0, 0, 0); transform: translate3d(0, 0, 0); }
@@ -13519,8 +13519,20 @@
             const speed = 5 + (speedValue - 10) * 65 / 90; // px/sec
             const durationSec = halfHeight / speed;
             const durationMs = Math.round(Math.max(20, durationSec * 1000));
+
+            // חישוב animation-delay שלילי – ממשיך מנקודת העצירה האחרונה (ללא קפיצה להתחלה)
+            let resumeDelayMs = 0;
+            const savedY = container._scrollSavedY || 0;
+            if (savedY < 0 && halfHeight > 0) {
+                const progress = Math.min(1, Math.abs(savedY) / halfHeight);
+                resumeDelayMs = -Math.round(progress * durationMs);
+            }
+            container._scrollSavedY = 0;
+
             container.style.setProperty('--scroll-duration', durationMs + 'ms');
+            container.style.setProperty('--scroll-resume-delay', resumeDelayMs + 'ms');
             container.style.animation = ''; // מנקה כל inline override של אנימציה
+            container.style.transform = ''; // מנקה transform הקפאה
             container.removeAttribute('data-scroll-animation');
             container.offsetHeight; // force reflow
             container.setAttribute('data-scroll-animation', '1');
@@ -13537,6 +13549,23 @@
         function stopDonorsAutoScroll() {
             const container = document.getElementById('liveDonorsScroll');
             if (container) {
+                // שמירת המיקום הנוכחי לפני עצירה – מונע קפיצה להתחלה
+                try {
+                    const computedTransform = window.getComputedStyle(container).transform;
+                    if (computedTransform && computedTransform !== 'none') {
+                        const match = computedTransform.match(/matrix(?:3d)?\(([^)]+)\)/);
+                        if (match) {
+                            const vals = match[1].split(',');
+                            // translateY: אינדקס 5 ב-matrix(), אינדקס 13 ב-matrix3d()
+                            const ty = parseFloat(vals.length === 6 ? vals[5] : vals[13]) || 0;
+                            container._scrollSavedY = ty; // ערך שלילי (px)
+                        }
+                    }
+                } catch (e) {}
+                // הקפאה במיקום הנוכחי – ללא קפיצה לתחילה
+                if (container._scrollSavedY) {
+                    container.style.transform = 'translate3d(0,' + container._scrollSavedY + 'px,0)';
+                }
                 container.removeAttribute('data-scroll-animation');
                 container.style.animation = 'none';
                 if (autoScrollStates.donors && autoScrollStates.donors.onIteration) {
@@ -17057,6 +17086,9 @@
                     container.innerHTML = html + html;
                     lastLiveViewStructure = structureSignature;
                     container.style.animation = ''; // מנקה inline override לפני restart
+                    container.style.transform = ''; // מנקה קפאה ישנה
+                    container._scrollSavedY = 0; // אפס מיקום שמור – מבנה השתנה
+                    container.style.setProperty('--scroll-resume-delay', '0ms'); // restart מהתחלה
                     container.removeAttribute('data-scroll-animation');
                     if (liveViewSettings.enableAutoScroll) {
                         requestAnimationFrame(() => restartDonorsAutoScroll());
