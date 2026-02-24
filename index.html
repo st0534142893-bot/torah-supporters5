@@ -13539,14 +13539,14 @@
             if (displayMode !== 'none') startDuringUpdateOverlay(displayMode);
             console.log('🔄 [תצוגת לייב] עדכון תוך כדי גלילה' + (displayMode !== 'none' ? ' (עם מסך ' + displayMode + ')' : '') + '...');
             try {
+                // טעינה מהגליון קודם (בסיס), אחר כך סנכרון נדרים מנצח – מונע הבהוב של נתונים ישנים
+                var url = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').trim();
+                if (url && googleSheetsSyncEnabled && sheetSyncLoadEnabled && typeof loadFromGoogleSheets === 'function') {
+                    await loadFromGoogleSheets(true);
+                }
                 await checkTotalAmountFromAPI(true);
                 await syncWithNedarimPlus(true);
-                var url = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').trim();
                 if (url && googleSheetsSyncEnabled) {
-                    if (sheetSyncLoadEnabled && typeof loadFromGoogleSheets === 'function') {
-                        var r = await loadFromGoogleSheets(true);
-                        if (r && r.success && typeof notifyDataChanged === 'function') notifyDataChanged(true);
-                    }
                     if (sheetSyncSaveEnabled && typeof saveToGoogleSheets === 'function') await saveToGoogleSheets();
                 }
                 if (url && typeof fetchAppsScript === 'function') {
@@ -13647,26 +13647,29 @@
             }
 
             try {
-                if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'בדיקת סכום');
-                await checkTotalAmountFromAPI(true);
-                if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'סנכרון תרומות');
-                await syncWithNedarimPlus(true);
+                // טעינה מהגליון קודם (בסיס), אחר כך סנכרון נדרים מנצח – מונע הבהוב של נתונים ישנים
                 if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'טעינת נתונים');
+                var url = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').trim();
                 if (updateType === 'all') {
                     if (autoSyncNedarimEnabled && typeof performAutoRefresh === 'function') await performAutoRefresh();
-                    var url = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').trim();
                     if (url && googleSheetsSyncEnabled) {
                         if (sheetSyncLoadEnabled && typeof loadFromGoogleSheets === 'function') {
                             var r = await loadFromGoogleSheets(true);
                             if (r && r.success && typeof notifyDataChanged === 'function') notifyDataChanged();
                         }
-                        if (sheetSyncSaveEnabled && typeof saveToGoogleSheets === 'function') await saveToGoogleSheets();
                     }
                 } else if (updateType === 'loadSheet' && typeof loadFromGoogleSheets === 'function') {
                     var r = await loadFromGoogleSheets(true);
                     if (r && r.success && typeof notifyDataChanged === 'function') notifyDataChanged();
                 } else if (updateType === 'loadMatrim' && typeof loadMatrimFromNedarim === 'function') {
                     await loadMatrimFromNedarim(true);
+                }
+                if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'בדיקת סכום');
+                await checkTotalAmountFromAPI(true);
+                if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'סנכרון תרומות');
+                await syncWithNedarimPlus(true);
+                if (url && googleSheetsSyncEnabled && updateType === 'all') {
+                    if (sheetSyncSaveEnabled && typeof saveToGoogleSheets === 'function') await saveToGoogleSheets();
                 }
                 if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'מרענן שמות קבוצות');
                 var sheetUrl = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').toString().trim();
@@ -22068,9 +22071,15 @@
                 }
                 
                 // סכום כולל מהגליון – נטען גם במחשב חדש (אין localStorage)
+                // 🛡️ לא דורסים totalDonatedFromAPI עם ערך נמוך יותר ממה שכבר יש (מונע הבהוב אחרי סנכרון נדרים)
                 if (result.totalDonated != null || result.goal != null) {
                     if (typeof NEDARIM_CONFIG !== 'undefined') {
-                        NEDARIM_CONFIG.totalDonatedFromAPI = result.totalDonated != null ? Number(result.totalDonated) : NEDARIM_CONFIG.totalDonatedFromAPI;
+                        if (result.totalDonated != null) {
+                            const sheetTotal = Number(result.totalDonated);
+                            if (!NEDARIM_CONFIG.apiDataLoaded || sheetTotal >= (NEDARIM_CONFIG.totalDonatedFromAPI || 0)) {
+                                NEDARIM_CONFIG.totalDonatedFromAPI = sheetTotal;
+                            }
+                        }
                         NEDARIM_CONFIG.goalFromAPI = result.goal != null ? Number(result.goal) : NEDARIM_CONFIG.goalFromAPI;
                         NEDARIM_CONFIG.apiDataLoaded = true;
                         if (!silent) console.log('📊 [גליון] סכום כולל נטען:', (result.totalDonated || 0).toLocaleString(), 'ש"ח');
