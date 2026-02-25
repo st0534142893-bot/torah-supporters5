@@ -3450,8 +3450,6 @@
             width: 100%;
             max-width: 100%;
             height: 100vh;
-            contain: paint;
-            content-visibility: auto;
             overflow: hidden;
             position: relative;
             background: none;
@@ -3463,9 +3461,7 @@
             background-blend-mode: normal;
         }
 
-
         .live-donors-scroll {
-            contain: paint;
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
@@ -3473,9 +3469,10 @@
             padding: 10px;
             padding-bottom: 0;
             will-change: transform;
+            -webkit-backface-visibility: hidden;
             backface-visibility: hidden;
-            perspective: 1000px;
-            transform: translateZ(0); /* שכבת GPU נפרדת – גלילה חלקה במסכים גדולים */
+            /* transform:translateZ(0) מוסיפה שכבת GPU – הJS יכתוב translate3d בכל frame */
+            transform: translateZ(0);
         }
         .live-donors-scroll[data-scroll-animation] {
             -webkit-animation: donorsScrollUp var(--scroll-duration, 90s) var(--scroll-resume-delay, 0ms) linear infinite;
@@ -7440,6 +7437,9 @@
                         <div class="liveview-settings-actions">
                             <button class="btn" onclick="saveLiveViewSettings()">שמור הגדרות</button>
                             <button class="btn btn-secondary" onclick="resetLiveViewSettings()">איפוס לברירת מחדל</button>
+                            <button class="btn" onclick="applyTVMode()" style="background: linear-gradient(135deg,#1a1a2e,#16213e); color:#fff; border:none; display:flex; align-items:center; gap:7px;">
+                                <span style="font-size:1.2em;">📺</span> התאם לטלוויזיה
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -12448,6 +12448,35 @@
             showNotification('הגדרות תצוגת לייב אופסו לברירת מחדל');
         }
 
+        // מצב טלוויזיה – מכוונן את כל ההגדרות לתצוגה חלקה ונוחה על מסך TV
+        function applyTVMode() {
+            if (!confirm('להחיל מצב טלוויזיה? ההגדרות הנוכחיות ייחלפו בהגדרות מותאמות לטלוויזיה.')) return;
+            const tvSettings = Object.assign({}, liveViewSettings, {
+                // גופנים גדולים יותר לנוחות צפייה מרחוק
+                titleSize: 36,
+                donorNameSize: 22,
+                amountSize: 17,
+                groupNameSize: 32,
+                donorGroupSize: 15,
+                // ביטול אפקטים שגורמים לרינדור כבד בטלוויזיה
+                enableHoverEffects: false,
+                enableTransitions: false,
+                enableAnimations: false,
+                // גלילה איטית יותר – נוחה לקריאה על TV גדול
+                donorsScrollSpeed: 28,
+                // רווחים מוגדלים לכרטיסיות
+                donorGap: 8,
+                groupGap: 8,
+                donorCardPadding: 16,
+                cardBorderRadius: 14,
+                cardShadow: 8,
+            });
+            liveViewSettings = tvSettings;
+            try { localStorage.setItem('liveViewSettings', JSON.stringify(tvSettings)); } catch (e) {}
+            loadLiveViewSettings(true);
+            showNotification('✅ מצב טלוויזיה הופעל – גלילה חלקה ותצוגה מותאמת');
+        }
+
         // פונקציה להמרת hex ל-rgba
         function hexToRgba(hex, opacity) {
             if (!hex) return `rgba(255, 255, 255, ${opacity / 100})`;
@@ -13541,7 +13570,10 @@
                 }
 
                 if (lastTimestamp === null) lastTimestamp = timestamp;
-                const delta = Math.min(50, timestamp - lastTimestamp); // עצירה מקסימלית של 50ms – מונע קפיצה אחרי switch tab
+                var rawDelta = timestamp - lastTimestamp;
+                // מגביל ל-33ms: מונע קפיצה גדולה אחרי השהייה (למשל switch tab)
+                // אם יש frame drop קל (>16ms) – מחלק אותו לשניים כדי להחליק
+                var delta = rawDelta > 100 ? 16 : Math.min(33, rawDelta);
                 lastTimestamp = timestamp;
 
                 currentY -= speed * delta / 1000;
@@ -13558,7 +13590,9 @@
                     }
                 }
 
-                container.style.transform = 'translate3d(0,' + currentY + 'px,0)';
+                // עיגול לפיקסל שלם – מונע רעידה של תת-פיקסל בטלוויזיות ומסכים עם DPR שונה
+                var roundedY = Math.round(currentY);
+                container.style.transform = 'translate3d(0,' + roundedY + 'px,0)';
                 donorsScrollLastTime = timestamp;
                 state.handle = requestAnimationFrame(donorsScrollTick);
             }
