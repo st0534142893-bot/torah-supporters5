@@ -6916,6 +6916,13 @@
                     <div class="liveview-settings-panel">
                         <h3>הגדרות תצוגת לייב</h3>
                         <p style="color: var(--muted); margin-bottom: 20px;">הגדר את אופן התצוגה במסך הלייב - צבעים, גדלים, מה להציג ועוד</p>
+                        <div style="margin-bottom: 20px; padding: 16px; background: rgba(212,175,55,0.15); border-radius: 12px; border: 1px solid rgba(212,175,55,0.3);">
+                            <strong>תצוגת לייב נפרדת:</strong> קובץ <code>liveview.html</code> מציג רק את התצוגה (ללא ניהול). מתאים למסך טלוויזיה או חלון נפרד. ההגדרות כאן נשמרות ומשמשות את הקובץ הנפרד.
+                            <br><br>
+                            <button type="button" class="btn btn-primary" onclick="openStandaloneLiveView()" style="display: inline-flex; align-items: center; gap: 8px;">
+                                <span>📺</span> פתח תצוגת לייב נפרדת
+                            </button>
+                        </div>
                         
                         <div class="liveview-settings-grid">
                             <div class="liveview-setting-group">
@@ -12364,6 +12371,24 @@
             showNotification('הגדרות תצוגת לייב אופסו לברירת מחדל');
         }
 
+        /** פותח את תצוגת הלייב הנפרדת (liveview.html) בחלון חדש – עם ההגדרות והכתובת הנוכחיות */
+        function openStandaloneLiveView() {
+            saveLiveViewSettings();
+            const url = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').trim();
+            if (!url) {
+                showNotification('נא להגדיר כתובת Web App בהגדרות סנכרון לפני פתיחת התצוגה הנפרדת', 'warning');
+                return;
+            }
+            const liveViewPath = (typeof window !== 'undefined' && window.location) 
+                ? new URL('liveview.html', window.location.href).href 
+                : 'liveview.html';
+            const params = new URLSearchParams();
+            params.set('sheetUrl', url);
+            params.set('settings', encodeURIComponent(JSON.stringify(liveViewSettings)));
+            const fullUrl = liveViewPath + (liveViewPath.includes('?') ? '&' : '?') + params.toString();
+            window.open(fullUrl, '_blank', 'noopener,noreferrer');
+        }
+
         // מצב טלוויזיה – מכוונן את כל ההגדרות לתצוגה חלקה ונוחה על מסך TV
         function applyTVMode() {
             if (!confirm('להחיל מצב טלוויזיה? ההגדרות הנוכחיות ייחלפו בהגדרות מותאמות לטלוויזיה.')) return;
@@ -13852,6 +13877,17 @@
                     const pt = p.querySelector('.leader-total, .leader-target-progress-text');
                     const ct = c.querySelector('.leader-total, .leader-target-progress-text');
                     if (pt && ct) ct.textContent = pt.textContent;
+                    const pName = p.querySelector('.leader-name');
+                    const cName = c.querySelector('.leader-name');
+                    if (pName && cName) cName.textContent = pName.textContent;
+                    const pRank = p.querySelector('.leader-rank');
+                    const cRank = c.querySelector('.leader-rank');
+                    if (pRank && cRank) cRank.textContent = pRank.textContent;
+                    if (p.classList.contains('leader-item') && c.classList.contains('leader-item')) {
+                        ['rank-1','rank-2','rank-3','rank-4','rank-5'].forEach(cl => c.classList.remove(cl));
+                        const rankCl = ['rank-1','rank-2','rank-3','rank-4','rank-5'].find(cl => p.classList.contains(cl));
+                        if (rankCl) c.classList.add(rankCl);
+                    }
                     const pm = p.querySelector('.leader-target-meta');
                     const cm = c.querySelector('.leader-target-meta');
                     if (pm && cm) cm.textContent = pm.textContent;
@@ -17043,6 +17079,7 @@
         // עדכון רשימת מובילים – עם debounce להקטנת קפיצות (עדכון מתוזמן לא מתעכב)
         let updateLeadersListTimeout = null;
         const LEADERS_LIST_DEBOUNCE_MS = 80;
+        let lastLeadersSnapshot = null; // להשוואה – דילוג על עדכון אם אין שינוי
         function updateLeadersList(forceFromScheduled = false) {
             // 🛡️ במצב עדכון מתוזמן – חסימת עדכונים מבחוץ
             if (typeof isLiveViewScheduledUpdatesOnly === 'function' && isLiveViewScheduledUpdatesOnly() && !forceFromScheduled) return;
@@ -17067,9 +17104,18 @@
             
             // מובילים מחושבים ישירות מרשימת כל המתרימים לפי סכום (מקום 1 = הגבוה ביותר)
             // בלי סינון לפי קבוצות – מהיר יותר ומונע באגים של groupId שלא מתאים
+            // מיון יציב: כשיש שוויון בסכום – לפי id או שם, כדי למנוע קפיצות בין עדכונים
             const sortedDonors = [...donors]
                 .filter(d => (d.name || '').trim() && (d.amount || 0) > 0)
-                .sort((a, b) => (b.amount || 0) - (a.amount || 0))
+                .sort((a, b) => {
+                    const amtA = a.amount || 0;
+                    const amtB = b.amount || 0;
+                    if (amtB !== amtA) return amtB - amtA;
+                    const idA = String(a.id ?? '');
+                    const idB = String(b.id ?? '');
+                    if (idA !== idB) return idA.localeCompare(idB);
+                    return String(a.name || '').localeCompare(String(b.name || ''));
+                })
                 .slice(0, 5);
             
             const totalCollected = (typeof getDisplayTotal === 'function') ? getDisplayTotal() : donors.reduce((sum, donor) => sum + Math.max(0, donor.amount || 0), 0);
@@ -17142,6 +17188,13 @@
             `;
 
             if (sortedDonors.length === 0) {
+                const emptySnapshot = 'empty|' + totalCollected + '|' + progressWidth + '|' + visibleGroups.map(g => {
+                    const gd = getDonorsForGroup(g);
+                    const gc = gd.reduce((s, d) => s + (d.amount || 0), 0);
+                    return (g.id || '') + ':' + gc;
+                }).join(',');
+                if (lastLeadersSnapshot === emptySnapshot) return;
+                lastLeadersSnapshot = emptySnapshot;
                 leadersList.innerHTML = groupsCardsHtml + summaryCardHtml;
                 return;
             }
@@ -17168,8 +17221,26 @@
                 `;
             }).join('');
 
-            // 🛡️ תמיד בנייה מחדש מלאה של רשימת המובילים – מונע באג שבו רק השם או רק הסכום מתעדכן; כרטיסיה שלמה (שם+סכום) נעה יחד
-            const useIncremental = false;
+            // עדכון אינקרמנטלי – מפצל DOM במקום innerHTML מלא, מונע קפיצות וקופצים בתצוגה
+            const useIncremental = true;
+
+            // השוואה לדילוג על עדכון מיותר – אם המובילים והסכומים לא השתנו
+            const snapshot = sortedDonors.map(d => `${d.id}|${d.amount}|${(d.displayName || d.name || '')}`).join(';') +
+                '|' + totalCollected + '|' + progressWidth + '|' + visibleGroups.map(g => {
+                    const gd = getDonorsForGroup(g);
+                    const gc = gd.reduce((s, d) => s + (d.amount || 0), 0);
+                    return (g.id || '') + ':' + gc;
+                }).join(',');
+            if (lastLeadersSnapshot === snapshot) {
+                return;
+            }
+            lastLeadersSnapshot = snapshot;
+
+            // חילוץ אלמנטים קיימים לעדכון אינקרמנטלי
+            const allChildren = [...leadersList.children];
+            const existingLeaders = allChildren.filter(el => el.classList.contains('leader-item'));
+            const existingGroupCards = allChildren.filter(el => el.classList.contains('leader-target-card') && el.dataset.groupId);
+            const existingSummary = allChildren.find(el => el.classList.contains('leader-summary-card') || el.dataset?.summary === 'overall');
 
             function updateLeaderItem(el, donor, rank) {
                 if (!el) return;
@@ -17184,16 +17255,20 @@
                 el.classList.add('rank-' + Math.min(rank, 5));
             }
 
-            if (useIncremental) {
-                // עדכון חלקי – רק מספרים ורכיבים, בלי להחליף DOM
-                const leadersContainer = leadersList.querySelector('.leaders-list') || leadersList;
-                const firstLeaderParent = existingLeaders[0] && existingLeaders[0].parentNode;
+            const hideLeaderCards = typeof liveViewSettings !== 'undefined' && liveViewSettings.hideLeaderCards;
+            const canUseIncremental = (existingLeaders.length > 0 || existingGroupCards.length > 0 || existingSummary) &&
+                existingGroupCards.length === visibleGroups.length;
+
+            if (useIncremental && canUseIncremental) {
+                // עדכון חלקי – רק מספרים ורכיבים, בלי להחליף DOM – מונע קפיצות
                 const idToEl = new Map();
                 existingLeaders.forEach(el => { idToEl.set(el.dataset.donorId || '', el); });
+                const anchor = existingGroupCards[0] || existingSummary || null;
+                const parent = leadersList;
 
-                if (sortedDonors.length > 0) {
-                    const anchor = existingGroupCards[0] || existingSummary || null;
-                    const parent = anchor ? anchor.parentNode : leadersList;
+                if (hideLeaderCards) {
+                    existingLeaders.forEach(el => { el.style.display = 'none'; });
+                } else if (sortedDonors.length > 0) {
                     sortedDonors.forEach((donor, index) => {
                         let el = idToEl.get(String(donor.id || ''));
                         if (!el) {
@@ -17201,17 +17276,22 @@
                             el.className = 'leader-item';
                             el.dataset.donorId = String(donor.id || '');
                             el.innerHTML = '<div class="leader-rank"></div><div class="leader-info"><div class="leader-name"></div></div><div class="leader-total"></div>';
-                            idToEl.set(String(donor.id || ''), el); // כדי שלולאת הסדר תמצא ותמיק
-                            if (parent && anchor) parent.insertBefore(el, anchor);
+                            idToEl.set(String(donor.id || ''), el);
+                            if (anchor) parent.insertBefore(el, anchor);
+                            else parent.appendChild(el);
                         }
                         el.style.display = '';
                         updateLeaderItem(el, donor, index + 1);
                     });
-                    // סדר מחדש: מקום 1 (הסכום הגבוה ביותר) ראשון ב-DOM, מקום 5 אחרון
-                    if (parent && anchor) {
-                        for (let i = 0; i < sortedDonors.length; i++) {
+                    // סדר מחדש: מקום 1 ראשון ב-DOM, מקום 5 אחרון (insertBefore בסדר הפוך)
+                    if (anchor) {
+                        let ref = anchor;
+                        for (let i = sortedDonors.length - 1; i >= 0; i--) {
                             const el = idToEl.get(String(sortedDonors[i].id || ''));
-                            if (el) parent.insertBefore(el, anchor);
+                            if (el) {
+                                parent.insertBefore(el, ref);
+                                ref = el;
+                            }
                         }
                     }
                     existingLeaders.forEach(el => {
