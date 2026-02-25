@@ -191,11 +191,32 @@
             will-change: auto;
             transform: none;
         }
+        /* גלילת מתרימים – transform + CSS animation (כמו scroll-wrapper/scroll-content) */
+        .live-donors-scroll-viewport.scroll-type-transform-animation .live-donors-scroll-inner {
+            position: absolute;
+            width: 100%;
+            left: 0;
+            top: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .live-donors-scroll-viewport.scroll-type-transform-animation .live-donors-scroll-inner > .live-donors-scroll { flex-shrink: 0; }
+        .live-donors-scroll-clone { display: none; flex-shrink: 0; }
+        .live-donors-scroll-viewport.scroll-type-transform-animation .live-donors-scroll-clone { display: flex; flex-shrink: 0; }
+        .live-donors-scroll-inner[data-donors-scroll] {
+            animation: donorsScrollUp var(--donors-scroll-duration, 60s) linear infinite;
+            will-change: transform;
+            backface-visibility: hidden;
+        }
+        @keyframes donorsScrollUp {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-50%); }
+        }
         .live-donors-scroll {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 6px;
+            gap: 10px;
             padding: 10px;
             will-change: transform;
             -webkit-backface-visibility: hidden;
@@ -344,8 +365,8 @@
             backface-visibility: hidden;
         }
         @keyframes leadersScrollUp {
-            0% { transform: translate3d(0, 0, 0); }
-            100% { transform: translate3d(0, calc(-1 * var(--leaders-scroll-distance, 500px)), 0); }
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-50%); }
         }
         /* סימון עדכון – מוצג בזמן רענון נתונים */
         .live-view-update-indicator {
@@ -541,7 +562,10 @@
             <div class="live-donors-area">
                 <div class="live-donors-container">
                     <div class="live-donors-scroll-viewport" id="liveDonorsScrollViewport">
-                        <div class="live-donors-scroll" id="liveDonorsScroll"></div>
+                        <div class="live-donors-scroll-inner" id="liveDonorsScrollInner">
+                            <div class="live-donors-scroll" id="liveDonorsScroll"></div>
+                            <div class="live-donors-scroll live-donors-scroll-clone" id="liveDonorsScrollClone"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -576,8 +600,8 @@
                 <div class="liveview-setting-group">
                     <h4>גדלי אזורים</h4>
                     <div class="liveview-setting-row"><label>רוחב מובילים (%):</label><input type="range" id="lvLeadersWidth" min="20" max="50" value="25"><span id="lvLeadersWidthVal">25%</span></div>
-                    <div class="liveview-setting-row"><label>מרווח אנכי בין כרטיסיות:</label><input type="range" id="lvDonorGapVertical" min="0" max="40" value="6"><span id="lvDonorGapVerticalVal">6px</span></div>
-                    <div class="liveview-setting-row"><label>מרווח אופקי בין כרטיסיות:</label><input type="range" id="lvDonorGapHorizontal" min="0" max="40" value="6"><span id="lvDonorGapHorizontalVal">6px</span></div>
+                    <div class="liveview-setting-row"><label>מרווח אנכי בין כרטיסיות:</label><input type="range" id="lvDonorGapVertical" min="0" max="40" value="10"><span id="lvDonorGapVerticalVal">10px</span></div>
+                    <div class="liveview-setting-row"><label>מרווח אופקי בין כרטיסיות:</label><input type="range" id="lvDonorGapHorizontal" min="0" max="40" value="10"><span id="lvDonorGapHorizontalVal">10px</span></div>
                 </div>
                 <div class="liveview-setting-group">
                     <h4>מה להציג</h4>
@@ -589,7 +613,7 @@
                 </div>
                 <div class="liveview-setting-group">
                     <h4>גלילה</h4>
-                    <div class="liveview-setting-row"><label>סוג אנימציית גלילה:</label><select id="lvDonorScrollType"><option value="normal">רגיל (מחשב)</option><option value="tv">חלק לטלוויזיה</option><option value="tv-slow">חלק לטלוויזיה (איטי)</option></select></div>
+                    <div class="liveview-setting-row"><label>סוג אנימציית גלילה:</label><select id="lvDonorScrollType"><option value="normal">רגיל (מחשב)</option><option value="tv">חלק לטלוויזיה</option><option value="tv-slow">חלק לטלוויזיה (איטי)</option><option value="transform-animation">חלק (transform + CSS animation)</option></select></div>
                     <div class="liveview-setting-row"><label>גלילה אוטומטית:</label><label class="switch"><input type="checkbox" id="lvEnableAutoScroll" checked><span class="switch-slider"></span></label></div>
                     <div class="liveview-setting-row"><label>מהירות גלילה:</label><input type="range" id="lvDonorsScrollSpeed" min="10" max="100" value="50"><span id="lvDonorsScrollSpeedVal">50</span></div>
                     <div class="liveview-setting-row"><label>מהירות גלילה (מהיר 100–200):</label><input type="range" id="lvDonorsScrollSpeedFast" min="0" max="200" value="0" title="0 = כבוי, 100–200 = מהירות בפיקסלים לשנייה"><span id="lvDonorsScrollSpeedFastVal">כבוי</span></div>
@@ -682,8 +706,8 @@
             leadersWidth: 25,
             donorsWidth: 75,
             leadersGap: 14,
-            donorGapVertical: 6,
-            donorGapHorizontal: 6,
+            donorGapVertical: 10,
+            donorGapHorizontal: 10,
             donorScrollType: 'normal',
             enableAutoScroll: true,
             donorsScrollSpeed: 50,
@@ -699,8 +723,8 @@
             ...liveViewSettings
         };
         const oldGap = liveViewSettings.donorGap;
-        if (liveViewSettings.donorGapVertical == null) liveViewSettings.donorGapVertical = oldGap ?? 6;
-        if (liveViewSettings.donorGapHorizontal == null) liveViewSettings.donorGapHorizontal = oldGap ?? 6;
+        if (liveViewSettings.donorGapVertical == null) liveViewSettings.donorGapVertical = oldGap ?? 10;
+        if (liveViewSettings.donorGapHorizontal == null) liveViewSettings.donorGapHorizontal = oldGap ?? 10;
         if (liveViewSettings.tvModeEnabled === undefined && typeof localStorage !== 'undefined' && localStorage.getItem('tvModeEnabled') === '1') {
             liveViewSettings.tvModeEnabled = true;
         }
@@ -1154,16 +1178,27 @@
         });
 
         const donorCardsHtml = htmlParts.join('');
+        const scrollType = liveViewSettings.donorScrollType || 'normal';
+        const useTransformAnimation = scrollType === 'transform-animation';
+        const donorsClone = document.getElementById('liveDonorsScrollClone');
         if (donorsScroll) {
             stopDonorsScroll();
-            donorsScroll.innerHTML = donorCardsHtml + donorCardsHtml;
-            const v = Math.max(0, parseInt(liveViewSettings.donorGapVertical, 10) ?? 6);
-            const h = Math.max(0, parseInt(liveViewSettings.donorGapHorizontal, 10) ?? 6);
+            if (useTransformAnimation && donorsClone) {
+                donorsScroll.innerHTML = donorCardsHtml;
+                donorsClone.innerHTML = donorCardsHtml;
+            } else {
+                donorsScroll.innerHTML = donorCardsHtml + donorCardsHtml;
+            }
+            const v = Math.max(0, parseInt(liveViewSettings.donorGapVertical, 10) ?? 10);
+            const h = Math.max(0, parseInt(liveViewSettings.donorGapHorizontal, 10) ?? 10);
             donorsScroll.style.setProperty('gap', v + 'px ' + h + 'px', 'important');
+            if (donorsClone) donorsClone.style.setProperty('gap', v + 'px ' + h + 'px', 'important');
         }
         const viewport = document.getElementById('liveDonorsScrollViewport');
-        const scrollType = liveViewSettings.donorScrollType || 'normal';
-        if (viewport) viewport.classList.toggle('scroll-type-tv', scrollType === 'tv' || scrollType === 'tv-slow');
+        if (viewport) {
+            viewport.classList.toggle('scroll-type-tv', scrollType === 'tv' || scrollType === 'tv-slow');
+            viewport.classList.toggle('scroll-type-transform-animation', scrollType === 'transform-animation');
+        }
 
         if (liveViewSettings.enableAutoScroll && donorsScroll) {
             requestAnimationFrame(() => requestAnimationFrame(() => startDonorsScroll()));
@@ -1174,10 +1209,14 @@
     function startDonorsScroll() {
         const container = document.getElementById('liveDonorsScroll');
         const viewport = document.getElementById('liveDonorsScrollViewport');
+        const scrollInner = document.getElementById('liveDonorsScrollInner');
         if (!container || donorsScrollHandle) return;
         const scrollType = liveViewSettings.donorScrollType || 'normal';
         const useTvScroll = scrollType === 'tv' || scrollType === 'tv-slow';
-        const half = container.scrollHeight / 2;
+        const useTransformAnimation = scrollType === 'transform-animation';
+        const half = useTransformAnimation && scrollInner
+            ? container.offsetHeight
+            : (container.scrollHeight / 2);
         if (!half || !isFinite(half) || half < 100) return;
 
         let speed;
@@ -1189,6 +1228,33 @@
             speed = 5 + (speedValue - 10) * 65 / 90;
         }
 
+        if (useTransformAnimation && scrollInner) {
+            const durationMs = Math.round((half / speed) * 1000);
+            scrollInner.style.setProperty('--donors-scroll-duration', durationMs + 'ms');
+            const ratio = savedDonorsScrollRatio ?? (scrollInner._scrollSavedY != null && scrollInner._scrollSavedY < 0 ? -scrollInner._scrollSavedY / half : null);
+            scrollInner._scrollSavedY = 0;
+            savedDonorsScrollY = null;
+            savedDonorsScrollRatio = null;
+            if (ratio != null && ratio > 0 && ratio < 1) {
+                scrollInner.style.animationDelay = '-' + (ratio * durationMs) + 'ms';
+            } else {
+                scrollInner.style.animationDelay = '';
+            }
+            const onIteration = function() { donorsScrollLastTime = performance.now(); };
+            scrollInner.removeEventListener('animationiteration', onIteration);
+            scrollInner.addEventListener('animationiteration', onIteration);
+            scrollInner.removeAttribute('data-donors-scroll');
+            scrollInner.offsetHeight;
+            scrollInner.setAttribute('data-donors-scroll', '1');
+            donorsScrollHandle = 1;
+            donorsScrollLastTime = performance.now();
+            return;
+        }
+        if (scrollInner) {
+            scrollInner.removeAttribute('data-donors-scroll');
+            scrollInner.style.animationDelay = '';
+            scrollInner.style.transform = '';
+        }
         if (useTvScroll && viewport) {
             const tvSpeed = scrollType === 'tv-slow' ? speed * 0.5 : speed;
             const ratio = savedDonorsScrollRatio ?? (container._scrollSavedY != null && container._scrollSavedY >= 0 ? container._scrollSavedY / half : null);
@@ -1235,15 +1301,31 @@
     function stopDonorsScroll() {
         const container = document.getElementById('liveDonorsScroll');
         const viewport = document.getElementById('liveDonorsScrollViewport');
-        const half = container ? container.scrollHeight / 2 : 0;
+        const scrollInner = document.getElementById('liveDonorsScrollInner');
         const scrollType = liveViewSettings.donorScrollType || 'normal';
         const useTvScroll = (scrollType === 'tv' || scrollType === 'tv-slow') && viewport;
+        const useTransformAnimation = scrollType === 'transform-animation';
+        const half = useTransformAnimation && scrollInner && container
+            ? container.offsetHeight
+            : (container ? container.scrollHeight / 2 : 0);
         if (half > 0) {
             if (useTvScroll) {
                 const st = viewport.scrollTop;
                 if (st >= 0 && st < half) {
                     savedDonorsScrollRatio = st / half;
                 }
+            } else if (useTransformAnimation && scrollInner && scrollInner.hasAttribute('data-donors-scroll')) {
+                const anims = scrollInner.getAnimations();
+                const anim = anims.find(function(a) { return a.animationName === 'donorsScrollUp'; });
+                if (anim) {
+                    const dur = anim.effect && anim.effect.getTiming ? anim.effect.getTiming().duration : 0;
+                    const ct = anim.currentTime;
+                    if (typeof dur === 'number' && dur > 0 && typeof ct === 'number' && ct >= 0) {
+                        savedDonorsScrollRatio = (ct % dur) / dur;
+                    }
+                }
+                scrollInner.removeAttribute('data-donors-scroll');
+                scrollInner.style.animationDelay = '';
             } else if (container && container.style.transform) {
                 const m = container.style.transform.match(/translate3d\(0,\s*(-?[\d.]+)px/);
                 if (m) {
@@ -1284,7 +1366,6 @@
         inner.addEventListener('animationiteration', onIteration);
         const speed = 30;
         const durationMs = Math.round((contentHeight / speed) * 1000);
-        inner.style.setProperty('--leaders-scroll-distance', contentHeight + 'px');
         inner.style.setProperty('--leaders-scroll-duration', durationMs + 'ms');
         const progress = savedLeadersScrollProgress;
         savedLeadersScrollProgress = null;
@@ -1454,8 +1535,8 @@
         set('lvAmountSize', s.amountSize || 16);
         set('lvGroupNameSize', s.groupNameSize || 28);
         set('lvLeadersWidth', s.leadersWidth || 25);
-        set('lvDonorGapVertical', s.donorGapVertical ?? 6);
-        set('lvDonorGapHorizontal', s.donorGapHorizontal ?? 6);
+        set('lvDonorGapVertical', s.donorGapVertical ?? 10);
+        set('lvDonorGapHorizontal', s.donorGapHorizontal ?? 10);
         set('lvDonorScrollType', s.donorScrollType || 'normal');
         set('lvDonorsScrollSpeed', s.donorsScrollSpeed || 50);
         set('lvDonorsScrollSpeedFast', s.donorsScrollSpeedFast || 0);
@@ -1468,8 +1549,8 @@
         setSpan('lvAmountSizeVal', (s.amountSize || 16) + 'px');
         setSpan('lvGroupNameSizeVal', (s.groupNameSize || 28) + 'px');
         setSpan('lvLeadersWidthVal', (s.leadersWidth || 25) + '%');
-        setSpan('lvDonorGapVerticalVal', (s.donorGapVertical ?? 6) + 'px');
-        setSpan('lvDonorGapHorizontalVal', (s.donorGapHorizontal ?? 6) + 'px');
+        setSpan('lvDonorGapVerticalVal', (s.donorGapVertical ?? 10) + 'px');
+        setSpan('lvDonorGapHorizontalVal', (s.donorGapHorizontal ?? 10) + 'px');
         setSpan('lvDonorsScrollSpeedVal', s.donorsScrollSpeed || 50);
         const fastV = parseInt(s.donorsScrollSpeedFast, 10) || 0;
         setSpan('lvDonorsScrollSpeedFastVal', fastV >= 100 ? fastV : 'כבוי');
@@ -1523,8 +1604,8 @@
             amountSize: parseInt(document.getElementById('lvAmountSize')?.value) || 16,
             groupNameSize: parseInt(document.getElementById('lvGroupNameSize')?.value) || 28,
             leadersWidth: parseInt(document.getElementById('lvLeadersWidth')?.value) || 25,
-            donorGapVertical: parseInt(document.getElementById('lvDonorGapVertical')?.value) ?? 6,
-            donorGapHorizontal: parseInt(document.getElementById('lvDonorGapHorizontal')?.value) ?? 6,
+            donorGapVertical: parseInt(document.getElementById('lvDonorGapVertical')?.value) ?? 10,
+            donorGapHorizontal: parseInt(document.getElementById('lvDonorGapHorizontal')?.value) ?? 10,
             donorScrollType: document.getElementById('lvDonorScrollType')?.value || 'normal',
             donorsScrollSpeed: parseInt(document.getElementById('lvDonorsScrollSpeed')?.value) || 50,
             donorsScrollSpeedFast: parseInt(document.getElementById('lvDonorsScrollSpeedFast')?.value) || 0,
