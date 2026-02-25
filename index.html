@@ -17154,13 +17154,8 @@
                 `;
             }).join('');
 
-            // עדכון חלקי בלבד – לעולם לא innerHTML (מונע קפיצות כשמשתנה סכום כולל או סדר מובילים)
-            const existingLeaders = leadersList.querySelectorAll('.leader-item[data-donor-id]');
-            const existingGroupCards = leadersList.querySelectorAll('.leader-target-card[data-group-id]');
-            const existingSummary = leadersList.querySelector('[data-summary="overall"]');
-            const canIncremental = existingLeaders.length > 0 || existingGroupCards.length > 0 || existingSummary;
-            // תמיד עדכון חלקי כשיש מבנה קיים – מונע קפיצות בעמודת המובילים (innerHTML גורם לריצוד)
-            const useIncremental = canIncremental && (existingGroupCards.length > 0 || existingSummary || existingLeaders.length > 0);
+            // 🛡️ תמיד בנייה מחדש מלאה של רשימת המובילים – מונע באג שבו רק השם או רק הסכום מתעדכן; כרטיסיה שלמה (שם+סכום) נעה יחד
+            const useIncremental = false;
 
             function updateLeaderItem(el, donor, rank) {
                 if (!el) return;
