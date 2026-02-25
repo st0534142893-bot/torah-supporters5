@@ -170,11 +170,32 @@
             position: relative;
             background: url("https://i.postimg.cc/PqpcB8WP/rq'-khh-lmsk.jpg") center/cover no-repeat;
         }
+        .live-donors-scroll-viewport {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            position: relative;
+        }
+        .live-donors-scroll-viewport.scroll-type-tv {
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            contain: paint;
+            scroll-snap-type: none;
+        }
+        .live-donors-scroll-viewport.scroll-type-tv::-webkit-scrollbar { display: none; }
+        .live-donors-scroll-viewport.scroll-type-tv .live-donors-scroll {
+            will-change: auto;
+            transform: none;
+        }
         .live-donors-scroll {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 10px;
+            gap: 6px;
             padding: 10px;
             will-change: transform;
             -webkit-backface-visibility: hidden;
@@ -519,7 +540,9 @@
             </div>
             <div class="live-donors-area">
                 <div class="live-donors-container">
-                    <div class="live-donors-scroll" id="liveDonorsScroll"></div>
+                    <div class="live-donors-scroll-viewport" id="liveDonorsScrollViewport">
+                        <div class="live-donors-scroll" id="liveDonorsScroll"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -531,7 +554,7 @@
                 <div class="liveview-setting-group">
                     <h4>כללי</h4>
                     <div class="liveview-setting-row">
-                        <label>מצב טלוויזיה (ללא רווח בין מתרימים):</label>
+                        <label>מצב טלוויזיה (גלילה חלקה, ללא רווח):</label>
                         <label class="switch">
                             <input type="checkbox" id="lvTvModeEnabled">
                             <span class="switch-slider"></span>
@@ -553,8 +576,8 @@
                 <div class="liveview-setting-group">
                     <h4>גדלי אזורים</h4>
                     <div class="liveview-setting-row"><label>רוחב מובילים (%):</label><input type="range" id="lvLeadersWidth" min="20" max="50" value="25"><span id="lvLeadersWidthVal">25%</span></div>
-                    <div class="liveview-setting-row"><label>מרווח אנכי בין כרטיסיות:</label><input type="range" id="lvDonorGapVertical" min="0" max="40" value="10"><span id="lvDonorGapVerticalVal">10px</span></div>
-                    <div class="liveview-setting-row"><label>מרווח אופקי בין כרטיסיות:</label><input type="range" id="lvDonorGapHorizontal" min="0" max="40" value="10"><span id="lvDonorGapHorizontalVal">10px</span></div>
+                    <div class="liveview-setting-row"><label>מרווח אנכי בין כרטיסיות:</label><input type="range" id="lvDonorGapVertical" min="0" max="40" value="6"><span id="lvDonorGapVerticalVal">6px</span></div>
+                    <div class="liveview-setting-row"><label>מרווח אופקי בין כרטיסיות:</label><input type="range" id="lvDonorGapHorizontal" min="0" max="40" value="6"><span id="lvDonorGapHorizontalVal">6px</span></div>
                 </div>
                 <div class="liveview-setting-group">
                     <h4>מה להציג</h4>
@@ -566,6 +589,7 @@
                 </div>
                 <div class="liveview-setting-group">
                     <h4>גלילה</h4>
+                    <div class="liveview-setting-row"><label>סוג אנימציית גלילה:</label><select id="lvDonorScrollType"><option value="normal">רגיל (מחשב)</option><option value="tv">חלק לטלוויזיה</option><option value="tv-slow">חלק לטלוויזיה (איטי)</option></select></div>
                     <div class="liveview-setting-row"><label>גלילה אוטומטית:</label><label class="switch"><input type="checkbox" id="lvEnableAutoScroll" checked><span class="switch-slider"></span></label></div>
                     <div class="liveview-setting-row"><label>מהירות גלילה:</label><input type="range" id="lvDonorsScrollSpeed" min="10" max="100" value="50"><span id="lvDonorsScrollSpeedVal">50</span></div>
                     <div class="liveview-setting-row"><label>מהירות גלילה (מהיר 100–200):</label><input type="range" id="lvDonorsScrollSpeedFast" min="0" max="200" value="0" title="0 = כבוי, 100–200 = מהירות בפיקסלים לשנייה"><span id="lvDonorsScrollSpeedFastVal">כבוי</span></div>
@@ -622,6 +646,7 @@
     let buttonsHideTimer = null;
     const BUTTONS_HIDE_DELAY_MS = 3000;
     let savedDonorsScrollY = null;
+    let savedDonorsScrollRatio = null;
     let savedLeadersScrollProgress = null;
 
     function getUrlParam(name) {
@@ -657,6 +682,9 @@
             leadersWidth: 25,
             donorsWidth: 75,
             leadersGap: 14,
+            donorGapVertical: 6,
+            donorGapHorizontal: 6,
+            donorScrollType: 'normal',
             enableAutoScroll: true,
             donorsScrollSpeed: 50,
             donorsScrollSpeedFast: 0,
@@ -671,8 +699,8 @@
             ...liveViewSettings
         };
         const oldGap = liveViewSettings.donorGap;
-        if (liveViewSettings.donorGapVertical == null) liveViewSettings.donorGapVertical = oldGap ?? 10;
-        if (liveViewSettings.donorGapHorizontal == null) liveViewSettings.donorGapHorizontal = oldGap ?? 10;
+        if (liveViewSettings.donorGapVertical == null) liveViewSettings.donorGapVertical = oldGap ?? 6;
+        if (liveViewSettings.donorGapHorizontal == null) liveViewSettings.donorGapHorizontal = oldGap ?? 6;
         if (liveViewSettings.tvModeEnabled === undefined && typeof localStorage !== 'undefined' && localStorage.getItem('tvModeEnabled') === '1') {
             liveViewSettings.tvModeEnabled = true;
         }
@@ -1129,63 +1157,101 @@
         if (donorsScroll) {
             stopDonorsScroll();
             donorsScroll.innerHTML = donorCardsHtml + donorCardsHtml;
-            const v = document.body.classList.contains('tv-mode') ? 0 : (liveViewSettings.donorGapVertical ?? 10);
-            const h = document.body.classList.contains('tv-mode') ? 0 : (liveViewSettings.donorGapHorizontal ?? 10);
-            donorsScroll.style.gap = v + 'px ' + h + 'px';
+            const v = Math.max(0, parseInt(liveViewSettings.donorGapVertical, 10) ?? 6);
+            const h = Math.max(0, parseInt(liveViewSettings.donorGapHorizontal, 10) ?? 6);
+            donorsScroll.style.setProperty('gap', v + 'px ' + h + 'px', 'important');
         }
+        const viewport = document.getElementById('liveDonorsScrollViewport');
+        const scrollType = liveViewSettings.donorScrollType || 'normal';
+        if (viewport) viewport.classList.toggle('scroll-type-tv', scrollType === 'tv' || scrollType === 'tv-slow');
 
         if (liveViewSettings.enableAutoScroll && donorsScroll) {
-            requestAnimationFrame(() => startDonorsScroll());
+            requestAnimationFrame(() => requestAnimationFrame(() => startDonorsScroll()));
         }
-        requestAnimationFrame(() => startLeadersScroll());
+        requestAnimationFrame(() => requestAnimationFrame(() => startLeadersScroll()));
     }
 
     function startDonorsScroll() {
         const container = document.getElementById('liveDonorsScroll');
+        const viewport = document.getElementById('liveDonorsScrollViewport');
         if (!container || donorsScrollHandle) return;
+        const scrollType = liveViewSettings.donorScrollType || 'normal';
+        const useTvScroll = scrollType === 'tv' || scrollType === 'tv-slow';
         const half = container.scrollHeight / 2;
         if (!half || !isFinite(half) || half < 100) return;
-        let currentY = 0;
-        const fromSaved = (container._scrollSavedY != null && container._scrollSavedY < 0) ? container._scrollSavedY : savedDonorsScrollY;
-        if (fromSaved != null && fromSaved < 0) {
-            currentY = Math.max(-half, Math.min(0, fromSaved));
-        }
-        container._scrollSavedY = 0;
-        savedDonorsScrollY = null;
-        container.style.transform = 'translate3d(0,' + Math.round(currentY) + 'px,0)';
-        let lastTs = null;
 
-        function tick(timestamp) {
-            if (lastTs === null) lastTs = timestamp;
-            let delta = timestamp - lastTs;
-            if (delta > 100) delta = 16;
-            delta = Math.min(33, delta);
-            lastTs = timestamp;
-            let speed;
-            const fastVal = parseInt(liveViewSettings.donorsScrollSpeedFast, 10) || 0;
-            if (fastVal >= 100 && fastVal <= 200) {
-                speed = fastVal;
-            } else {
-                const speedValue = Math.max(10, Math.min(100, liveViewSettings.donorsScrollSpeed || 50));
-                speed = 5 + (speedValue - 10) * 65 / 90;
+        let speed;
+        const fastVal = parseInt(liveViewSettings.donorsScrollSpeedFast, 10) || 0;
+        if (fastVal >= 100 && fastVal <= 200) {
+            speed = fastVal;
+        } else {
+            const speedValue = Math.max(10, Math.min(100, liveViewSettings.donorsScrollSpeed || 50));
+            speed = 5 + (speedValue - 10) * 65 / 90;
+        }
+
+        if (useTvScroll && viewport) {
+            const tvSpeed = scrollType === 'tv-slow' ? speed * 0.5 : speed;
+            const ratio = savedDonorsScrollRatio ?? (container._scrollSavedY != null && container._scrollSavedY >= 0 ? container._scrollSavedY / half : null);
+            viewport.scrollTop = (ratio != null && ratio >= 0 && ratio < 1) ? Math.min(ratio * half, half - 1) : 0;
+            container._scrollSavedY = 0;
+            savedDonorsScrollY = null;
+            savedDonorsScrollRatio = null;
+            let lastTs = null;
+            function tickTv(timestamp) {
+                if (lastTs === null) lastTs = timestamp;
+                const delta = Math.min(50, timestamp - lastTs);
+                lastTs = timestamp;
+                let st = viewport.scrollTop + tvSpeed * delta / 1000;
+                if (st >= half) st -= half;
+                viewport.scrollTop = st;
+                donorsScrollLastTime = timestamp;
+                donorsScrollHandle = requestAnimationFrame(tickTv);
             }
-            currentY -= speed * delta / 1000;
-            if (currentY <= -half) currentY += half;
+            donorsScrollHandle = requestAnimationFrame(tickTv);
+        } else {
+            const ratio = savedDonorsScrollRatio ?? (container._scrollSavedY != null && container._scrollSavedY < 0 ? -container._scrollSavedY / half : null);
+            let currentY = (ratio != null && ratio >= 0 && ratio <= 1) ? -ratio * half : 0;
+            container._scrollSavedY = 0;
+            savedDonorsScrollY = null;
+            savedDonorsScrollRatio = null;
             container.style.transform = 'translate3d(0,' + Math.round(currentY) + 'px,0)';
-            donorsScrollLastTime = timestamp;
+            let lastTs = null;
+            function tick(timestamp) {
+                if (lastTs === null) lastTs = timestamp;
+                let delta = timestamp - lastTs;
+                if (delta > 100) delta = 16;
+                delta = Math.min(33, delta);
+                lastTs = timestamp;
+                currentY -= speed * delta / 1000;
+                if (currentY <= -half) currentY += half;
+                container.style.transform = 'translate3d(0,' + Math.round(currentY) + 'px,0)';
+                donorsScrollLastTime = timestamp;
+                donorsScrollHandle = requestAnimationFrame(tick);
+            }
             donorsScrollHandle = requestAnimationFrame(tick);
         }
-        donorsScrollHandle = requestAnimationFrame(tick);
     }
 
     function stopDonorsScroll() {
         const container = document.getElementById('liveDonorsScroll');
-        if (container && container.style.transform) {
-            const m = container.style.transform.match(/translate3d\(0,\s*(-?[\d.]+)px/);
-            if (m) {
-                const y = parseFloat(m[1]) || 0;
-                container._scrollSavedY = y;
-                savedDonorsScrollY = y;
+        const viewport = document.getElementById('liveDonorsScrollViewport');
+        const half = container ? container.scrollHeight / 2 : 0;
+        const scrollType = liveViewSettings.donorScrollType || 'normal';
+        const useTvScroll = (scrollType === 'tv' || scrollType === 'tv-slow') && viewport;
+        if (half > 0) {
+            if (useTvScroll) {
+                const st = viewport.scrollTop;
+                if (st >= 0 && st < half) {
+                    savedDonorsScrollRatio = st / half;
+                }
+            } else if (container && container.style.transform) {
+                const m = container.style.transform.match(/translate3d\(0,\s*(-?[\d.]+)px/);
+                if (m) {
+                    const y = parseFloat(m[1]) || 0;
+                    if (y <= 0 && y >= -half) {
+                        savedDonorsScrollRatio = -y / half;
+                    }
+                }
             }
         }
         if (donorsScrollHandle) {
@@ -1388,8 +1454,9 @@
         set('lvAmountSize', s.amountSize || 16);
         set('lvGroupNameSize', s.groupNameSize || 28);
         set('lvLeadersWidth', s.leadersWidth || 25);
-        set('lvDonorGapVertical', s.donorGapVertical ?? 10);
-        set('lvDonorGapHorizontal', s.donorGapHorizontal ?? 10);
+        set('lvDonorGapVertical', s.donorGapVertical ?? 6);
+        set('lvDonorGapHorizontal', s.donorGapHorizontal ?? 6);
+        set('lvDonorScrollType', s.donorScrollType || 'normal');
         set('lvDonorsScrollSpeed', s.donorsScrollSpeed || 50);
         set('lvDonorsScrollSpeedFast', s.donorsScrollSpeedFast || 0);
         set('lvGroupsSortBy', s.groupsSortBy || 'name');
@@ -1401,8 +1468,8 @@
         setSpan('lvAmountSizeVal', (s.amountSize || 16) + 'px');
         setSpan('lvGroupNameSizeVal', (s.groupNameSize || 28) + 'px');
         setSpan('lvLeadersWidthVal', (s.leadersWidth || 25) + '%');
-        setSpan('lvDonorGapVerticalVal', (s.donorGapVertical ?? 10) + 'px');
-        setSpan('lvDonorGapHorizontalVal', (s.donorGapHorizontal ?? 10) + 'px');
+        setSpan('lvDonorGapVerticalVal', (s.donorGapVertical ?? 6) + 'px');
+        setSpan('lvDonorGapHorizontalVal', (s.donorGapHorizontal ?? 6) + 'px');
         setSpan('lvDonorsScrollSpeedVal', s.donorsScrollSpeed || 50);
         const fastV = parseInt(s.donorsScrollSpeedFast, 10) || 0;
         setSpan('lvDonorsScrollSpeedFastVal', fastV >= 100 ? fastV : 'כבוי');
@@ -1456,8 +1523,9 @@
             amountSize: parseInt(document.getElementById('lvAmountSize')?.value) || 16,
             groupNameSize: parseInt(document.getElementById('lvGroupNameSize')?.value) || 28,
             leadersWidth: parseInt(document.getElementById('lvLeadersWidth')?.value) || 25,
-            donorGapVertical: parseInt(document.getElementById('lvDonorGapVertical')?.value) ?? 10,
-            donorGapHorizontal: parseInt(document.getElementById('lvDonorGapHorizontal')?.value) ?? 10,
+            donorGapVertical: parseInt(document.getElementById('lvDonorGapVertical')?.value) ?? 6,
+            donorGapHorizontal: parseInt(document.getElementById('lvDonorGapHorizontal')?.value) ?? 6,
+            donorScrollType: document.getElementById('lvDonorScrollType')?.value || 'normal',
             donorsScrollSpeed: parseInt(document.getElementById('lvDonorsScrollSpeed')?.value) || 50,
             donorsScrollSpeedFast: parseInt(document.getElementById('lvDonorsScrollSpeedFast')?.value) || 0,
             groupsSortBy: document.getElementById('lvGroupsSortBy')?.value || 'name',
