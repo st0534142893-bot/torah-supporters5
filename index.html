@@ -6296,17 +6296,7 @@
                 <button class="nav-item" data-section="liveview">תצוגה בלייב</button>
                 <button class="nav-item" data-section="management">ניהול</button>
                 <button class="nav-item" data-section="breakdown">פילוח נתונים</button>
-                <button class="nav-item" data-section="raffle">מערכת הגרלות</button>
-                <button class="nav-item" data-section="scouts">ניהול סיירות</button>
-                <button class="nav-item" data-section="toolkit">ארגז כלים לתתני״ק הצעיר</button>
-                <button class="nav-item" data-section="semifinal">חגיגת ניצחון</button>          
-                <button class="nav-item" data-section="finance">חישוב לכל השנה</button>
-                <button class="nav-item" data-section="loans">הלוואות</button>
-                <button class="nav-item" data-section="planning">תכנון קמפיין לשנים הבאות</button>
-                <button class="nav-item" data-section="groomGrant">מענק לחתנים</button>
-                <button class="nav-item" data-section="grants">קבלת מענקים למתרמים</button>
-                <button class="nav-item" data-section="addresses">כתובות</button>
-                <button class="nav-item" data-section="instructions">אודות התוכנה</button>
+                <button class="nav-item" data-section="semifinal">חגיגת ניצחון</button>
                 </div>
         </nav>
 
@@ -6687,85 +6677,13 @@
                 <div class="management-nav-curtain">
                     <div class="management-nav-curtain-inner">
                         <button class="management-tab active" data-tab="donors">ניהול מתרימים</button>
-                        <button class="management-tab" data-tab="manualDonation">הוספת תרומה ידנית מהחפ״ק</button>
-                        <button class="management-tab" data-tab="pairs">ניהול זוגות</button>
                         <button class="management-tab" data-tab="groups">ניהול קבוצות</button>
                         <button class="management-tab" data-tab="liveview">הגדרות תצוגת לייב</button>
-                        <button class="management-tab" data-tab="calculator">מחשבון</button>
-                        <button class="management-tab" data-tab="sync">עדכונים</button>
-                        <button class="management-tab" data-tab="history">היסטוריה</button>
-                        <button class="management-tab" data-tab="reset">אפשרויות איפוס</button>
-                        <button class="management-tab" data-tab="password">הגדרת סיסמה</button>
+                        <button class="management-tab" data-tab="sync">הגדרות סנכרון</button>
                     </div>
                 </div>
 
                 <!-- מחשבון -->
-                <div class="management-content" id="calculatorContent">
-                    <div style="display: flex; justify-content: center; padding: 20px;">
-                        <div class="management-calculator-panel" id="managementCalculatorPanel" style="display: block;">
-                            <div class="management-calculator-display" id="managementCalculatorDisplay">0</div>
-                            <div class="management-calculator-grid">
-                                <button class="function" onclick="managementCalcClear()">C</button>
-                                <button class="function" onclick="managementCalcInput('±')">±</button>
-                                <button class="function" onclick="managementCalcInput('%')">%</button>
-                                <button class="operator" onclick="managementCalcInput('/')">÷</button>
-                                <button onclick="managementCalcInput('7')">7</button>
-                                <button onclick="managementCalcInput('8')">8</button>
-                                <button onclick="managementCalcInput('9')">9</button>
-                                <button class="operator" onclick="managementCalcInput('*')">×</button>
-                                <button onclick="managementCalcInput('4')">4</button>
-                                <button onclick="managementCalcInput('5')">5</button>
-                                <button onclick="managementCalcInput('6')">6</button>
-                                <button class="operator" onclick="managementCalcInput('-')">−</button>
-                                <button onclick="managementCalcInput('1')">1</button>
-                                <button onclick="managementCalcInput('2')">2</button>
-                                <button onclick="managementCalcInput('3')">3</button>
-                                <button class="operator" onclick="managementCalcInput('+')">+</button>
-                                <button class="zero" onclick="managementCalcInput('0')">0</button>
-                                <button onclick="managementCalcInput('.')">.</button>
-                                <button class="operator" onclick="managementCalcCalculate()">=</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ניהול זוגות – הוספת תרומה לזוג מתרימים (מחצית לכל אחד) -->
-                <div class="management-content" id="pairsContent">
-                    <div class="donors-management">
-                        <p style="font-size: 14px; color: var(--muted); margin-bottom: 20px;">בשבוע שלפני פורים מתרימים יוצאים בזוגות לאסוף בכתובות. הזן את הזוג ואת סה״כ הסכום שנאסף – התוכנה תחלק אוטומטית מחצית לכל מתרים.</p>
-                        <div class="pairs-form" style="background: linear-gradient(135deg, #fffbf0 0%, #fff8e6 100%); border: 2px solid var(--primary-gold); border-radius: 14px; padding: 24px; margin-bottom: 24px;">
-                            <div style="display: grid; gap: 16px;">
-                                <div>
-                                    <label class="manual-search-label">מתרים ראשון – חיפוש חכם</label>
-                                    <div class="donors-search-input-wrapper manual-donor-search-with-autocomplete" style="position: relative;">
-                                        <input type="text" id="pairsDonor1Input" class="donors-search-input manual-donor-search-input" placeholder="שם, מספר מתרים או קבוצה..." autocomplete="off">
-                                        <div id="pairsDonor1Autocomplete" class="manual-donor-autocomplete-list" style="display: none;"></div>
-                                    </div>
-                                    <div id="pairsDonor1Selected" style="margin-top: 8px; font-weight: 600; color: var(--primary-gold); min-height: 20px;"></div>
-                                </div>
-                                <div>
-                                    <label class="manual-search-label">מתרים שני – חיפוש חכם</label>
-                                    <div class="donors-search-input-wrapper manual-donor-search-with-autocomplete" style="position: relative;">
-                                        <input type="text" id="pairsDonor2Input" class="donors-search-input manual-donor-search-input" placeholder="שם, מספר מתרים או קבוצה..." autocomplete="off">
-                                        <div id="pairsDonor2Autocomplete" class="manual-donor-autocomplete-list" style="display: none;"></div>
-                                    </div>
-                                    <div id="pairsDonor2Selected" style="margin-top: 8px; font-weight: 600; color: var(--primary-gold); min-height: 20px;"></div>
-                                </div>
-                                <div>
-                                    <label for="pairsAmountInput" class="manual-search-label">סה״כ סכום שנאסף (₪)</label>
-                                    <input type="number" id="pairsAmountInput" placeholder="למשל: 1800" min="1" step="1" style="padding: 14px 18px; font-size: 18px; border: 2px solid var(--border); border-radius: 10px; width: 100%; max-width: 200px;">
-                                    <p id="pairsSplitPreview" style="margin-top: 8px; font-size: 13px; color: var(--muted);"></p>
-                                </div>
-                                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                                    <button type="button" class="btn btn-primary" id="pairsConfirmBtn" onclick="confirmPairsDonation()" disabled>אשר והוסף תרומה לזוג</button>
-                                    <button type="button" class="btn btn-secondary" onclick="clearPairsSelection()">נקה בחירה</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="pairsRecentList" style="font-size: 13px; color: var(--muted);"></div>
-                    </div>
-                </div>
-
                 <!-- ניהול קבוצות -->
                 <div class="management-content" id="groupsContent">
                     <div class="management-actions-row" style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
@@ -6809,25 +6727,8 @@
                     </div>
                 </div>
 
-                <!-- הוספת תרומה באופן ידני מהחפ״ק -->
-                <div class="management-content" id="manualDonationContent">
-                    <div class="donors-management">
-                        <div class="donors-search-bar">
-                            <label for="manualDonorSearchInput" class="manual-search-label">🔍 חיפוש חכם – שם, מספר מתרים, קבוצה, סכום</label>
-                            <div class="donors-search-input-wrapper manual-donor-search-with-autocomplete">
-                                <input type="text" id="manualDonorSearchInput" class="donors-search-input manual-donor-search-input" placeholder="שם, מספר מתרים, קבוצה..." autocomplete="off">
-                                <div id="manualDonorAutocompleteList" class="manual-donor-autocomplete-list" style="display: none;"></div>
-                            </div>
-                            <div class="donors-search-meta" id="manualDonorsSearchMeta"></div>
-                        </div>
-                        <div class="donors-list" id="manualDonorsListContainer">
-                            <!-- יוטען דינמית -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- היסטוריה -->
-                <div class="management-content" id="historyContent">
+                <!-- historyContent הוסר -->
+                <div class="management-content" id="historyContent" style="display:none!important">
                     <div style="padding: 25px; background: #fafafa; min-height: 100%;">
                         
                         <!-- כותרת -->
@@ -6997,8 +6898,8 @@
                     </div>
                 </div>
 
-                <!-- אפשרויות איפוס -->
-                <div class="management-content" id="resetContent">
+                <!-- resetContent הוסר -->
+                <div class="management-content" id="resetContent" style="display:none!important">
                     <div class="management-reset-panel">
                         <h3>כלי ניקוי מהירים</h3>
                         <div class="reset-actions">
@@ -7444,33 +7345,35 @@
                     </div>
                 </div>
 
-                <!-- עדכונים -->
+                <!-- הגדרות סנכרון -->
                 <div class="management-content" id="syncContent">
                     <div class="sync-settings-panel">
-                        <h3>עדכונים מנדרים פלוס</h3>
-                        
-                        
+                        <h3>הגדרות סנכרון</h3>
+                        <p style="color: var(--muted); margin-bottom: 20px;">המערכת משקפת נתונים מנדרים פלוס בלבד. הגדר את כתובת ה-API ואת הגליון, וסנכרן נתונים.</p>
+
+                        <!-- פעולות עיקריות -->
                         <div style="margin-bottom: 25px;">
-                            <h4 style="margin-bottom: 15px;">פעולות עדכון</h4>
+                            <h4 style="margin-bottom: 15px;">משיכת נתונים מנדרים פלוס</h4>
                             <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                                 <button class="btn btn-success" onclick="runSequentialOp(()=>syncWithNedarimPlus(), 'סנכרון תרומות')" id="nedarimSyncBtn">
-                                    🔄 סנכרון תרומות
-                                </button>
-                                <button class="btn btn-info" onclick="runSequentialOp(()=>checkTotalAmountFromAPI(), 'בדוק סכום כולל')" id="checkTotalBtn" style="background: #17a2b8; color: white;">
-                                    🔍 בדוק סכום כולל מ-API
+                                    🔄 סנכרן תרומות מנדרים פלוס
                                 </button>
                                 <button class="btn btn-primary" onclick="runSequentialOp(()=>loadMatrimFromNedarim(), 'טען מתרימים מנדרים פלוס')" id="nedarimLoadMatrimBtn">
                                     📥 טען מתרימים מנדרים פלוס
+                                </button>
+                                <button class="btn btn-info" onclick="runSequentialOp(()=>checkTotalAmountFromAPI(), 'בדוק סכום כולל')" id="checkTotalBtn" style="background: #17a2b8; color: white;">
+                                    🔍 בדוק סכום כולל
                                 </button>
                             </div>
                         </div>
 
                         <div class="nedarim-sync-status" id="nedarimSyncStatus"></div>
-                        
+
                         <!-- גליון Google Sheets -->
                         <div style="margin-top: 30px; padding-top: 30px; border-top: 2px solid var(--border);">
                             <h3 style="margin-bottom: 15px;">🗂️ גליון Google Sheets</h3>
-                            
+                            <p style="color: var(--muted); font-size: 13px; margin-bottom: 15px;">הגליון משמש לשמירת נתוני הקבוצות והמתרימים (ייצוא/ייבוא). אינו משמש לדחיפת נתונים לנדרים.</p>
+
                             <div class="sync-input-group" style="margin-bottom: 20px;">
                                 <label style="display: block; margin-bottom: 8px; font-weight: 500;">כתובת Web App של Google Apps Script:</label>
                                 <div style="margin-bottom: 10px;">
@@ -7483,20 +7386,20 @@
                                     ה-URL שמתקבל אחרי פריסת הקוד ב-Google Apps Script.
                                 </small>
                             </div>
-                            
+
                             <div class="sync-actions" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
                                 <button class="btn btn-success" onclick="runSequentialOp(()=>testGoogleSheetsConnection(), 'בדוק חיבור')">🔌 בדוק חיבור</button>
-                                <button class="btn btn-primary" onclick="runSequentialOp(()=>loadFromGoogleSheets(), 'טען מהגליון')">📥 טען מהגליון</button>
-                                <button class="btn btn-secondary" onclick="runSequentialOp(()=>saveToGoogleSheets(), 'שמור לגליון')">💾 שמור לגליון</button>
+                                <button class="btn btn-primary" onclick="runSequentialOp(()=>loadFromGoogleSheets(), 'טען מהגליון')">📥 טען קבוצות ומתרימים מהגליון</button>
+                                <button class="btn btn-secondary" onclick="runSequentialOp(()=>saveToGoogleSheets(), 'שמור לגליון')">💾 שמור קבוצות ומתרימים לגליון</button>
                             </div>
-                            
+
                             <div class="sync-status" id="googleSheetsSyncStatus" style="display: none; padding: 10px; border-radius: 6px; margin-bottom: 15px;"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- הגדרת סיסמה -->
-                <div class="management-content" id="passwordContent">
+                <!-- passwordContent הוסר -->
+                <div class="management-content" id="passwordContent" style="display:none!important">
                     <div class="password-settings-panel">
                         <h3>מסך כניסה והגנת סיסמה</h3>
                         <div class="password-toggle-row" style="margin-bottom: 16px; padding: 14px; background: #f0f9ff; border-radius: 12px; border: 1px solid #bae6fd;">
@@ -14253,9 +14156,6 @@
                                 יעד: ₪${donor.personalGoal.toLocaleString()} (${Math.round(progress)}%)
                             </div>
                         </div>
-                        <div class="donor-actions">
-                            <button class="btn btn-primary btn-small" onclick='addDonorPayment(${JSON.stringify(donor.id)})'>הוסף תשלום</button>
-                        </div>
                     </div>
                 `;
             }).join('');
@@ -14715,7 +14615,7 @@
             if (!isSectionProtected(sectionId)) return;
             if (requestSectionAccess(sectionId)) return;
             // המשתמש ביטל – מעבר לטאב ראשון לא-מוגן
-            const tabOrder = ['groups', 'donors', 'manualDonation', 'pairs', 'liveview', 'calculator', 'sync', 'history', 'reset', 'password'];
+            const tabOrder = ['donors', 'groups', 'liveview', 'sync'];
             for (const t of tabOrder) {
                 const sid = 'management-' + t;
                 if (!isSectionProtected(sid)) {
@@ -15225,9 +15125,7 @@
                                     <span class="group-donor-name">${d.name}</span>
                                     <span class="group-donor-amount">₪${d.amount.toLocaleString()}</span>
                                 </div>
-                                <div class="group-donor-actions">
-                                    <button class="group-donor-payment" onclick='addDonorPayment(${JSON.stringify(d.id)})'>הוסף תשלום</button>
-                                </div>
+                                <div class="group-donor-actions"></div>
                             </div>
                         `).join('') : '<div style="text-align: center; color: var(--muted); padding: 10px;">אין מתרימים</div>'}
                     </div>
@@ -15722,7 +15620,6 @@
                             <div class="donor-item-compact-main">
                                 <span class="donor-item-compact-name">${escapeHtml(displayName)}</span>
                                 <span class="donor-item-compact-amount">₪${(donor.amount || 0).toLocaleString()}</span>
-                                <button class="btn btn-primary btn-small donor-item-compact-btn" onclick='addDonorPayment(${JSON.stringify(donor.id)})'>הוסף תשלום</button>
                             </div>
                             <div class="donor-item-compact-details">${details}</div>
                         </div>
@@ -15807,9 +15704,7 @@
                             </div>
                         </div>
                         </div>
-                        <div class="donor-actions">
-                            <button class="btn btn-secondary btn-small" onclick='addDonorPayment(${JSON.stringify(donor.id)})'>הוסף תשלום</button>
-                        </div>
+                        <div class="donor-actions"></div>
                         <div class="donor-history" id="donorHistory_${donor.id}">
                             ${historyHtml}
                         </div>
@@ -16485,53 +16380,7 @@
                 storageSetItem('donors', donors);
             }
             
-            // שולח לנדרים פלוס מיד אם יש שינוי בסכום – לא מחכים לסנכרון תרומות
-            // שולח כשהמתרים מקושר לנדרים (מספר מתרים תקין או נטען מנדרים)
-            const hasNedarimLink = donor.fromNedarimPlus || (donor.nedarimMatrimId && /^\d+$/.test(String(donor.nedarimMatrimId).trim()));
-            if (amountDelta !== 0 && hasNedarimLink) {
-                isUpdatingDonorForNedarim = true;
-                try {
-                    const originalName = donor.originalName || donor.name;
-                    const group = groups.find(g => g.id === donor.groupId);
-                    const groupName = group ? group.name : '';
-                    const matrimId = donor.nedarimMatrimId || null;
-                    await uploadOfflineDonation(
-                        originalName,
-                        'תרומה מהמערכת',
-                        amountDelta, // יכול להיות שלילי להפחתות
-                        `עדכון ידני: ${amountDelta > 0 ? 'תוספת ידנית' : 'הפחתה ידנית'}`,
-                        groupName,
-                        matrimId
-                    );
-                    const actionText = amountDelta > 0 ? 'נוספה' : 'הופחתה';
-                    console.log(`✅ תרומה של ${Math.abs(amountDelta)} ₪ ${actionText} בנדרים פלוס עבור ${matrimId ? 'מספר מתרים: ' + matrimId : originalName}${groupName ? ' (קבוצה: ' + groupName + ')' : ''}`);
-                    
-                    // מעדכן את הסכום הכולל מ-API אחרי העלאה מוצלחת
-                    setTimeout(async () => {
-                        try {
-                            console.log('🔄 מעדכן סכום כולל מ-API אחרי עדכון מתרים...');
-                            const totalData = await fetchTotalFromMatchPlus();
-                            if (totalData && totalData.Donated > 0) {
-                                console.log(`✅ סכום כולל עודכן: ${totalData.Donated.toLocaleString()} ש"ח`);
-                                updateHomeStats();
-                                updateLeadersList(true);
-                                updateLiveTargets();
-                                // עדכון מיידי של Live View
-                                if (typeof updateLiveView === 'function') {
-                                    updateLiveView(true); // immediate = true
-                                }
-                            }
-                        } catch (err) {
-                            console.warn('⚠️ שגיאה בעדכון סכום כולל אחרי עדכון מתרים:', err);
-                        }
-                    }, 2000);
-                } catch (error) {
-                    console.warn('⚠️ העדכון נשמר במערכת אך לא נשלח לנדרים פלוס:', error.message);
-                    // לא נציג שגיאה למשתמש כי העדכון כבר נשמר במערכת
-                } finally {
-                    isUpdatingDonorForNedarim = false;
-                }
-            }
+            // המערכת במצב שיקוף נתונים בלבד – אין דחיפה לנדרים פלוס מכאן
 
             if (!changed) {
                 showNotification('לא בוצעו שינויים');
@@ -20780,7 +20629,8 @@
         // פונקציה ראשית לסנכרון עם נדרים פלוס (משתמש ב-MatchPlus API)
         // סנכרון דו-כיווני: דוחף שינויים מקומיים לנדרים פלוס, then מושך עדכונים מנדרים פלוס (מכבד recentlyUpdatedDonors).
         // forceSync=true: מתעלם מ-cooldown – כשהמשתמש לוחץ ידנית "בדוק סכום כולל מ-API"
-        async function syncWithNedarimPlus(silent = false, pullOnly = false, forceSync = false) {
+        async function syncWithNedarimPlus(silent = false, pullOnly = true, forceSync = false) {
+            pullOnly = true; // תמיד pull-only – המערכת משקפת נתונים בלבד, אין דחיפה לנדרים
             if (syncWithNedarimPlusInProgress) {
                 console.warn('⚠️ [סנכרון] סנכרון כבר רץ – דילוג (מונע כפילות דלתות בנדרים פלוס)');
                 return;
