@@ -14255,8 +14255,8 @@
                         </div>
                         <div class="donor-actions">
                             <button class="btn btn-primary btn-small" onclick='addDonorPayment(${JSON.stringify(donor.id)})'>הוסף תשלום</button>
-                            <button class="btn btn-danger btn-small" onclick="deleteDonor(${JSON.stringify(String(donor.id))})">מחק</button>
-                            <button class="btn btn-danger btn-small" onclick="deleteDonor(${JSON.stringify(String(donor.id))}, true)" title="מחיקה לצמיתות מהמערכת המקומית">מחק לצמיתות</button>
+                            <button class="btn btn-danger btn-small" onclick='deleteDonor(${JSON.stringify(String(donor.id))})'>מחק</button>
+                            <button class="btn btn-danger btn-small" onclick='deleteDonor(${JSON.stringify(String(donor.id))}, true)' title="מחיקה לצמיתות מהמערכת המקומית">מחק לצמיתות</button>
                         </div>
                     </div>
                 `;
@@ -15229,8 +15229,8 @@
                                 </div>
                                 <div class="group-donor-actions">
                                     <button class="group-donor-payment" onclick='addDonorPayment(${JSON.stringify(d.id)})'>הוסף תשלום</button>
-                                    <button class="btn btn-danger btn-small" onclick="deleteDonor(${JSON.stringify(String(d.id))})">מחק</button>
-                                    <button class="btn btn-danger btn-small" onclick="deleteDonor(${JSON.stringify(String(d.id))}, true)" title="מחיקה לצמיתות מהמערכת המקומית">מחק לצמיתות</button>
+                                    <button class="btn btn-danger btn-small" onclick='deleteDonor(${JSON.stringify(String(d.id))})'>מחק</button>
+                                    <button class="btn btn-danger btn-small" onclick='deleteDonor(${JSON.stringify(String(d.id))}, true)' title="מחיקה לצמיתות מהמערכת המקומית">מחק לצמיתות</button>
                                 </div>
                             </div>
                         `).join('') : '<div style="text-align: center; color: var(--muted); padding: 10px;">אין מתרימים</div>'}
@@ -15763,8 +15763,8 @@
                                        class="donor-name-input"
                                        value="${escapeHtml(displayName)}"
                                        data-donor-name-input="${donor.id}"
-                                       onchange="updateDonorDisplayName(${JSON.stringify(String(donor.id))}, this.value)"
-                                       onkeydown="handleDonorNameKey(event, ${JSON.stringify(String(donor.id))})"
+                                       onchange='updateDonorDisplayName(${JSON.stringify(String(donor.id))}, this.value)'
+                                       onkeydown='handleDonorNameKey(event, ${JSON.stringify(String(donor.id))})'
                                        placeholder="שם המתרים">
                             </div>
                             <div class="donor-edit-panel${isEditing ? ' active' : ''}" id="donorEdit_${donor.id}">
@@ -15806,15 +15806,15 @@
                                 </div>
                             </div>
                             <div class="donor-edit-actions">
-                                <button class="btn btn-secondary btn-small" onclick="saveDonorEdits(${JSON.stringify(String(donor.id))})">שמור</button>
-                                <button class="btn btn-secondary btn-small" onclick="cancelDonorEdits(${JSON.stringify(String(donor.id))})">בטל</button>
+                                <button class="btn btn-secondary btn-small" onclick='saveDonorEdits(${JSON.stringify(String(donor.id))})'>שמור</button>
+                                <button class="btn btn-secondary btn-small" onclick='cancelDonorEdits(${JSON.stringify(String(donor.id))})'>בטל</button>
                             </div>
                         </div>
                         </div>
                         <div class="donor-actions">
                             <button class="btn btn-secondary btn-small" onclick='addDonorPayment(${JSON.stringify(donor.id)})'>הוסף תשלום</button>
-                            <button class="btn btn-danger btn-small" onclick="deleteDonor(${JSON.stringify(String(donor.id))})">מחק</button>
-                            <button class="btn btn-danger btn-small" onclick="deleteDonor(${JSON.stringify(String(donor.id))}, true)" title="מחיקה לצמיתות מהמערכת המקומית">מחק לצמיתות</button>
+                            <button class="btn btn-danger btn-small" onclick='deleteDonor(${JSON.stringify(String(donor.id))})'>מחק</button>
+                            <button class="btn btn-danger btn-small" onclick='deleteDonor(${JSON.stringify(String(donor.id))}, true)' title="מחיקה לצמיתות מהמערכת המקומית">מחק לצמיתות</button>
                         </div>
                         <div class="donor-history" id="donorHistory_${donor.id}">
                             ${historyHtml}
@@ -19126,7 +19126,7 @@
                     </table>
                 </div>
                 <div class="donor-history-footer">
-                    <button class="btn btn-secondary btn-small" onclick="exportSingleDonorHistoryToExcel(${JSON.stringify(String(donor.id))})">
+                    <button class="btn btn-secondary btn-small" onclick='exportSingleDonorHistoryToExcel(${JSON.stringify(String(donor.id))})'>
                         ייצוא היסטוריה לאקסל
                     </button>
                 </div>
