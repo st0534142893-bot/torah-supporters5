@@ -2612,6 +2612,25 @@
             transform: translateY(0);
         }
 
+        .btn-paste {
+            background: #e0f2fe;
+            color: #0369a1;
+            border: 2px solid #7dd3fc;
+            border-radius: 12px;
+            padding: 16px 32px;
+            min-height: 52px;
+            min-width: 120px;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(3, 105, 161, 0.15);
+            transition: all 0.25s ease;
+        }
+        .btn-paste:hover,
+        .btn-paste:focus {
+            background: #bae6fd;
+            border-color: #38bdf8;
+            box-shadow: 0 4px 12px rgba(3, 105, 161, 0.25);
+        }
+
         .btn-secondary {
             background: rgba(255, 255, 255, 0.9);
             color: var(--brown-dark);
@@ -3098,8 +3117,9 @@
 
         /* פרוגרס ומעקב עדכונים ב-overlay */
         #liveViewUpdateProgressBar[style*="display: block"] { display: block !important; }
-        .live-view-update-donors-preview-item { padding: 4px 8px; animation: donorPreviewFade 0.5s ease; }
-        @keyframes donorPreviewFade { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .live-view-update-donors-preview-item { padding: 4px 8px; -webkit-animation: donorPreviewFade 0.5s ease; animation: donorPreviewFade 0.5s ease; }
+        @-webkit-keyframes donorPreviewFade { from { opacity: 0; -webkit-transform: translate3d(0, -10px, 0); transform: translate3d(0, -10px, 0); } to { opacity: 1; -webkit-transform: translate3d(0, 0, 0); transform: translate3d(0, 0, 0); } }
+        @keyframes donorPreviewFade { from { opacity: 0; transform: translate3d(0, -10px, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
 
         /* שכבת overlay בזמן עדכון אוטומטי (סיום גלילה) */
         .live-view-update-overlay {
@@ -3163,7 +3183,11 @@
             border: 4px solid var(--cream-dark);
             border-top-color: var(--primary-gold);
             border-radius: 50%;
+            -webkit-animation: liveViewSpinner 0.8s linear infinite;
             animation: liveViewSpinner 0.8s linear infinite;
+        }
+        @-webkit-keyframes liveViewSpinner {
+            to { -webkit-transform: rotate(360deg); transform: rotate(360deg); }
         }
         @keyframes liveViewSpinner {
             to { transform: rotate(360deg); }
@@ -3302,6 +3326,7 @@
             padding: 6px 12px;
             border-radius: 8px;
             font-size: 14px;
+            -webkit-animation: donorPreviewFade 0.4s ease;
             animation: donorPreviewFade 0.4s ease;
         }
         .live-view-section::before {
@@ -3383,11 +3408,6 @@
             box-shadow: 0 9px 28px rgba(212, 175, 55, 0.45);
         }
 
-        .fullscreen-btn.active {
-            background: var(--primary-gold);
-            color: white;
-        }
-
         body.tv-mode .back-home-btn:focus,
         body.tv-mode .fullscreen-btn:focus {
             background: var(--primary-gold);
@@ -3400,6 +3420,11 @@
         body.tv-mode .fullscreen-btn:focus-visible {
             outline: 4px solid var(--primary-gold);
             outline-offset: 3px;
+        }
+
+        .fullscreen-btn.active {
+            background: var(--primary-gold);
+            color: white;
         }
 
         /* אזור מתרימים במרכז */
@@ -3425,7 +3450,6 @@
             width: 100%;
             max-width: 100%;
             height: 100vh;
-            contain: paint;
             overflow: hidden;
             position: relative;
             background: none;
@@ -3437,9 +3461,7 @@
             background-blend-mode: normal;
         }
 
-
         .live-donors-scroll {
-            contain: paint;
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
@@ -3447,12 +3469,18 @@
             padding: 10px;
             padding-bottom: 0;
             will-change: transform;
+            -webkit-backface-visibility: hidden;
             backface-visibility: hidden;
-            perspective: 1000px;
-            transform: translateZ(0); /* שכבת GPU נפרדת – גלילה חלקה במסכים גדולים */
+            /* transform:translateZ(0) מוסיפה שכבת GPU – הJS יכתוב translate3d בכל frame */
+            transform: translateZ(0);
         }
         .live-donors-scroll[data-scroll-animation] {
-            animation: donorsScrollUp var(--scroll-duration, 90s) linear infinite;
+            -webkit-animation: donorsScrollUp var(--scroll-duration, 90s) var(--scroll-resume-delay, 0ms) linear infinite;
+            animation: donorsScrollUp var(--scroll-duration, 90s) var(--scroll-resume-delay, 0ms) linear infinite;
+        }
+        @-webkit-keyframes donorsScrollUp {
+            0% { -webkit-transform: translate3d(0, 0, 0); transform: translate3d(0, 0, 0); }
+            100% { -webkit-transform: translate3d(0, -50%, 0); transform: translate3d(0, -50%, 0); }
         }
         @keyframes donorsScrollUp {
             0% { transform: translate3d(0, 0, 0); }
@@ -4100,10 +4128,54 @@
         .amount-value, .goal-value {
             min-width: 8ch;
             font-variant-numeric: tabular-nums;
-            contain: layout;
+            contain: paint;
         }
 
         /* אזור מובילים בצד - רוחב קבוע באחוזים */
+        /* פס סיכום כולל – מוצג כשעמודת המובילים מוסתרת */
+        .live-total-banner {
+            display: none;
+            position: absolute;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 50;
+            background: linear-gradient(135deg, rgba(212,175,55,0.97) 0%, rgba(180,140,30,0.97) 100%);
+            color: #fff;
+            border-radius: 16px;
+            padding: 10px 32px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.22);
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: 0.01em;
+            white-space: nowrap;
+            text-align: center;
+            pointer-events: none;
+            gap: 18px;
+            align-items: center;
+            flex-direction: row;
+        }
+        .live-total-banner.active {
+            display: flex;
+        }
+        .live-total-banner-amount {
+            font-size: 1.7rem;
+            font-weight: 900;
+            color: #fff;
+        }
+        .live-total-banner-label {
+            font-size: 1.1rem;
+            font-weight: 600;
+            opacity: 0.9;
+        }
+        .live-total-banner-percent {
+            font-size: 1.2rem;
+            font-weight: 700;
+            background: rgba(255,255,255,0.18);
+            border-radius: 8px;
+            padding: 2px 10px;
+        }
+
         .live-leaders-sidebar {
             position: relative;
             flex: 0 0 25% !important;
@@ -4210,13 +4282,21 @@
             overflow-x: hidden;
             height: 100%;
             contain: paint;
+            content-visibility: auto;
         }
 
         .live-leaders-scroll-inner[data-leaders-scroll] {
+            -webkit-animation: leadersScrollUp var(--leaders-scroll-duration, 60s) linear infinite;
             animation: leadersScrollUp var(--leaders-scroll-duration, 60s) linear infinite;
             will-change: transform;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
         }
 
+        @-webkit-keyframes leadersScrollUp {
+            0% { -webkit-transform: translate3d(0, 0, 0); transform: translate3d(0, 0, 0); }
+            100% { -webkit-transform: translate3d(0, calc(-1 * var(--leaders-scroll-distance, 500px)), 0); transform: translate3d(0, calc(-1 * var(--leaders-scroll-distance, 500px)), 0); }
+        }
         @keyframes leadersScrollUp {
             0% { transform: translate3d(0, 0, 0); }
             100% { transform: translate3d(0, calc(-1 * var(--leaders-scroll-distance, 500px)), 0); }
@@ -4497,7 +4577,7 @@
             color: var(--primary-gold-dark);
             min-width: 10ch;
             font-variant-numeric: tabular-nums;
-            contain: layout;
+            contain: paint;
         }
 
         .leader-item.rank-1 .leader-total {
@@ -4656,7 +4736,7 @@
             white-space: nowrap;
             min-width: 14ch;
             font-variant-numeric: tabular-nums;
-            contain: layout;
+            contain: paint;
         }
         /* הודעות */
         .notification {
@@ -4718,6 +4798,13 @@
             flex-direction: column;
         }
         .semifinal-video-overlay.show { display: flex !important; }
+        .semifinal-url-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .semifinal-url-row input { flex: 1; min-width: 0; }
+        .semifinal-url-row .btn-paste { flex-shrink: 0; white-space: nowrap; }
         .semifinal-video-header {
             display: flex;
             justify-content: space-between;
@@ -5349,36 +5436,96 @@
                 max-width: 25% !important;
             }
         }
-        /* תמיכה במסכי טלוויזיה גדולים - Android TV */
+        /* תמיכה במסכי טלוויזיה – מופעל רק כשמצב טלוויזיה מסומן */
         @media (min-width: 1920px) {
-            .sidebar-nav {
+            body.tv-mode {
+                font-size: 20px;
+            }
+            body.tv-mode h1, body.tv-mode .home-title, body.tv-mode .section-header {
+                font-size: 32px !important;
+            }
+            body.tv-mode h2, body.tv-mode .instructions-hero h1 {
+                font-size: 28px !important;
+            }
+            body.tv-mode .sidebar-nav {
                 max-width: 360px;
                 min-width: 320px;
             }
-            
-            .nav-item {
+            body.tv-mode .nav-item {
                 padding: 28px 40px;
                 font-size: 26px;
                 min-height: 70px;
             }
-            
-            .btn {
+            body.tv-mode .btn, body.tv-mode .external-action-button, body.tv-mode .support-button {
                 padding: 20px 40px;
-                font-size: 22px;
-                min-height: 60px;
+                font-size: 20px;
+                min-height: 48px;
                 min-width: 140px;
             }
-            
-            .content-section {
+            body.tv-mode .content-section {
                 padding: 60px;
             }
-            
-            .form-group input,
-            .form-group select {
+            body.tv-mode .form-group input,
+            body.tv-mode .form-group select {
                 padding: 18px;
                 font-size: 20px;
                 min-height: 56px;
             }
+            body.tv-mode .back-home-btn,
+            body.tv-mode .fullscreen-btn {
+                min-width: 48px;
+                min-height: 48px;
+            }
+        }
+
+        /* מתג מצב טלוויזיה – בדף הכניסה */
+        .tv-mode-toggle-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding: 12px 16px;
+            background: rgba(212, 175, 55, 0.08);
+            border-radius: 12px;
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            cursor: pointer;
+        }
+        .tv-mode-toggle-wrap label {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--brown-dark);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .tv-mode-switch {
+            position: relative;
+            width: 52px;
+            height: 28px;
+            background: rgba(139, 111, 71, 0.35);
+            border-radius: 28px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .tv-mode-switch.on {
+            background: var(--primary-gold);
+        }
+        .tv-mode-switch::before {
+            content: '';
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+        .tv-mode-switch.on::before {
+            transform: translateX(-24px);
         }
 
         @media (min-width: 2560px) {
@@ -5386,24 +5533,20 @@
                 max-width: 400px;
                 min-width: 360px;
             }
-            
             .nav-item {
                 padding: 32px 48px;
                 font-size: 28px;
                 min-height: 80px;
             }
-            
             .btn {
                 padding: 24px 48px;
                 font-size: 24px;
                 min-height: 68px;
                 min-width: 160px;
             }
-            
             .content-section {
                 padding: 80px;
             }
-            
             .form-group input,
             .form-group select {
                 padding: 20px;
@@ -6062,101 +6205,9 @@
         .raffle-section {
             background: linear-gradient(135deg, rgba(245, 230, 211, 0.95) 0%, rgba(255, 248, 220, 0.95) 100%);
         }
-
-        /* תמיכה במסכי טלוויזיה – מופעל רק כשמצב טלוויזיה מסומן */
-        @media (min-width: 1920px) {
-            body.tv-mode {
-                font-size: 20px;
-            }
-            body.tv-mode h1, body.tv-mode .home-title, body.tv-mode .section-header {
-                font-size: 32px !important;
-            }
-            body.tv-mode h2, body.tv-mode .instructions-hero h1 {
-                font-size: 28px !important;
-            }
-            body.tv-mode .sidebar-nav {
-                max-width: 360px;
-                min-width: 320px;
-            }
-            body.tv-mode .nav-item {
-                padding: 28px 40px;
-                font-size: 26px;
-                min-height: 70px;
-            }
-            body.tv-mode .btn, body.tv-mode .external-action-button, body.tv-mode .support-button {
-                padding: 20px 40px;
-                font-size: 20px;
-                min-height: 48px;
-                min-width: 140px;
-            }
-            body.tv-mode .content-section {
-                padding: 60px;
-            }
-            body.tv-mode .form-group input,
-            body.tv-mode .form-group select {
-                padding: 18px;
-                font-size: 20px;
-                min-height: 56px;
-            }
-            body.tv-mode .back-home-btn,
-            body.tv-mode .fullscreen-btn {
-                min-width: 48px;
-                min-height: 48px;
-            }
-        }
-
-        /* מתג מצב טלוויזיה – בדף הכניסה */
-        .tv-mode-toggle-wrap {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            margin-bottom: 20px;
-            padding: 12px 16px;
-            background: rgba(212, 175, 55, 0.08);
-            border-radius: 12px;
-            border: 1px solid rgba(212, 175, 55, 0.25);
-            cursor: pointer;
-        }
-        .tv-mode-toggle-wrap label {
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--brown-dark);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .tv-mode-switch {
-            position: relative;
-            width: 52px;
-            height: 28px;
-            background: rgba(139, 111, 71, 0.35);
-            border-radius: 28px;
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
-        .tv-mode-switch.on {
-            background: var(--primary-gold);
-        }
-        .tv-mode-switch::before {
-            content: '';
-            position: absolute;
-            top: 4px;
-            right: 4px;
-            width: 20px;
-            height: 20px;
-            background: white;
-            border-radius: 50%;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            transition: transform 0.3s ease;
-        }
-        .tv-mode-switch.on::before {
-            transform: translateX(-24px);
-        }
     </style>
 </head>
-<body lang="he" dir="rtl">
+<body>
     <script>
         (function(){ try { if (localStorage.getItem('tvModeEnabled') === '1') document.body.classList.add('tv-mode'); } catch(e) {} })();
     </script>
@@ -6173,11 +6224,11 @@
                 </button>
                 <div id="entrySheetUrlPanel" class="entry-sheet-url-panel hidden">
                     <label style="display: block; font-weight: 600; margin-bottom: 10px; font-size: 14px; color: var(--brown-dark);">קישור לשרת (אם החלפת גליון – הזן כאן את הקישור החדש):</label>
-                    <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: stretch;">
-                        <input type="url" id="entryCodeSheetUrlInput" class="app-lock-password-input" placeholder="https://script.google.com/macros/s/xxxx/exec" style="flex: 1; font-size: 14px; padding: 14px 18px;">
-                        <button type="button" class="btn" onclick="pasteIntoInput('entryCodeSheetUrlInput')" style="font-size: 14px; padding: 12px 20px; white-space: nowrap;" title="הדבק קישור מהלוח">📋 הדבק</button>
+                    <div style="margin-bottom: 12px;">
+                        <input type="url" id="entryCodeSheetUrlInput" class="app-lock-password-input" placeholder="https://script.google.com/macros/s/xxxx/exec" style="width: 100%; font-size: 14px; padding: 14px 18px; box-sizing: border-box;">
                     </div>
                     <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                        <button type="button" class="btn btn-paste" onclick="pasteIntoInput('entryCodeSheetUrlInput')" title="הדבק קישור מהלוח">📋 הדבק</button>
                         <button type="button" class="btn" onclick="saveEntryCodeSheetUrl()" style="font-size: 14px; padding: 12px 24px;">שמור קישור</button>
                         <span id="entryCodeUrlSavedMsg" style="display: none; color: var(--success); font-size: 14px; font-weight: 600;">✓ נשמר</span>
                     </div>
@@ -6246,16 +6297,7 @@
                 <button class="nav-item" data-section="management">ניהול</button>
                 <button class="nav-item" data-section="breakdown">פילוח נתונים</button>
                 <button class="nav-item" data-section="raffle">מערכת הגרלות</button>
-                <button class="nav-item" data-section="scouts">ניהול סיירות</button>
-                <button class="nav-item" data-section="toolkit">ארגז כלים לתתני״ק הצעיר</button>
-                <button class="nav-item" data-section="semifinal">חגיגת ניצחון</button>          
-                <button class="nav-item" data-section="finance">חישוב לכל השנה</button>
-                <button class="nav-item" data-section="loans">הלוואות</button>
-                <button class="nav-item" data-section="planning">תכנון קמפיין לשנים הבאות</button>
-                <button class="nav-item" data-section="groomGrant">מענק לחתנים</button>
-                <button class="nav-item" data-section="grants">קבלת מענקים למתרמים</button>
-                <button class="nav-item" data-section="addresses">כתובות</button>
-                <button class="nav-item" data-section="instructions">אודות התוכנה</button>
+                <button class="nav-item" data-section="semifinal">חגיגת ניצחון</button>
                 </div>
         </nav>
 
@@ -6334,7 +6376,10 @@
                         <div class="semifinal-form" style="margin-top: 16px; padding: 16px; background: rgba(0,0,0,0.03); border-radius: 12px;">
                             <div class="address-form-row">
                                 <label for="semifinalVideoUrl">קישור לסרטון (Google Drive):</label>
-                                <input type="text" id="semifinalVideoUrl" placeholder="https://drive.google.com/..." onchange="saveSemifinalSettings()">
+                                <div class="semifinal-url-row">
+                                    <input type="text" id="semifinalVideoUrl" placeholder="https://drive.google.com/..." onchange="saveSemifinalSettings()">
+                                    <button type="button" class="btn btn-paste" onclick="pasteSemifinalVideoUrl()" title="הדבק קישור מהלוח">הדבק</button>
+                                </div>
                             </div>
                             <div class="address-form-row">
                                 <label for="semifinalDuration">משך הצגה (דקות):</label>
@@ -6633,85 +6678,13 @@
                 <div class="management-nav-curtain">
                     <div class="management-nav-curtain-inner">
                         <button class="management-tab active" data-tab="donors">ניהול מתרימים</button>
-                        <button class="management-tab" data-tab="manualDonation">הוספת תרומה ידנית מהחפ״ק</button>
-                        <button class="management-tab" data-tab="pairs">ניהול זוגות</button>
                         <button class="management-tab" data-tab="groups">ניהול קבוצות</button>
                         <button class="management-tab" data-tab="liveview">הגדרות תצוגת לייב</button>
-                        <button class="management-tab" data-tab="calculator">מחשבון</button>
-                        <button class="management-tab" data-tab="sync">עדכונים</button>
-                        <button class="management-tab" data-tab="history">היסטוריה</button>
-                        <button class="management-tab" data-tab="reset">אפשרויות איפוס</button>
-                        <button class="management-tab" data-tab="password">הגדרת סיסמה</button>
+                        <button class="management-tab" data-tab="sync">הגדרות סנכרון</button>
                     </div>
                 </div>
 
                 <!-- מחשבון -->
-                <div class="management-content" id="calculatorContent">
-                    <div style="display: flex; justify-content: center; padding: 20px;">
-                        <div class="management-calculator-panel" id="managementCalculatorPanel" style="display: block;">
-                            <div class="management-calculator-display" id="managementCalculatorDisplay">0</div>
-                            <div class="management-calculator-grid">
-                                <button class="function" onclick="managementCalcClear()">C</button>
-                                <button class="function" onclick="managementCalcInput('±')">±</button>
-                                <button class="function" onclick="managementCalcInput('%')">%</button>
-                                <button class="operator" onclick="managementCalcInput('/')">÷</button>
-                                <button onclick="managementCalcInput('7')">7</button>
-                                <button onclick="managementCalcInput('8')">8</button>
-                                <button onclick="managementCalcInput('9')">9</button>
-                                <button class="operator" onclick="managementCalcInput('*')">×</button>
-                                <button onclick="managementCalcInput('4')">4</button>
-                                <button onclick="managementCalcInput('5')">5</button>
-                                <button onclick="managementCalcInput('6')">6</button>
-                                <button class="operator" onclick="managementCalcInput('-')">−</button>
-                                <button onclick="managementCalcInput('1')">1</button>
-                                <button onclick="managementCalcInput('2')">2</button>
-                                <button onclick="managementCalcInput('3')">3</button>
-                                <button class="operator" onclick="managementCalcInput('+')">+</button>
-                                <button class="zero" onclick="managementCalcInput('0')">0</button>
-                                <button onclick="managementCalcInput('.')">.</button>
-                                <button class="operator" onclick="managementCalcCalculate()">=</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ניהול זוגות – הוספת תרומה לזוג מתרימים (מחצית לכל אחד) -->
-                <div class="management-content" id="pairsContent">
-                    <div class="donors-management">
-                        <p style="font-size: 14px; color: var(--muted); margin-bottom: 20px;">בשבוע שלפני פורים מתרימים יוצאים בזוגות לאסוף בכתובות. הזן את הזוג ואת סה״כ הסכום שנאסף – התוכנה תחלק אוטומטית מחצית לכל מתרים.</p>
-                        <div class="pairs-form" style="background: linear-gradient(135deg, #fffbf0 0%, #fff8e6 100%); border: 2px solid var(--primary-gold); border-radius: 14px; padding: 24px; margin-bottom: 24px;">
-                            <div style="display: grid; gap: 16px;">
-                                <div>
-                                    <label class="manual-search-label">מתרים ראשון – חיפוש חכם</label>
-                                    <div class="donors-search-input-wrapper manual-donor-search-with-autocomplete" style="position: relative;">
-                                        <input type="text" id="pairsDonor1Input" class="donors-search-input manual-donor-search-input" placeholder="שם, מספר מתרים או קבוצה..." autocomplete="off">
-                                        <div id="pairsDonor1Autocomplete" class="manual-donor-autocomplete-list" style="display: none;"></div>
-                                    </div>
-                                    <div id="pairsDonor1Selected" style="margin-top: 8px; font-weight: 600; color: var(--primary-gold); min-height: 20px;"></div>
-                                </div>
-                                <div>
-                                    <label class="manual-search-label">מתרים שני – חיפוש חכם</label>
-                                    <div class="donors-search-input-wrapper manual-donor-search-with-autocomplete" style="position: relative;">
-                                        <input type="text" id="pairsDonor2Input" class="donors-search-input manual-donor-search-input" placeholder="שם, מספר מתרים או קבוצה..." autocomplete="off">
-                                        <div id="pairsDonor2Autocomplete" class="manual-donor-autocomplete-list" style="display: none;"></div>
-                                    </div>
-                                    <div id="pairsDonor2Selected" style="margin-top: 8px; font-weight: 600; color: var(--primary-gold); min-height: 20px;"></div>
-                                </div>
-                                <div>
-                                    <label for="pairsAmountInput" class="manual-search-label">סה״כ סכום שנאסף (₪)</label>
-                                    <input type="number" id="pairsAmountInput" placeholder="למשל: 1800" min="1" step="1" style="padding: 14px 18px; font-size: 18px; border: 2px solid var(--border); border-radius: 10px; width: 100%; max-width: 200px;">
-                                    <p id="pairsSplitPreview" style="margin-top: 8px; font-size: 13px; color: var(--muted);"></p>
-                                </div>
-                                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                                    <button type="button" class="btn btn-primary" id="pairsConfirmBtn" onclick="confirmPairsDonation()" disabled>אשר והוסף תרומה לזוג</button>
-                                    <button type="button" class="btn btn-secondary" onclick="clearPairsSelection()">נקה בחירה</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="pairsRecentList" style="font-size: 13px; color: var(--muted);"></div>
-                    </div>
-                </div>
-
                 <!-- ניהול קבוצות -->
                 <div class="management-content" id="groupsContent">
                     <div class="management-actions-row" style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
@@ -6755,25 +6728,8 @@
                     </div>
                 </div>
 
-                <!-- הוספת תרומה באופן ידני מהחפ״ק -->
-                <div class="management-content" id="manualDonationContent">
-                    <div class="donors-management">
-                        <div class="donors-search-bar">
-                            <label for="manualDonorSearchInput" class="manual-search-label">🔍 חיפוש חכם – שם, מספר מתרים, קבוצה, סכום</label>
-                            <div class="donors-search-input-wrapper manual-donor-search-with-autocomplete">
-                                <input type="text" id="manualDonorSearchInput" class="donors-search-input manual-donor-search-input" placeholder="שם, מספר מתרים, קבוצה..." autocomplete="off">
-                                <div id="manualDonorAutocompleteList" class="manual-donor-autocomplete-list" style="display: none;"></div>
-                            </div>
-                            <div class="donors-search-meta" id="manualDonorsSearchMeta"></div>
-                        </div>
-                        <div class="donors-list" id="manualDonorsListContainer">
-                            <!-- יוטען דינמית -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- היסטוריה -->
-                <div class="management-content" id="historyContent">
+                <!-- historyContent הוסר -->
+                <div class="management-content" id="historyContent" style="display:none!important">
                     <div style="padding: 25px; background: #fafafa; min-height: 100%;">
                         
                         <!-- כותרת -->
@@ -6943,8 +6899,8 @@
                     </div>
                 </div>
 
-                <!-- אפשרויות איפוס -->
-                <div class="management-content" id="resetContent">
+                <!-- resetContent הוסר -->
+                <div class="management-content" id="resetContent" style="display:none!important">
                     <div class="management-reset-panel">
                         <h3>כלי ניקוי מהירים</h3>
                         <div class="reset-actions">
@@ -6960,6 +6916,13 @@
                     <div class="liveview-settings-panel">
                         <h3>הגדרות תצוגת לייב</h3>
                         <p style="color: var(--muted); margin-bottom: 20px;">הגדר את אופן התצוגה במסך הלייב - צבעים, גדלים, מה להציג ועוד</p>
+                        <div style="margin-bottom: 20px; padding: 16px; background: rgba(212,175,55,0.15); border-radius: 12px; border: 1px solid rgba(212,175,55,0.3);">
+                            <strong>תצוגת לייב נפרדת:</strong> קובץ <code>liveview.html</code> מציג רק את התצוגה (ללא ניהול). מתאים למסך טלוויזיה או חלון נפרד. ההגדרות כאן נשמרות ומשמשות את הקובץ הנפרד.
+                            <br><br>
+                            <button type="button" class="btn btn-primary" onclick="openStandaloneLiveView()" style="display: inline-flex; align-items: center; gap: 8px;">
+                                <span>📺</span> פתח תצוגת לייב נפרדת
+                            </button>
+                        </div>
                         
                         <div class="liveview-settings-grid">
                             <div class="liveview-setting-group">
@@ -7079,13 +7042,13 @@
                                 <h4>מרווחים ופדינג</h4>
                                 <div class="liveview-setting-row">
                                     <label>מרווח בין מתרימים:</label>
-                                    <input type="range" id="liveviewDonorGap" min="0" max="40" value="10" oninput="updateLiveViewSettings()">
-                                    <span id="liveviewDonorGapValue">10px</span>
+                                    <input type="range" id="liveviewDonorGap" min="0" max="40" value="0" oninput="updateLiveViewSettings()">
+                                    <span id="liveviewDonorGapValue">0px</span>
                                 </div>
                                 <div class="liveview-setting-row">
                                     <label>מרווח בין קבוצות:</label>
-                                    <input type="range" id="liveviewGroupGap" min="0" max="60" value="10" oninput="updateLiveViewSettings()">
-                                    <span id="liveviewGroupGapValue">10px</span>
+                                    <input type="range" id="liveviewGroupGap" min="0" max="60" value="0" oninput="updateLiveViewSettings()">
+                                    <span id="liveviewGroupGapValue">0px</span>
                                 </div>
                                 <div class="liveview-setting-row">
                                     <label>פדינג כרטיסית מתרים:</label>
@@ -7193,6 +7156,13 @@
                                     </label>
                                 </div>
                                 <div class="liveview-setting-row">
+                                    <label>הסתר את 5 כרטיסיות המובילים (דירוג 1–5):</label>
+                                    <label class="switch">
+                                        <input type="checkbox" id="liveviewHideLeaderCards" onchange="updateLiveViewSettings()">
+                                        <span class="switch-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="liveview-setting-row">
                                     <label>הצג רשימת מתרימים:</label>
                                     <label class="switch">
                                         <input type="checkbox" id="liveviewShowDonors" checked onchange="updateLiveViewSettings()">
@@ -7210,6 +7180,13 @@
                                     <label>הסתר עמודת מובילים והצג שני טורים:</label>
                                     <label class="switch">
                                         <input type="checkbox" id="liveviewHideLeadersColumn" onchange="updateLiveViewSettings()">
+                                        <span class="switch-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="liveview-setting-row">
+                                    <label>הצג פס סיכום כולל כשעמודת מובילים מוסתרת:</label>
+                                    <label class="switch">
+                                        <input type="checkbox" id="liveviewShowTotalBanner" onchange="updateLiveViewSettings()">
                                         <span class="switch-slider"></span>
                                     </label>
                                 </div>
@@ -7376,61 +7353,68 @@
                         <div class="liveview-settings-actions">
                             <button class="btn" onclick="saveLiveViewSettings()">שמור הגדרות</button>
                             <button class="btn btn-secondary" onclick="resetLiveViewSettings()">איפוס לברירת מחדל</button>
+                            <button class="btn" onclick="applyTVMode()" style="background: linear-gradient(135deg,#1a1a2e,#16213e); color:#fff; border:none; display:flex; align-items:center; gap:7px;">
+                                <span style="font-size:1.2em;">📺</span> התאם לטלוויזיה
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- עדכונים -->
+                <!-- הגדרות סנכרון -->
                 <div class="management-content" id="syncContent">
                     <div class="sync-settings-panel">
-                        <h3>עדכונים מנדרים פלוס</h3>
-                        
-                        
+                        <h3>הגדרות סנכרון</h3>
+                        <p style="color: var(--muted); margin-bottom: 20px;">המערכת משקפת נתונים מנדרים פלוס בלבד. הגדר את כתובת ה-API ואת הגליון, וסנכרן נתונים.</p>
+
+                        <!-- פעולות עיקריות -->
                         <div style="margin-bottom: 25px;">
-                            <h4 style="margin-bottom: 15px;">פעולות עדכון</h4>
+                            <h4 style="margin-bottom: 15px;">משיכת נתונים מנדרים פלוס</h4>
                             <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                                 <button class="btn btn-success" onclick="runSequentialOp(()=>syncWithNedarimPlus(), 'סנכרון תרומות')" id="nedarimSyncBtn">
-                                    🔄 סנכרון תרומות
-                                </button>
-                                <button class="btn btn-info" onclick="runSequentialOp(()=>checkTotalAmountFromAPI(), 'בדוק סכום כולל')" id="checkTotalBtn" style="background: #17a2b8; color: white;">
-                                    🔍 בדוק סכום כולל מ-API
+                                    🔄 סנכרן תרומות מנדרים פלוס
                                 </button>
                                 <button class="btn btn-primary" onclick="runSequentialOp(()=>loadMatrimFromNedarim(), 'טען מתרימים מנדרים פלוס')" id="nedarimLoadMatrimBtn">
                                     📥 טען מתרימים מנדרים פלוס
+                                </button>
+                                <button class="btn btn-info" onclick="runSequentialOp(()=>checkTotalAmountFromAPI(), 'בדוק סכום כולל')" id="checkTotalBtn" style="background: #17a2b8; color: white;">
+                                    🔍 בדוק סכום כולל
                                 </button>
                             </div>
                         </div>
 
                         <div class="nedarim-sync-status" id="nedarimSyncStatus"></div>
-                        
+
                         <!-- גליון Google Sheets -->
                         <div style="margin-top: 30px; padding-top: 30px; border-top: 2px solid var(--border);">
                             <h3 style="margin-bottom: 15px;">🗂️ גליון Google Sheets</h3>
-                            
+                            <p style="color: var(--muted); font-size: 13px; margin-bottom: 15px;">הגליון משמש לשמירת נתוני הקבוצות והמתרימים (ייצוא/ייבוא). אינו משמש לדחיפת נתונים לנדרים.</p>
+
                             <div class="sync-input-group" style="margin-bottom: 20px;">
                                 <label style="display: block; margin-bottom: 8px; font-weight: 500;">כתובת Web App של Google Apps Script:</label>
-                                <div style="display: flex; gap: 8px; align-items: stretch;">
-                                    <input type="text" id="googleSheetsWebAppUrl" placeholder="https://script.google.com/macros/s/xxxx/exec" style="flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px;" onchange="saveGoogleSheetsSettings(); applySheetSyncSettings();">
-                                    <button type="button" class="btn btn-secondary" onclick="pasteIntoInput('googleSheetsWebAppUrl'); saveGoogleSheetsSettings(); applySheetSyncSettings();" style="white-space: nowrap;" title="הדבק קישור מהלוח">📋 הדבק</button>
+                                <div style="margin-bottom: 10px;">
+                                    <input type="text" id="googleSheetsWebAppUrl" placeholder="https://script.google.com/macros/s/xxxx/exec" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; box-sizing: border-box;" onchange="saveGoogleSheetsSettings(); applySheetSyncSettings();">
+                                </div>
+                                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                                    <button type="button" class="btn btn-paste" onclick="pasteIntoInput('googleSheetsWebAppUrl'); saveGoogleSheetsSettings(); applySheetSyncSettings();" title="הדבק קישור מהלוח">📋 הדבק</button>
                                 </div>
                                 <small style="display: block; margin-top: 5px; color: var(--muted);">
                                     ה-URL שמתקבל אחרי פריסת הקוד ב-Google Apps Script.
                                 </small>
                             </div>
-                            
+
                             <div class="sync-actions" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
                                 <button class="btn btn-success" onclick="runSequentialOp(()=>testGoogleSheetsConnection(), 'בדוק חיבור')">🔌 בדוק חיבור</button>
-                                <button class="btn btn-primary" onclick="runSequentialOp(()=>loadFromGoogleSheets(), 'טען מהגליון')">📥 טען מהגליון</button>
-                                <button class="btn btn-secondary" onclick="runSequentialOp(()=>saveToGoogleSheets(), 'שמור לגליון')">💾 שמור לגליון</button>
+                                <button class="btn btn-primary" onclick="runSequentialOp(()=>loadFromGoogleSheets(), 'טען מהגליון')">📥 טען קבוצות ומתרימים מהגליון</button>
+                                <button class="btn btn-secondary" onclick="runSequentialOp(()=>saveToGoogleSheets(), 'שמור לגליון')">💾 שמור קבוצות ומתרימים לגליון</button>
                             </div>
-                            
+
                             <div class="sync-status" id="googleSheetsSyncStatus" style="display: none; padding: 10px; border-radius: 6px; margin-bottom: 15px;"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- הגדרת סיסמה -->
-                <div class="management-content" id="passwordContent">
+                <!-- passwordContent הוסר -->
+                <div class="management-content" id="passwordContent" style="display:none!important">
                     <div class="password-settings-panel">
                         <h3>מסך כניסה והגנת סיסמה</h3>
                         <div class="password-toggle-row" style="margin-bottom: 16px; padding: 14px; background: #f0f9ff; border-radius: 12px; border: 1px solid #bae6fd;">
@@ -7483,6 +7467,13 @@
                         <path d="M3 10.5L12 3L21 10.5V20C21 20.55 20.55 21 20 21H15C14.45 21 14 20.55 14 20V15C14 14.45 13.55 14 13 14H11C10.45 14 10 14.45 10 15V20C10 20.55 9.55 21 9 21H4C3.45 21 3 20.55 3 20V10.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </button>
+                <!-- פס סיכום כולל – מוצג כשעמודת המובילים מוסתרת -->
+                <div class="live-total-banner" id="liveTotalBanner">
+                    <span class="live-total-banner-label">סה"כ נאסף:</span>
+                    <span class="live-total-banner-amount" id="liveTotalBannerAmount">₪0</span>
+                    <span class="live-total-banner-percent" id="liveTotalBannerPercent" style="display:none;"></span>
+                </div>
+
                 <div class="live-content">
                     <!-- אזור מובילים בצד -->
                     <div class="live-leaders-sidebar">
@@ -8181,9 +8172,6 @@
         const recentlyUpdatedDonors = new Map(); // Map<donorId, timestamp>
         const recentlyUpdatedGroups = new Map(); // Map<groupId, timestamp> – מונע דריסת שם קבוצה מטעינה מהגליון
         const PROTECTION_WINDOW_MS = 300000; // 5 דקות הגנה – מונע דריסת שמות/סכומים שעודכנו לאחרונה
-        // מתרימים שנמחקו במפורש – לא להחזיר אותם מטעינה מהגליון או מנדרים פלוס (מונע "קפיצה חזרה")
-        let deletedDonorIds = new Set();      // Set<string> – מזהה מקומי
-        let deletedDonorMatrimIds = new Set(); // Set<string> – מספר מתרים (nedarimMatrimId)
         let lastSaveToSheetsTime = 0; // אחרי שמירה – לא לטעון מהגליון 15 שניות (מונע דריסה)
         // דגל: במהלך עדכון לנדרים/גליון – לא לטעון מהגליון כדי לא לדרוס נתונים
         let isUpdatingDonorForNedarim = false;
@@ -9466,26 +9454,6 @@
             setTimeout(() => input.focus(), 100);
         }
 
-        function toggleTvMode() {
-            const isOn = document.body.classList.toggle('tv-mode');
-            try { localStorage.setItem('tvModeEnabled', isOn ? '1' : '0'); } catch(e) {}
-            const sw = document.getElementById('tvModeSwitch');
-            const wrap = document.querySelector('.tv-mode-toggle-wrap');
-            if (sw) { sw.classList.toggle('on', isOn); sw.setAttribute('aria-checked', isOn); }
-            if (wrap) wrap.setAttribute('aria-pressed', isOn);
-        }
-
-        function initTvModeToggle() {
-            const isOn = document.body.classList.contains('tv-mode');
-            const sw = document.getElementById('tvModeSwitch');
-            const wrap = document.querySelector('.tv-mode-toggle-wrap');
-            if (sw) { sw.classList.toggle('on', isOn); }
-            if (wrap) wrap.setAttribute('aria-pressed', isOn);
-        }
-
-        window.toggleTvMode = toggleTvMode;
-        window.initTvModeToggle = initTvModeToggle;
-
         async function pasteIntoInput(inputId) {
             const el = document.getElementById(inputId);
             if (!el) return;
@@ -9648,6 +9616,23 @@
         function toggleEntryCodeVisibility(show) {
             const input = document.getElementById('entryCodeInput');
             if (input) input.type = show ? 'text' : 'password';
+        }
+
+        function toggleTvMode() {
+            const isOn = document.body.classList.toggle('tv-mode');
+            try { localStorage.setItem('tvModeEnabled', isOn ? '1' : '0'); } catch(e) {}
+            const sw = document.getElementById('tvModeSwitch');
+            const wrap = document.querySelector('.tv-mode-toggle-wrap');
+            if (sw) { sw.classList.toggle('on', isOn); sw.setAttribute('aria-checked', isOn); }
+            if (wrap) wrap.setAttribute('aria-pressed', isOn);
+        }
+
+        function initTvModeToggle() {
+            const isOn = document.body.classList.contains('tv-mode');
+            const sw = document.getElementById('tvModeSwitch');
+            const wrap = document.querySelector('.tv-mode-toggle-wrap');
+            if (sw) { sw.classList.toggle('on', isOn); }
+            if (wrap) wrap.setAttribute('aria-pressed', isOn);
         }
 
         function toggleAppLockVisibility(show) {
@@ -11194,6 +11179,25 @@
         }
 
         // ——— חגיגת ניצחון: המרת קישור Google Drive ל-embed ———
+        function pasteSemifinalVideoUrl() {
+            const input = document.getElementById('semifinalVideoUrl');
+            if (!input) return;
+            if (navigator.clipboard && navigator.clipboard.readText) {
+                navigator.clipboard.readText().then(function (text) {
+                    if (text && typeof text === 'string') {
+                        input.value = text.trim();
+                        input.dispatchEvent(new Event('change', { bubbles: true }));
+                        if (typeof showNotification === 'function') showNotification('הקישור הודבק');
+                    } else {
+                        if (typeof showNotification === 'function') showNotification('אין טקסט להדבקה בלוח', 'error');
+                    }
+                }).catch(function () {
+                    if (typeof showNotification === 'function') showNotification('לא ניתן לגשת ללוח. נסה להדביק ידנית (Ctrl+V).', 'error');
+                });
+            } else {
+                if (typeof showNotification === 'function') showNotification('הדפדפן לא תומך בהדבקה מלוח. השתמש ב־Ctrl+V בשדה.', 'error');
+            }
+        }
         function getEmbedUrlFromDriveUrl(url) {
             if (!url || typeof url !== 'string') return '';
             const m = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
@@ -11721,8 +11725,8 @@
             cardBorderColor: '#D4AF37',
             cardBorderRadius: 18,
             cardShadow: 12,
-            donorGap: 10,
-            groupGap: 10,
+            donorGap: 3,
+            groupGap: 3,
             donorCardPadding: 14,
             leaderCardPadding: 12,
             leadersGap: 14,
@@ -11743,6 +11747,8 @@
             showDonors: true,
             showSummary: true,
             hideLeadersColumn: false,
+            hideLeaderCards: false,
+            showTotalBanner: false,
             donorsScrollSpeed: 50,
             enableAnimations: true,
             enableAutoScroll: true,
@@ -12017,6 +12023,10 @@
             if (enableTransitions) enableTransitions.checked = liveViewSettings.enableTransitions !== false;
             const hideLeadersColumn = document.getElementById('liveviewHideLeadersColumn');
             if (hideLeadersColumn) hideLeadersColumn.checked = liveViewSettings.hideLeadersColumn === true;
+            const hideLeaderCardsEl = document.getElementById('liveviewHideLeaderCards');
+            if (hideLeaderCardsEl) hideLeaderCardsEl.checked = liveViewSettings.hideLeaderCards === true;
+            const showTotalBannerEl = document.getElementById('liveviewShowTotalBanner');
+            if (showTotalBannerEl) showTotalBannerEl.checked = liveViewSettings.showTotalBanner === true;
             if (groupsSortBy) groupsSortBy.value = liveViewSettings.groupsSortBy || 'name';
             if (groupsFilter) groupsFilter.value = liveViewSettings.groupsFilter || 'all';
             if (donorsSortBy) donorsSortBy.value = liveViewSettings.donorsSortBy || 'name';
@@ -12029,7 +12039,11 @@
             if (skipStorage) {
                 doLoad(null);
             } else {
-                storageGetItem('liveViewSettings', doLoad);
+                // טעינה מ-localStorage בלבד – ללא קריאה מהגליון (מניעת דריסה מבין מסכים)
+                try {
+                    var _saved = localStorage.getItem('liveViewSettings');
+                    doLoad(_saved ? JSON.parse(_saved) : null);
+                } catch(e) { doLoad(null); }
             }
         }
 
@@ -12232,6 +12246,8 @@
                 showDonors: showDonors ? showDonors.checked : liveViewSettings.showDonors,
                 showSummary: showSummary ? showSummary.checked : liveViewSettings.showSummary,
                 hideLeadersColumn: document.getElementById('liveviewHideLeadersColumn') ? document.getElementById('liveviewHideLeadersColumn').checked : liveViewSettings.hideLeadersColumn,
+                hideLeaderCards: document.getElementById('liveviewHideLeaderCards') ? document.getElementById('liveviewHideLeaderCards').checked : liveViewSettings.hideLeaderCards,
+                showTotalBanner: document.getElementById('liveviewShowTotalBanner') ? document.getElementById('liveviewShowTotalBanner').checked : liveViewSettings.showTotalBanner,
                 donorsScrollSpeed: donorsScrollSpeed ? parseInt(donorsScrollSpeed.value) : liveViewSettings.donorsScrollSpeed,
                 enableAnimations: enableAnimations ? enableAnimations.checked : liveViewSettings.enableAnimations,
                 enableAutoScroll: enableAutoScroll ? enableAutoScroll.checked : liveViewSettings.enableAutoScroll,
@@ -12251,12 +12267,8 @@
                 liveViewSidepanelIntervalMinutes: document.getElementById('liveviewSidepanelIntervalMinutes') ? (parseInt(document.getElementById('liveviewSidepanelIntervalMinutes').value) || 10) : (liveViewSettings.liveViewSidepanelIntervalMinutes || 10),
             };
 
-            // שמירת ההגדרות
+            // שמירת ההגדרות – localStorage בלבד, ללא סנכרון לגליון (מניעת קפיצות כשכמה מסכים פתוחים)
             try { localStorage.setItem('liveViewSettings', JSON.stringify(liveViewSettings)); } catch (e) {}
-            storageSetItem('liveViewSettings', liveViewSettings);
-            if (typeof saveToGoogleSheets === 'function') {
-                saveToGoogleSheets().catch(() => {});
-            }
             
             // עדכון המשתנה הגלובלי מיד כדי שהפונקציה showNotification תבדוק נכון
             const showNotificationsCheckbox = document.getElementById('liveviewShowNotificationsOnLiveView');
@@ -12311,8 +12323,8 @@
                 cardBorderColor: '#D4AF37',
                 cardBorderRadius: 18,
                 cardShadow: 12,
-                donorGap: 10,
-                groupGap: 10,
+                donorGap: 3,
+                groupGap: 3,
                 donorCardPadding: 14,
                 leaderCardPadding: 12,
                 leadersGap: 14,
@@ -12333,6 +12345,8 @@
                 showDonors: true,
                 showSummary: true,
                 hideLeadersColumn: false,
+                hideLeaderCards: false,
+                showTotalBanner: false,
                 donorsScrollSpeed: 50,
                 enableAnimations: true,
                 enableAutoScroll: true,
@@ -12353,9 +12367,55 @@
             };
             liveViewSettings = defaults;
             try { localStorage.setItem('liveViewSettings', JSON.stringify(defaults)); } catch (e) {}
-            storageSetItem('liveViewSettings', defaults);
             loadLiveViewSettings(true);
             showNotification('הגדרות תצוגת לייב אופסו לברירת מחדל');
+        }
+
+        /** פותח את תצוגת הלייב הנפרדת (liveview.html) בחלון חדש – עם ההגדרות והכתובת הנוכחיות */
+        function openStandaloneLiveView() {
+            saveLiveViewSettings();
+            const url = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').trim();
+            if (!url) {
+                showNotification('נא להגדיר כתובת Web App בהגדרות סנכרון לפני פתיחת התצוגה הנפרדת', 'warning');
+                return;
+            }
+            const liveViewPath = (typeof window !== 'undefined' && window.location) 
+                ? new URL('liveview.html', window.location.href).href 
+                : 'liveview.html';
+            const params = new URLSearchParams();
+            params.set('sheetUrl', url);
+            params.set('settings', encodeURIComponent(JSON.stringify(liveViewSettings)));
+            const fullUrl = liveViewPath + (liveViewPath.includes('?') ? '&' : '?') + params.toString();
+            window.open(fullUrl, '_blank', 'noopener,noreferrer');
+        }
+
+        // מצב טלוויזיה – מכוונן את כל ההגדרות לתצוגה חלקה ונוחה על מסך TV
+        function applyTVMode() {
+            if (!confirm('להחיל מצב טלוויזיה? ההגדרות הנוכחיות ייחלפו בהגדרות מותאמות לטלוויזיה.')) return;
+            const tvSettings = Object.assign({}, liveViewSettings, {
+                // גופנים גדולים יותר לנוחות צפייה מרחוק
+                titleSize: 36,
+                donorNameSize: 22,
+                amountSize: 17,
+                groupNameSize: 32,
+                donorGroupSize: 15,
+                // ביטול אפקטים שגורמים לרינדור כבד בטלוויזיה
+                enableHoverEffects: false,
+                enableTransitions: false,
+                enableAnimations: false,
+                // גלילה איטית יותר – נוחה לקריאה על TV גדול
+                donorsScrollSpeed: 28,
+                // רווחים מוגדלים לכרטיסיות
+                donorGap: 8,
+                groupGap: 8,
+                donorCardPadding: 16,
+                cardBorderRadius: 14,
+                cardShadow: 8,
+            });
+            liveViewSettings = tvSettings;
+            try { localStorage.setItem('liveViewSettings', JSON.stringify(tvSettings)); } catch (e) {}
+            loadLiveViewSettings(true);
+            showNotification('✅ מצב טלוויזיה הופעל – גלילה חלקה ותצוגה מותאמת');
         }
 
         // פונקציה להמרת hex ל-rgba
@@ -12414,6 +12474,7 @@
                 .leaders-title {
                     font-size: ${liveViewSettings.titleSize}px !important;
                     color: ${liveViewSettings.leadersTitleColor} !important;
+                    display: ${liveViewSettings.hideLeaderCards ? 'none' : 'block'} !important;
                 }
                 .live-donor-name {
                     font-size: ${liveViewSettings.donorNameSize}px !important;
@@ -12551,6 +12612,13 @@
                 ` : ''}
             `;
             document.head.appendChild(style);
+
+            // הצגה/הסתרה של פס הסיכום הכולל
+            const totalBanner = document.getElementById('liveTotalBanner');
+            if (totalBanner) {
+                const shouldShow = liveViewSettings.showTotalBanner && liveViewSettings.hideLeadersColumn;
+                totalBanner.classList.toggle('active', !!shouldShow);
+            }
 
             // עדכון מהירות גלילה - יישום יבוצע בעת הפעלת הגלילה
             // המהירות תשמר ב-liveViewSettings ותיושם בעת restart
@@ -12807,7 +12875,10 @@
                     }
                     
                     // טעינה אסינכרונית של כל הנתונים
-                    const [savedDonors, savedGroups, savedDefaultGoal, savedFinance, savedLoans, savedToolkitTips, savedScouts, savedGroomGrants, savedAddresses, savedLiveViewSettings] = await Promise.all([
+                    // liveViewSettings נטען מ-localStorage בלבד (לא מהגליון) – כל מסך שומר הגדרות משלו
+                    const _lvsRaw = localStorage.getItem('liveViewSettings');
+                    const savedLiveViewSettings = _lvsRaw ? (function(){ try { return JSON.parse(_lvsRaw); } catch(e){ return null; } })() : null;
+                    const [savedDonors, savedGroups, savedDefaultGoal, savedFinance, savedLoans, savedToolkitTips, savedScouts, savedGroomGrants, savedAddresses] = await Promise.all([
                         storageGetItemSync('donors'),
                         storageGetItemSync('groups'),
                         storageGetItemSync('defaultDonorGoal'),
@@ -12816,20 +12887,10 @@
                         storageGetItemSync('toolkitTips'),
                         storageGetItemSync('scoutsSchedule'),
                         storageGetItemSync('groomGrants'),
-                        storageGetItemSync('addresses'),
-                        storageGetItemSync('liveViewSettings')
+                        storageGetItemSync('addresses')
                     ]);
                     
                     if (savedDonors) donors = savedDonors;
-                    // טעינת רשימת מתרימים שנמחקו במפורש (מונע החזרה מטעינה מהגליון/נדרים)
-                    try {
-                        const savedDeleted = localStorage.getItem('deletedDonors');
-                        if (savedDeleted) {
-                            const parsed = JSON.parse(savedDeleted);
-                            if (parsed.ids && Array.isArray(parsed.ids)) deletedDonorIds = new Set(parsed.ids);
-                            if (parsed.matrimIds && Array.isArray(parsed.matrimIds)) deletedDonorMatrimIds = new Set(parsed.matrimIds);
-                        }
-                    } catch (e) { console.warn('שגיאה בטעינת deletedDonors:', e); }
                     // תמיד טוענים מהגליון כשיש URL – הגליון הוא מקור האמת
                     const hasSheetsUrlForLoad = ((typeof googleSheetsWebAppUrl !== 'undefined' && googleSheetsWebAppUrl) || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || (typeof DEFAULT_GOOGLE_SHEETS_URL !== 'undefined' ? DEFAULT_GOOGLE_SHEETS_URL : '') || '').toString().trim();
                     let sheetLoadedOk = false;
@@ -12987,9 +13048,12 @@
                         console.warn('⚠️ שגיאה בסנכרון לבסיס הנתונים:', err);
                     });
                     
-                    // ⚠️ שמירה לגליון לא מתבצעת כאן – רק בעדכון מתוזמן (סיום גלילה / כל X דקות) – מונע קפיצות בתצוגת לייב
-                    
-                    console.log('💾 נתונים נשמרו אוטומטית (מקומית)');
+                    // עדכון ישיר לגליון – מנגנון יחיד: כל saveData() מפעיל שמירה לגליון (דיבאונס 250ms, מונע כפילויות)
+                    if (window._donorsGroupsToSheetDebounce) clearTimeout(window._donorsGroupsToSheetDebounce);
+                    window._donorsGroupsToSheetDebounce = setTimeout(function() {
+                        window._donorsGroupsToSheetDebounce = null;
+                        if (typeof saveDonorsAndGroupsToSheets === 'function') saveDonorsAndGroupsToSheets().then(function(r) { if (r && r.success && typeof lastSaveToSheetsTime !== 'undefined') lastSaveToSheetsTime = Date.now(); });
+                    }, 250);
                 } catch (e) {
                     console.error('שגיאה בשמירת נתונים:', e);
                 }
@@ -13405,9 +13469,18 @@
                 return;
             }
 
+            // ביטול RAF קיים
             if (state.handle) {
                 cancelAnimationFrame(state.handle);
                 state.handle = null;
+            }
+
+            // ניקוי CSS animation – גלילה תנוהל בJS בלבד (תואם גם לדפדפני TV)
+            container.removeAttribute('data-scroll-animation');
+            container.style.animation = 'none';
+            if (state.onIteration) {
+                container.removeEventListener('animationiteration', state.onIteration);
+                state.onIteration = null;
             }
 
             const halfHeight = container.scrollHeight / 2;
@@ -13417,38 +13490,82 @@
             }
 
             state.distance = halfHeight;
-            state.offset = 0;
             donorsScrollIsRunning = true;
             donorsScrollLastTime = performance.now();
             if (lastLiveViewUpdateAt === 0) lastLiveViewUpdateAt = Date.now();
 
-            // גלילה ב-CSS animation – רצה על ה-compositor, ללא רעידות במסכים גדולים
             const speedValue = liveViewSettings.donorsScrollSpeed || 50;
             const speed = 5 + (speedValue - 10) * 65 / 90; // px/sec
-            const durationSec = halfHeight / speed;
-            const durationMs = Math.round(Math.max(20, durationSec * 1000));
-            container.style.setProperty('--scroll-duration', durationMs + 'ms');
-            container.removeAttribute('data-scroll-animation');
-            container.offsetHeight; // force reflow
-            container.setAttribute('data-scroll-animation', '1');
 
-            var onIteration = function() {
-                donorsScrollLastTime = performance.now();
-                if ((liveViewSettings.liveViewUpdateWhen || 'end') === 'end' && typeof onDonorsScrollCycleComplete === 'function') onDonorsScrollCycleComplete().catch(() => {});
-            };
-            container.removeEventListener('animationiteration', onIteration);
-            container.addEventListener('animationiteration', onIteration);
-            state.onIteration = onIteration;
+            // המשך מנקודת העצירה האחרונה (ערך שמור ב-_scrollSavedY)
+            let currentY = (container._scrollSavedY && container._scrollSavedY < 0) ? container._scrollSavedY : 0;
+            container._scrollSavedY = 0;
+            container.style.transform = 'translate3d(0,' + currentY + 'px,0)';
+
+            let lastTimestamp = null;
+            let cycleDebounce = false;
+
+            function donorsScrollTick(timestamp) {
+                if (!donorsScrollIsRunning) {
+                    state.handle = null;
+                    return;
+                }
+
+                if (lastTimestamp === null) lastTimestamp = timestamp;
+                var rawDelta = timestamp - lastTimestamp;
+                // מגביל ל-33ms: מונע קפיצה גדולה אחרי השהייה (למשל switch tab)
+                // אם יש frame drop קל (>16ms) – מחלק אותו לשניים כדי להחליק
+                var delta = rawDelta > 100 ? 16 : Math.min(33, rawDelta);
+                lastTimestamp = timestamp;
+
+                currentY -= speed * delta / 1000;
+
+                // לולאה seamless: כשמגיעים לסוף עותק אחד – חוזרים לנקודה זהה ויזואלית
+                if (currentY <= -halfHeight) {
+                    currentY += halfHeight;
+                    donorsScrollLastTime = timestamp;
+                    // הפעלת עדכון בסיום מחזור (מצב 'end')
+                    if (!cycleDebounce && (liveViewSettings.liveViewUpdateWhen || 'end') === 'end' && typeof onDonorsScrollCycleComplete === 'function') {
+                        cycleDebounce = true;
+                        setTimeout(function() { cycleDebounce = false; }, 2000);
+                        onDonorsScrollCycleComplete().catch(function() {});
+                    }
+                }
+
+                // עיגול לפיקסל שלם – מונע רעידה של תת-פיקסל בטלוויזיות ומסכים עם DPR שונה
+                var roundedY = Math.round(currentY);
+                container.style.transform = 'translate3d(0,' + roundedY + 'px,0)';
+                donorsScrollLastTime = timestamp;
+                state.handle = requestAnimationFrame(donorsScrollTick);
+            }
+
+            state.handle = requestAnimationFrame(donorsScrollTick);
         }
 
         function stopDonorsAutoScroll() {
             const container = document.getElementById('liveDonorsScroll');
+            const state = autoScrollStates.donors;
             if (container) {
-                container.removeAttribute('data-scroll-animation');
-                container.style.animation = 'none';
-                if (autoScrollStates.donors && autoScrollStates.donors.onIteration) {
-                    container.removeEventListener('animationiteration', autoScrollStates.donors.onIteration);
+                // שמירת המיקום הנוכחי לפני עצירה (קריאה מה-inline style שהJS כותב)
+                try {
+                    const inlineTransform = container.style.transform;
+                    if (inlineTransform && inlineTransform.includes('translate3d')) {
+                        const match = inlineTransform.match(/translate3d\(0,\s*(-?[\d.]+)px/);
+                        if (match) container._scrollSavedY = parseFloat(match[1]) || 0;
+                    }
+                } catch (e) {}
+                // הקפאה במיקום הנוכחי
+                if (container._scrollSavedY) {
+                    container.style.transform = 'translate3d(0,' + container._scrollSavedY + 'px,0)';
                 }
+            }
+            if (state && state.handle) {
+                cancelAnimationFrame(state.handle);
+                state.handle = null;
+            }
+            if (container && state && state.onIteration) {
+                container.removeEventListener('animationiteration', state.onIteration);
+                state.onIteration = null;
             }
             donorsScrollIsRunning = false;
         }
@@ -13517,14 +13634,11 @@
             if (displayMode !== 'none') startDuringUpdateOverlay(displayMode);
             console.log('🔄 [תצוגת לייב] עדכון תוך כדי גלילה' + (displayMode !== 'none' ? ' (עם מסך ' + displayMode + ')' : '') + '...');
             try {
+                // 🛡️ לא טוענים מהגליון בעדכון מתוזמן – הגליון עלול להיות ישן ולדרוס סכומים נכונים מ-API, לגרום לקפיצות בעמודת המובילים
+                var url = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').trim();
                 await checkTotalAmountFromAPI(true);
                 await syncWithNedarimPlus(true);
-                var url = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').trim();
                 if (url && googleSheetsSyncEnabled) {
-                    if (sheetSyncLoadEnabled && typeof loadFromGoogleSheets === 'function') {
-                        var r = await loadFromGoogleSheets(true);
-                        if (r && r.success && typeof notifyDataChanged === 'function') notifyDataChanged(true);
-                    }
                     if (sheetSyncSaveEnabled && typeof saveToGoogleSheets === 'function') await saveToGoogleSheets();
                 }
                 if (url && typeof fetchAppsScript === 'function') {
@@ -13586,12 +13700,15 @@
             runLiveViewUpdateDuring().catch(function() {});
         }
 
-        /** אחרי סיום גלילה מלאה – מציג overlay או כרטיסיה בצד, מריץ עדכון. במצב sidepanel הגלילה ממשיכה ברקע */
+        /** אחרי סיום גלילה מלאה – מציג overlay או כרטיסיה בצד, מריץ עדכון. הגלילה ממשיכה תמיד ברקע */
+        var _cycleUpdateRunning = false;
         async function onDonorsScrollCycleComplete() {
             if (typeof isLiveViewActive !== 'function' || !isLiveViewActive()) return;
             if (!liveViewSettings.enableAutoScroll) return;
             if ((liveViewSettings.liveViewUpdateWhen || 'end') === 'during' || (liveViewSettings.liveViewUpdateWhen || 'end') === 'custom') return;
             if (!donorsScrollIsRunning) return;
+            if (_cycleUpdateRunning) return; // מניעת עדכונים מקבילים
+            _cycleUpdateRunning = true;
             console.log('🔄 [תצוגת לייב] סיום מחזור גלילה – מציג overlay ומריץ עדכון...');
             lastLiveViewUpdateAt = Date.now();
             const overlay = document.getElementById('liveViewUpdateOverlay');
@@ -13599,12 +13716,8 @@
             const showMode = liveViewSettings.liveViewUpdateShow || 'loading';
             const updateType = liveViewSettings.liveViewUpdateType || 'all';
 
-            if (showMode !== 'sidepanel') {
-                stopAutoScroll('donors');
-                stopAutoScroll('leaders');
-                donorsScrollIsRunning = false;
-                leadersScrollIsRunning = false;
-            }
+            // הגלילה ממשיכה תמיד מתחת ל-overlay – ללא עצירה וקפיצה להתחלה
+            // (במצב sidepanel הגלילה לא נעצרת ממילא; במצב overlay מוסיפים את הoverlay מעל)
 
             if (showMode === 'sidepanel') {
                 liveViewSidePanelUpdateInProgress = true;
@@ -13618,6 +13731,14 @@
                     if (fillEl) fillEl.style.width = '0%';
                     startSidePanelSmoothProgress();
                 }
+                // הגנה: אם העדכון תקוע מעל 3 דקות – סוגר את הפאנל אוטומטית
+                var _sidepanelSafetyTimer = setTimeout(function() {
+                    console.warn('⚠️ [תצוגת לייב] עדכון תקוע מעל 3 דקות – סוגר כרטיסיה אוטומטית');
+                    stopSidePanelSmoothProgress();
+                    if (sidePanel) sidePanel.classList.remove('show');
+                    liveViewSidePanelUpdateInProgress = false;
+                }, 180000);
+                var _origSidepanelTimer = _sidepanelSafetyTimer;
             } else if (overlay) {
                 overlay.classList.remove('loading-only', 'grants-only', 'sidepanel-only');
                 overlay.classList.add(showMode === 'grants' ? 'grants-only' : 'loading-only');
@@ -13625,26 +13746,24 @@
             }
 
             try {
-                if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'בדיקת סכום');
-                await checkTotalAmountFromAPI(true);
-                if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'סנכרון תרומות');
-                await syncWithNedarimPlus(true);
+                // 🛡️ בעדכון מתוזמן (updateType='all') – לא טוענים מהגליון: הגליון עלול להיות ישן ולדרוס סכומים מ-API, לגרום לקפיצות בעמודת המובילים
                 if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'טעינת נתונים');
+                var url = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').trim();
                 if (updateType === 'all') {
                     if (autoSyncNedarimEnabled && typeof performAutoRefresh === 'function') await performAutoRefresh();
-                    var url = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').trim();
-                    if (url && googleSheetsSyncEnabled) {
-                        if (sheetSyncLoadEnabled && typeof loadFromGoogleSheets === 'function') {
-                            var r = await loadFromGoogleSheets(true);
-                            if (r && r.success && typeof notifyDataChanged === 'function') notifyDataChanged();
-                        }
-                        if (sheetSyncSaveEnabled && typeof saveToGoogleSheets === 'function') await saveToGoogleSheets();
-                    }
+                    // דילוג על loadFromGoogleSheets – נתונים טריים רק מ-API (performAutoRefresh + syncWithNedarimPlus)
                 } else if (updateType === 'loadSheet' && typeof loadFromGoogleSheets === 'function') {
                     var r = await loadFromGoogleSheets(true);
                     if (r && r.success && typeof notifyDataChanged === 'function') notifyDataChanged();
                 } else if (updateType === 'loadMatrim' && typeof loadMatrimFromNedarim === 'function') {
                     await loadMatrimFromNedarim(true);
+                }
+                if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'בדיקת סכום');
+                await checkTotalAmountFromAPI(true);
+                if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'סנכרון תרומות');
+                await syncWithNedarimPlus(true, true, true); // pullOnly=true – עדכון תצוגה בלבד, ללא דחיפה לנדרים (מהיר יותר)
+                if (url && googleSheetsSyncEnabled && updateType === 'all') {
+                    if (sheetSyncSaveEnabled && typeof saveToGoogleSheets === 'function') await saveToGoogleSheets();
                 }
                 if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'מרענן שמות קבוצות');
                 var sheetUrl = (googleSheetsWebAppUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('googleSheetsWebAppUrl')) || '').toString().trim();
@@ -13675,9 +13794,18 @@
                 if (typeof notifyDataChanged === 'function') notifyDataChanged();
                 if (showMode === 'sidepanel') updateLiveViewEndProgress(100, 'הושלם');
                 console.log('✅ [תצוגת לייב] עדכון הושלם');
+                if (typeof _sidepanelSafetyTimer !== 'undefined' && _sidepanelSafetyTimer) {
+                    clearTimeout(_sidepanelSafetyTimer);
+                    _sidepanelSafetyTimer = null;
+                }
             } catch (err) {
                 console.warn('⚠️ [תצוגת לייב] שגיאה בעדכון:', err);
+                if (typeof _sidepanelSafetyTimer !== 'undefined' && _sidepanelSafetyTimer) {
+                    clearTimeout(_sidepanelSafetyTimer);
+                    _sidepanelSafetyTimer = null;
+                }
                 if (showMode === 'sidepanel') updateLiveViewEndProgress(0, 'שגיאה');
+                _cycleUpdateRunning = false;
             }
 
             if (overlay) overlay.classList.remove('show');
@@ -13695,14 +13823,21 @@
             if (showMode !== 'sidepanel') { stopSidePanelSmoothProgress(); liveViewSidePanelUpdateInProgress = false; }
             if (typeof hideLiveViewSyncProgress === 'function') hideLiveViewSyncProgress();
             if (showMode !== 'sidepanel') {
-                if (typeof restartDonorsAutoScroll === 'function') restartDonorsAutoScroll();
-                if (typeof restartLeadersAutoScroll === 'function' && isLiveViewActive()) setTimeout(() => restartLeadersAutoScroll({ immediate: true }), 50);
+                // מפעיל גלילה רק אם נעצרה (לדוגמה: needsFullRender בנה מחדש את המיכל)
+                if (!donorsScrollIsRunning && liveViewSettings.enableAutoScroll) {
+                    if (typeof restartDonorsAutoScroll === 'function') restartDonorsAutoScroll();
+                }
+                if (!leadersScrollIsRunning && liveViewSettings.enableAutoScroll) {
+                    if (typeof restartLeadersAutoScroll === 'function' && isLiveViewActive()) setTimeout(() => restartLeadersAutoScroll({ immediate: true }), 50);
+                }
             }
+            _cycleUpdateRunning = false;
         }
         
         function triggerLiveViewUpdateByTimer() {
             if (typeof isLiveViewActive !== 'function' || !isLiveViewActive() || !liveViewSettings.enableAutoScroll) return;
             if (!donorsScrollIsRunning) return;
+            if (_cycleUpdateRunning) return;
             var nowMs = Date.now();
             var intervalMin = (liveViewSettings.liveViewSidepanelIntervalMinutes || 10);
             if (lastLiveViewUpdateAt > 0 && (nowMs - lastLiveViewUpdateAt) < intervalMin * 60 * 1000) return;
@@ -13742,6 +13877,17 @@
                     const pt = p.querySelector('.leader-total, .leader-target-progress-text');
                     const ct = c.querySelector('.leader-total, .leader-target-progress-text');
                     if (pt && ct) ct.textContent = pt.textContent;
+                    const pName = p.querySelector('.leader-name');
+                    const cName = c.querySelector('.leader-name');
+                    if (pName && cName) cName.textContent = pName.textContent;
+                    const pRank = p.querySelector('.leader-rank');
+                    const cRank = c.querySelector('.leader-rank');
+                    if (pRank && cRank) cRank.textContent = pRank.textContent;
+                    if (p.classList.contains('leader-item') && c.classList.contains('leader-item')) {
+                        ['rank-1','rank-2','rank-3','rank-4','rank-5'].forEach(cl => c.classList.remove(cl));
+                        const rankCl = ['rank-1','rank-2','rank-3','rank-4','rank-5'].find(cl => p.classList.contains(cl));
+                        if (rankCl) c.classList.add(rankCl);
+                    }
                     const pm = p.querySelector('.leader-target-meta');
                     const cm = c.querySelector('.leader-target-meta');
                     if (pm && cm) cm.textContent = pm.textContent;
@@ -13850,11 +13996,11 @@
                 if (typeof triggerLiveViewUpdateByTimer === 'function') triggerLiveViewUpdateByTimer();
             }
             
-            // בדיקת גלילת תורמים (CSS animation – מרענן donorsScrollLastTime ב-animationiteration)
+            // בדיקת גלילת תורמים (JS RAF – donorsScrollLastTime מתעדכן כל frame)
             if (!donorsScrollIsRunning && liveViewSettings.enableAutoScroll) {
                 restartDonorsAutoScroll();
-            } else if (donorsScrollIsRunning && now - donorsScrollLastTime > 180000) {
-                // גלילה רצה אך לא קיבלנו iteration מ-3 דקות – כנראה תקוע
+            } else if (donorsScrollIsRunning && now - donorsScrollLastTime > 10000) {
+                // RAF לא עדכן כבר 10 שניות – כנראה תקוע
                 donorsScrollIsRunning = false;
                 restartDonorsAutoScroll();
             }
@@ -14051,9 +14197,6 @@
                                 תרומה: ₪${donor.amount.toLocaleString()} | 
                                 יעד: ₪${donor.personalGoal.toLocaleString()} (${Math.round(progress)}%)
                             </div>
-                        </div>
-                        <div class="donor-actions">
-                            <button class="btn btn-primary btn-small" onclick="addDonorPayment(${donor.id})">הוסף תשלום</button>
                         </div>
                     </div>
                 `;
@@ -14514,7 +14657,7 @@
             if (!isSectionProtected(sectionId)) return;
             if (requestSectionAccess(sectionId)) return;
             // המשתמש ביטל – מעבר לטאב ראשון לא-מוגן
-            const tabOrder = ['groups', 'donors', 'manualDonation', 'pairs', 'liveview', 'calculator', 'sync', 'history', 'reset', 'password'];
+            const tabOrder = ['donors', 'groups', 'liveview', 'sync'];
             for (const t of tabOrder) {
                 const sid = 'management-' + t;
                 if (!isSectionProtected(sid)) {
@@ -14655,15 +14798,12 @@
             };
             step();
         }
-        // סכום לתצוגה – מקור יחיד לאמת: דף הבית ותצוגת לייב תמיד מציגים את אותו ערך
-        // כשה-API נטען – משתמשים בו (מקור האמת מנדרים פלוס/גליון). אחרת – סכום מקומי.
-        // כששניהם קיימים – לוקחים את הגבוה יותר (מבטיח שהמסך לא יציג פחות מהמציאות)
+        // סכום לתצוגה: כשסכום נדרים פלוס (API) גבוה מהמקומי – משתמשים ב-API (מציג את הסכום האמיתי, לא רק מה שנוסף ידנית)
         function getDisplayTotal() {
-            const localSum = (donors || []).reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
-            const apiVal = (typeof NEDARIM_CONFIG !== 'undefined' && NEDARIM_CONFIG.apiDataLoaded && 
-                NEDARIM_CONFIG.totalDonatedFromAPI != null) ? Number(NEDARIM_CONFIG.totalDonatedFromAPI) : null;
-            if (apiVal != null) {
-                return Math.max(apiVal, localSum);
+            const localSum = donors.reduce((sum, d) => sum + (d.amount || 0), 0);
+            if (NEDARIM_CONFIG.apiDataLoaded && NEDARIM_CONFIG.totalDonatedFromAPI != null && 
+                NEDARIM_CONFIG.totalDonatedFromAPI > localSum) {
+                return NEDARIM_CONFIG.totalDonatedFromAPI;
             }
             return localSum;
         }
@@ -15027,10 +15167,7 @@
                                     <span class="group-donor-name">${d.name}</span>
                                     <span class="group-donor-amount">₪${d.amount.toLocaleString()}</span>
                                 </div>
-                                <div class="group-donor-actions">
-                                    <button class="group-donor-payment" onclick="addDonorPayment(${d.id})">הוסף תשלום</button>
-                                    <button class="group-donor-delete" onclick="removeDonor(${d.id})">מחק</button>
-                                </div>
+                                <div class="group-donor-actions"></div>
                             </div>
                         `).join('') : '<div style="text-align: center; color: var(--muted); padding: 10px;">אין מתרימים</div>'}
                     </div>
@@ -15428,13 +15565,19 @@
             updateLeadersList();
             updateLiveTargets();
             
-            // שמירה מיידית לגליון (לא ממתינה ל-debounce)
-            const url = googleSheetsWebAppUrl || localStorage.getItem('googleSheetsWebAppUrl') || DEFAULT_GOOGLE_SHEETS_URL || '';
-            if (url) {
-                saveToGoogleSheets().then(() => {
-                    console.log('✅ שם תצוגה עודכן גם בגליון');
+            // שמירה מיידית לגליון (payload קטן – מתרימים וקבוצות בלבד) כדי שהשם לא יקפוץ בחזרה
+            if (typeof saveDonorsAndGroupsToSheets === 'function') {
+                saveDonorsAndGroupsToSheets().then((r) => {
+                    if (r && r.success) {
+                        if (typeof lastSaveToSheetsTime !== 'undefined') lastSaveToSheetsTime = Date.now();
+                        console.log('✅ שם תצוגה עודכן גם בגליון');
+                    } else {
+                        console.warn('⚠️ שגיאה בשמירת שם לגליון:', r && r.error);
+                        showNotification('השם נשמר בתוכנה אך שמירה לגליון נכשלה. נסה שמור לגליון ידנית.', 'warning');
+                    }
                 }).catch(err => {
                     console.warn('⚠️ שגיאה בשמירת שם לגליון:', err);
+                    showNotification('השם נשמר בתוכנה אך שמירה לגליון נכשלה.', 'warning');
                 });
             }
             
@@ -15519,7 +15662,6 @@
                             <div class="donor-item-compact-main">
                                 <span class="donor-item-compact-name">${escapeHtml(displayName)}</span>
                                 <span class="donor-item-compact-amount">₪${(donor.amount || 0).toLocaleString()}</span>
-                                <button class="btn btn-primary btn-small donor-item-compact-btn" onclick="addDonorPayment(${donor.id})">הוסף תשלום</button>
                             </div>
                             <div class="donor-item-compact-details">${details}</div>
                         </div>
@@ -15604,10 +15746,7 @@
                             </div>
                         </div>
                         </div>
-                        <div class="donor-actions">
-                            <button class="btn btn-secondary btn-small" onclick="addDonorPayment(${donor.id})">הוסף תשלום</button>
-                            <button class="btn btn-danger btn-small" onclick="deleteDonor(${donor.id})">מחק</button>
-                        </div>
+                        <div class="donor-actions"></div>
                         <div class="donor-history" id="donorHistory_${donor.id}">
                             ${historyHtml}
                         </div>
@@ -15979,19 +16118,6 @@
                     return String(d.id) !== String(idToDelete);
                 });
                 
-                // שמירה ברשימת המחוקים – מונע החזרה מטעינה מהגליון/נדרים פלוס
-                deletedDonorIds.add(String(donorToDelete.id));
-                if (donorToDelete.nedarimMatrimId) {
-                    const matrimStr = String(donorToDelete.nedarimMatrimId).trim();
-                    if (/^\d+$/.test(matrimStr)) deletedDonorMatrimIds.add(matrimStr);
-                }
-                try {
-                    localStorage.setItem('deletedDonors', JSON.stringify({
-                        ids: [...deletedDonorIds],
-                        matrimIds: [...deletedDonorMatrimIds]
-                    }));
-                } catch (e) { console.warn('שגיאה בשמירת deletedDonors:', e); }
-                
                 saveData();
                 updateDonorsList();
                 updateGroupsDisplay();
@@ -16090,14 +16216,6 @@
                     }
                     if (savedGroups) {
                         try { groups = JSON.parse(savedGroups); } catch (_) {}
-                    }
-                    const savedDeleted = localStorage.getItem('deletedDonors');
-                    if (savedDeleted) {
-                        try {
-                            const parsed = JSON.parse(savedDeleted);
-                            if (parsed.ids && Array.isArray(parsed.ids)) deletedDonorIds = new Set(parsed.ids);
-                            if (parsed.matrimIds && Array.isArray(parsed.matrimIds)) deletedDonorMatrimIds = new Set(parsed.matrimIds);
-                        } catch (_) {}
                     }
                     ensureDonorsNormalized();
                     // בתצוגת לייב: לא לרענן את התצוגה – מונע קפיצות. העדכון יתבצע רק בעדכון מתוזמן (סיום גלילה / כל X דקות)
@@ -16304,53 +16422,7 @@
                 storageSetItem('donors', donors);
             }
             
-            // שולח לנדרים פלוס מיד אם יש שינוי בסכום – לא מחכים לסנכרון תרומות
-            // שולח כשהמתרים מקושר לנדרים (מספר מתרים תקין או נטען מנדרים)
-            const hasNedarimLink = donor.fromNedarimPlus || (donor.nedarimMatrimId && /^\d+$/.test(String(donor.nedarimMatrimId).trim()));
-            if (amountDelta !== 0 && hasNedarimLink) {
-                isUpdatingDonorForNedarim = true;
-                try {
-                    const originalName = donor.originalName || donor.name;
-                    const group = groups.find(g => g.id === donor.groupId);
-                    const groupName = group ? group.name : '';
-                    const matrimId = donor.nedarimMatrimId || null;
-                    await uploadOfflineDonation(
-                        originalName,
-                        'תרומה מהמערכת',
-                        amountDelta, // יכול להיות שלילי להפחתות
-                        `עדכון ידני: ${amountDelta > 0 ? 'תוספת ידנית' : 'הפחתה ידנית'}`,
-                        groupName,
-                        matrimId
-                    );
-                    const actionText = amountDelta > 0 ? 'נוספה' : 'הופחתה';
-                    console.log(`✅ תרומה של ${Math.abs(amountDelta)} ₪ ${actionText} בנדרים פלוס עבור ${matrimId ? 'מספר מתרים: ' + matrimId : originalName}${groupName ? ' (קבוצה: ' + groupName + ')' : ''}`);
-                    
-                    // מעדכן את הסכום הכולל מ-API אחרי העלאה מוצלחת
-                    setTimeout(async () => {
-                        try {
-                            console.log('🔄 מעדכן סכום כולל מ-API אחרי עדכון מתרים...');
-                            const totalData = await fetchTotalFromMatchPlus();
-                            if (totalData && totalData.Donated > 0) {
-                                console.log(`✅ סכום כולל עודכן: ${totalData.Donated.toLocaleString()} ש"ח`);
-                                updateHomeStats();
-                                updateLeadersList();
-                                updateLiveTargets();
-                                // עדכון מיידי של Live View
-                                if (typeof updateLiveView === 'function') {
-                                    updateLiveView(true); // immediate = true
-                                }
-                            }
-                        } catch (err) {
-                            console.warn('⚠️ שגיאה בעדכון סכום כולל אחרי עדכון מתרים:', err);
-                        }
-                    }, 2000);
-                } catch (error) {
-                    console.warn('⚠️ העדכון נשמר במערכת אך לא נשלח לנדרים פלוס:', error.message);
-                    // לא נציג שגיאה למשתמש כי העדכון כבר נשמר במערכת
-                } finally {
-                    isUpdatingDonorForNedarim = false;
-                }
-            }
+            // המערכת במצב שיקוף נתונים בלבד – אין דחיפה לנדרים פלוס מכאן
 
             if (!changed) {
                 showNotification('לא בוצעו שינויים');
@@ -16372,14 +16444,21 @@
                 updateLiveView(true); // immediate = true
             }
             
-            // שמירה לגליון - חשוב! כדי שהשינויים (כולל מספר מתרים) יישמרו בגליון
+            // שמירה לגליון מיד – רק מתרימים וקבוצות (payload קטן) כדי שהשם והשינויים ייכתבו לגליון ולא יקפצו בחזרה
             isUpdatingDonorForNedarim = true;
             try {
-                await saveToGoogleSheets();
-                console.log(`✅ נשמרו השינויים לגליון (כולל מספר מתרים: ${donor.nedarimMatrimId || 'ללא'})`);
+                const sheetResult = typeof saveDonorsAndGroupsToSheets === 'function' ? await saveDonorsAndGroupsToSheets() : await saveToGoogleSheets();
+                if (sheetResult && sheetResult.success) {
+                    if (typeof lastSaveToSheetsTime !== 'undefined') lastSaveToSheetsTime = Date.now();
+                    console.log(`✅ נשמרו השינויים לגליון (כולל שם תצוגה ומספר מתרים: ${donor.nedarimMatrimId || 'ללא'})`);
+                } else {
+                    const errMsg = (sheetResult && sheetResult.error) ? sheetResult.error : 'שמירה נכשלה';
+                    console.warn('⚠️ שגיאה בשמירה לגליון:', errMsg);
+                    showNotification('העדכון נשמר בתוכנה אך שמירה לגליון נכשלה. נסה שוב או שמור לגליון ידנית.', 'warning');
+                }
             } catch (error) {
                 console.warn('⚠️ שגיאה בשמירה לגליון:', error);
-                // לא נציג שגיאה למשתמש כי העדכון כבר נשמר מקומית
+                showNotification('העדכון נשמר בתוכנה אך שמירה לגליון נכשלה. נסה שוב או שמור לגליון ידנית.', 'warning');
             } finally {
                 isUpdatingDonorForNedarim = false;
             }
@@ -16396,7 +16475,7 @@
             updateGroupsDisplay();
             updateHomeStats();
             if (typeof updateLiveView === 'function') updateLiveView(true);
-            if (typeof updateLeadersList === 'function') updateLeadersList();
+            if (typeof updateLeadersList === 'function') updateLeadersList(true);
             if (typeof updateLiveTargets === 'function') updateLiveTargets();
             
             // מסיר את הסימון רק אחרי 2 דקות – מונע שטעינה מהגליון תדרוס את הסכום שעודכן
@@ -16957,11 +17036,9 @@
                 if (needsFullRender) {
                     container.innerHTML = html + html;
                     lastLiveViewStructure = structureSignature;
-                    container.removeAttribute('data-scroll-animation');
-                    if (!wasScrolling && !donorsScrollIsRunning && liveViewSettings.enableAutoScroll) {
+                    container._scrollSavedY = 0; // מבנה השתנה – restart מהתחלה
+                    if (liveViewSettings.enableAutoScroll) {
                         requestAnimationFrame(() => restartDonorsAutoScroll());
-                    } else if (donorsScrollIsRunning && liveViewSettings.enableAutoScroll) {
-                        requestAnimationFrame(() => { stopDonorsAutoScroll(); restartDonorsAutoScroll(); });
                     }
                 } else {
                     if (!donorsScrollIsRunning && liveViewSettings.enableAutoScroll) {
@@ -17002,6 +17079,7 @@
         // עדכון רשימת מובילים – עם debounce להקטנת קפיצות (עדכון מתוזמן לא מתעכב)
         let updateLeadersListTimeout = null;
         const LEADERS_LIST_DEBOUNCE_MS = 80;
+        let lastLeadersSnapshot = null; // להשוואה – דילוג על עדכון אם אין שינוי
         function updateLeadersList(forceFromScheduled = false) {
             // 🛡️ במצב עדכון מתוזמן – חסימת עדכונים מבחוץ
             if (typeof isLiveViewScheduledUpdatesOnly === 'function' && isLiveViewScheduledUpdatesOnly() && !forceFromScheduled) return;
@@ -17026,9 +17104,18 @@
             
             // מובילים מחושבים ישירות מרשימת כל המתרימים לפי סכום (מקום 1 = הגבוה ביותר)
             // בלי סינון לפי קבוצות – מהיר יותר ומונע באגים של groupId שלא מתאים
+            // מיון יציב: כשיש שוויון בסכום – לפי id או שם, כדי למנוע קפיצות בין עדכונים
             const sortedDonors = [...donors]
                 .filter(d => (d.name || '').trim() && (d.amount || 0) > 0)
-                .sort((a, b) => (b.amount || 0) - (a.amount || 0))
+                .sort((a, b) => {
+                    const amtA = a.amount || 0;
+                    const amtB = b.amount || 0;
+                    if (amtB !== amtA) return amtB - amtA;
+                    const idA = String(a.id ?? '');
+                    const idB = String(b.id ?? '');
+                    if (idA !== idB) return idA.localeCompare(idB);
+                    return String(a.name || '').localeCompare(String(b.name || ''));
+                })
                 .slice(0, 5);
             
             const totalCollected = (typeof getDisplayTotal === 'function') ? getDisplayTotal() : donors.reduce((sum, donor) => sum + Math.max(0, donor.amount || 0), 0);
@@ -17047,6 +17134,19 @@
                 ? `₪${totalCollected.toLocaleString()} מתוך ₪${goal.toLocaleString()} | ${percentDisplay}%`
                 : `₪${totalCollected.toLocaleString()} | ללא יעד מוגדר`;
             const totalDonorsCount = donors.filter(d => d.name && d.name.trim()).length;
+
+            // עדכון פס הסיכום הכולל (מוצג כשעמודת המובילים מוסתרת)
+            const bannerAmountEl = document.getElementById('liveTotalBannerAmount');
+            const bannerPercentEl = document.getElementById('liveTotalBannerPercent');
+            if (bannerAmountEl) bannerAmountEl.textContent = '₪' + totalCollected.toLocaleString();
+            if (bannerPercentEl) {
+                if (goal > 0) {
+                    bannerPercentEl.textContent = percentDisplay + '%';
+                    bannerPercentEl.style.display = '';
+                } else {
+                    bannerPercentEl.style.display = 'none';
+                }
+            }
             
             // יצירת כרטיסיות לכל קבוצה - רק קבוצות שמוצגות בלייב
             const visibleGroups = groups.filter(g => g.showInLiveView !== false);
@@ -17075,22 +17175,32 @@
                 `;
             }).join('');
             
-            if (sortedDonors.length === 0) {
-                // גם אם אין מובילים, נציג את הסיכום הכללי ואת כרטיסיות הקבוצות
-                const summaryHtml = `
-                    <div class="leader-target-card">
-                        <div class="leader-target-title">סה"כ נאסף</div>
-                        <div class="leader-target-progress-bar">
-                            <div class="${progressClass}" style="width: ${progressWidth}%;"></div>
-                            <div class="leader-target-progress-text">${summaryText}</div>
-                        </div>
+            // כרטיסית סיכום כללי – עצמאית, לא קשורה לאף קבוצה
+            const summaryCardHtml = `
+                <div class="leader-target-card leader-summary-card" data-summary="overall">
+                    <div class="leader-target-title">סה"כ נאסף</div>
+                    <div class="leader-target-meta" style="color: white;">${totalDonorsCount} מתרימים</div>
+                    <div class="leader-target-progress-bar">
+                        <div class="${progressClass}" style="width: ${progressWidth}%;"></div>
+                        <div class="leader-target-progress-text">${summaryText}</div>
                     </div>
-                `;
-                leadersList.innerHTML = groupsCardsHtml + summaryHtml;
+                </div>
+            `;
+
+            if (sortedDonors.length === 0) {
+                const emptySnapshot = 'empty|' + totalCollected + '|' + progressWidth + '|' + visibleGroups.map(g => {
+                    const gd = getDonorsForGroup(g);
+                    const gc = gd.reduce((s, d) => s + (d.amount || 0), 0);
+                    return (g.id || '') + ':' + gc;
+                }).join(',');
+                if (lastLeadersSnapshot === emptySnapshot) return;
+                lastLeadersSnapshot = emptySnapshot;
+                leadersList.innerHTML = groupsCardsHtml + summaryCardHtml;
                 return;
             }
             
-            const listHtml = sortedDonors.map((donor, index) => {
+            // כשמופעלת "הסתר 5 כרטיסיות המובילים" – לא מציגים את כרטיסיות הדירוג 1–5
+            const listHtml = (typeof liveViewSettings !== 'undefined' && liveViewSettings.hideLeaderCards) ? '' : sortedDonors.map((donor, index) => {
                 const rank = index + 1;
                 let rankClass = '';
                 if (rank === 1) rankClass = 'rank-1';
@@ -17111,24 +17221,26 @@
                 `;
             }).join('');
 
-            // הוספת כרטיסית סיכום כללי
-            const summaryHtml = `
-                <div class="leader-target-card leader-summary-card" data-summary="1">
-                    <div class="leader-target-title">סה"כ נאסף</div>
-                    <div class="leader-target-progress-bar">
-                        <div class="${progressClass}" style="width: ${progressWidth}%;"></div>
-                        <div class="leader-target-progress-text">${summaryText}</div>
-                    </div>
-                </div>
-            `;
+            // עדכון אינקרמנטלי – מפצל DOM במקום innerHTML מלא, מונע קפיצות וקופצים בתצוגה
+            const useIncremental = true;
 
-            // עדכון חלקי בלבד – לעולם לא innerHTML (מונע קפיצות כשמשתנה סכום כולל או סדר מובילים)
-            const existingLeaders = leadersList.querySelectorAll('.leader-item[data-donor-id]');
-            const existingGroupCards = leadersList.querySelectorAll('.leader-target-card[data-group-id]');
-            const existingSummary = leadersList.querySelector('.leader-summary-card');
-            const canIncremental = existingLeaders.length > 0 || existingGroupCards.length > 0 || existingSummary;
-            // תמיד עדכון חלקי כשיש מבנה קיים – מונע קפיצות בעמודת המובילים (innerHTML גורם לריצוד)
-            const useIncremental = canIncremental && (existingGroupCards.length > 0 || existingSummary || existingLeaders.length > 0);
+            // השוואה לדילוג על עדכון מיותר – אם המובילים והסכומים לא השתנו
+            const snapshot = sortedDonors.map(d => `${d.id}|${d.amount}|${(d.displayName || d.name || '')}`).join(';') +
+                '|' + totalCollected + '|' + progressWidth + '|' + visibleGroups.map(g => {
+                    const gd = getDonorsForGroup(g);
+                    const gc = gd.reduce((s, d) => s + (d.amount || 0), 0);
+                    return (g.id || '') + ':' + gc;
+                }).join(',');
+            if (lastLeadersSnapshot === snapshot) {
+                return;
+            }
+            lastLeadersSnapshot = snapshot;
+
+            // חילוץ אלמנטים קיימים לעדכון אינקרמנטלי
+            const allChildren = [...leadersList.children];
+            const existingLeaders = allChildren.filter(el => el.classList.contains('leader-item'));
+            const existingGroupCards = allChildren.filter(el => el.classList.contains('leader-target-card') && el.dataset.groupId);
+            const existingSummary = allChildren.find(el => el.classList.contains('leader-summary-card') || el.dataset?.summary === 'overall');
 
             function updateLeaderItem(el, donor, rank) {
                 if (!el) return;
@@ -17143,16 +17255,20 @@
                 el.classList.add('rank-' + Math.min(rank, 5));
             }
 
-            if (useIncremental) {
-                // עדכון חלקי – רק מספרים ורכיבים, בלי להחליף DOM
-                const leadersContainer = leadersList.querySelector('.leaders-list') || leadersList;
-                const firstLeaderParent = existingLeaders[0] && existingLeaders[0].parentNode;
+            const hideLeaderCards = typeof liveViewSettings !== 'undefined' && liveViewSettings.hideLeaderCards;
+            const canUseIncremental = (existingLeaders.length > 0 || existingGroupCards.length > 0 || existingSummary) &&
+                existingGroupCards.length === visibleGroups.length;
+
+            if (useIncremental && canUseIncremental) {
+                // עדכון חלקי – רק מספרים ורכיבים, בלי להחליף DOM – מונע קפיצות
                 const idToEl = new Map();
                 existingLeaders.forEach(el => { idToEl.set(el.dataset.donorId || '', el); });
+                const anchor = existingGroupCards[0] || existingSummary || null;
+                const parent = leadersList;
 
-                if (sortedDonors.length > 0) {
-                    const anchor = existingGroupCards[0] || existingSummary || null;
-                    const parent = anchor ? anchor.parentNode : leadersList;
+                if (hideLeaderCards) {
+                    existingLeaders.forEach(el => { el.style.display = 'none'; });
+                } else if (sortedDonors.length > 0) {
                     sortedDonors.forEach((donor, index) => {
                         let el = idToEl.get(String(donor.id || ''));
                         if (!el) {
@@ -17160,17 +17276,22 @@
                             el.className = 'leader-item';
                             el.dataset.donorId = String(donor.id || '');
                             el.innerHTML = '<div class="leader-rank"></div><div class="leader-info"><div class="leader-name"></div></div><div class="leader-total"></div>';
-                            idToEl.set(String(donor.id || ''), el); // כדי שלולאת הסדר תמצא ותמיק
-                            if (parent && anchor) parent.insertBefore(el, anchor);
+                            idToEl.set(String(donor.id || ''), el);
+                            if (anchor) parent.insertBefore(el, anchor);
+                            else parent.appendChild(el);
                         }
                         el.style.display = '';
                         updateLeaderItem(el, donor, index + 1);
                     });
-                    // סדר מחדש: מקום 1 (הסכום הגבוה ביותר) ראשון ב-DOM, מקום 5 אחרון
-                    if (parent && anchor) {
-                        for (let i = 0; i < sortedDonors.length; i++) {
+                    // סדר מחדש: מקום 1 ראשון ב-DOM, מקום 5 אחרון (insertBefore בסדר הפוך)
+                    if (anchor) {
+                        let ref = anchor;
+                        for (let i = sortedDonors.length - 1; i >= 0; i--) {
                             const el = idToEl.get(String(sortedDonors[i].id || ''));
-                            if (el) parent.insertBefore(el, anchor);
+                            if (el) {
+                                parent.insertBefore(el, ref);
+                                ref = el;
+                            }
                         }
                     }
                     existingLeaders.forEach(el => {
@@ -17196,20 +17317,24 @@
                         if (meta) meta.textContent = 'מספר מתרימים: ' + groupDonors.length;
                     }
                 });
+                // עדכון כרטיסית סיכום כללי במקום – בלי לבנות מחדש
                 if (existingSummary) {
                     const fill = existingSummary.querySelector('.leader-target-progress-fill');
                     const textEl = existingSummary.querySelector('.leader-target-progress-text');
-                    const meta = existingSummary.querySelector('.leader-target-meta');
+                    const metaEl = existingSummary.querySelector('.leader-target-meta');
                     if (fill) fill.style.width = progressWidth + '%';
+                    if (fill) fill.className = progressClass;
                     if (textEl) textEl.textContent = summaryText;
-                    if (meta) meta.remove();
+                    if (metaEl) { metaEl.textContent = totalDonorsCount + ' מתרימים'; metaEl.style.color = 'white'; }
+                } else {
+                    leadersList.insertAdjacentHTML('beforeend', summaryCardHtml);
                 }
                 // סנכרון לקלון בלי innerHTML – רק עדכון טקסט/מבנה אלמנט-אלמנט (מונע קפיצות)
                 if (isLiveViewActive() && liveViewSettings.enableAutoScroll && leadersScrollIsRunning) {
                     syncLeadersCloneToPrimary(leadersList);
                 }
             } else {
-                leadersList.innerHTML = listHtml + groupsCardsHtml + summaryHtml;
+                leadersList.innerHTML = listHtml + groupsCardsHtml + summaryCardHtml;
             }
             
             if (isLiveViewActive() && liveViewSettings.enableAutoScroll) {
@@ -17290,15 +17415,6 @@
             }).join('');
 
             container.innerHTML = cardsHtml;
-            // לא מפעילים גלילה למובילים - עצירת גלילה והסרת קלון
-            if (typeof stopAutoScroll === 'function') {
-                stopAutoScroll('leaders');
-            }
-            const clone = document.getElementById('leadersScrollClone');
-            if (clone) {
-                clone.innerHTML = '';
-                clone.style.display = 'none';
-            }
         }
 
         function triggerGroupExcelUpload(groupId) {
@@ -18622,7 +18738,7 @@
             updateGroupsDisplay();
             updateHomeStats();
             if (typeof updateLiveView === 'function') updateLiveView(true);
-            if (typeof updateLeadersList === 'function') updateLeadersList();
+            if (typeof updateLeadersList === 'function') updateLeadersList(true);
             if (typeof updateLiveTargets === 'function') updateLiveTargets();
             if (!silent) {
                 const message = actualDelta > 0
@@ -18683,7 +18799,7 @@
                     updateGroupsDisplay();
                     updateHomeStats();
                     updateLiveView();
-                    updateLeadersList();
+                    updateLeadersList(true);
                     updateLiveTargets();
                     
                     // מעדכן את הסכום הכולל מ-API (כדי לקבל את הסכום המעודכן מנדרים פלוס)
@@ -18694,7 +18810,7 @@
                             if (totalData && totalData.Donated > 0) {
                                 console.log(`✅ סכום כולל עודכן: ${totalData.Donated.toLocaleString()} ש"ח`);
                                 updateHomeStats();
-                                updateLeadersList();
+                                updateLeadersList(true);
                                 updateLiveTargets();
                             }
                         } catch (err) {
@@ -18777,7 +18893,7 @@
             updateGroupsDisplay();
             updateHomeStats();
             if (typeof updateLiveView === 'function') updateLiveView(true);
-            if (typeof updateLeadersList === 'function') updateLeadersList();
+            if (typeof updateLeadersList === 'function') updateLeadersList(true);
             if (typeof updateLiveTargets === 'function') updateLiveTargets();
             showNotification(`הסכום של ${donor.name} עודכן ל-${donor.amount.toLocaleString()} ₪`);
         }
@@ -20595,7 +20711,8 @@
         // פונקציה ראשית לסנכרון עם נדרים פלוס (משתמש ב-MatchPlus API)
         // סנכרון דו-כיווני: דוחף שינויים מקומיים לנדרים פלוס, then מושך עדכונים מנדרים פלוס (מכבד recentlyUpdatedDonors).
         // forceSync=true: מתעלם מ-cooldown – כשהמשתמש לוחץ ידנית "בדוק סכום כולל מ-API"
-        async function syncWithNedarimPlus(silent = false, pullOnly = false, forceSync = false) {
+        async function syncWithNedarimPlus(silent = false, pullOnly = true, forceSync = false) {
+            pullOnly = true; // תמיד pull-only – המערכת משקפת נתונים בלבד, אין דחיפה לנדרים
             if (syncWithNedarimPlusInProgress) {
                 console.warn('⚠️ [סנכרון] סנכרון כבר רץ – דילוג (מונע כפילות דלתות בנדרים פלוס)');
                 return;
@@ -20916,7 +21033,7 @@
                     const totalData = await fetchTotalFromMatchPlus();
                     if (totalData) {
                         updateHomeStats();
-                        updateLeadersList();
+                        updateLeadersList(true);
                         updateLiveTargets();
                         if (typeof updateLiveView === 'function') updateLiveView(false);
                     }
@@ -20928,7 +21045,7 @@
                 if (totalData) {
                     console.log(`✅ עדכנו סכום כולל מ-API: ${totalData.Donated.toLocaleString()} ש"ח, יעד: ${totalData.Goal.toLocaleString()} ש"ח`);
                     updateHomeStats();
-                    updateLeadersList();
+                    updateLeadersList(true);
                     updateLiveTargets();
                     if (typeof updateLiveView === 'function') updateLiveView(false);
                 } else {
@@ -21093,11 +21210,6 @@
                     }
 
                     // מתרים לא קיים – מוסיפים (לקבוצה "נדרים פלוס" אם קיימת, אחרת לקבוצה הראשונה)
-                    // 🛡️ לא מוסיפים מתרימים שנמחקו במפורש – מונע "קפיצה חזרה"
-                    if (deletedDonorMatrimIds && deletedDonorMatrimIds.has(matrimIdStr)) {
-                        console.log(`⏭️ דילוג על "${matrimName}" (מס' ${matrimIdStr}) – נמחק במפורש`);
-                        return;
-                    }
                     if (!groupForNewDonors) {
                         console.warn('⚠️ אין קבוצות – מדלג על הוספת מתרים חדש');
                         return;
@@ -21192,7 +21304,7 @@
                 
                 // מעדכן את התצוגות עם הסכום הנכון - בלי להפריע לגלילה
                 updateHomeStats();
-                updateLeadersList();
+                updateLeadersList(true);
                 updateLiveTargets();
                 // עדכון Live View – כבר עודכן למעלה עם immediate (נתונים השתנו מסנכרון)
 
@@ -21291,7 +21403,7 @@
                 // מעדכן את הסכום הכולל מ-API (ברקע)
                 fetchTotalFromMatchPlus().then(() => {
                     updateHomeStats();
-                    updateLeadersList();
+                    updateLeadersList(true);
                     updateLiveTargets();
                 });
             }
@@ -21330,7 +21442,7 @@
                     if (totalData) {
                         console.log('✅ [אוטומטי] הסכום עודכן:', totalData);
                         updateHomeStats();
-                        updateLeadersList();
+                        updateLeadersList(true);
                         updateLiveTargets();
                     }
                 } catch (error) {
@@ -21395,7 +21507,7 @@
                     if (totalData) {
                         console.log('✅ [אתחול] הסכום הכולל עודכן בהצלחה:', totalData);
                         if (typeof updateHomeStats === 'function') updateHomeStats();
-                        if (typeof updateLeadersList === 'function') updateLeadersList();
+                        if (typeof updateLeadersList === 'function') updateLeadersList(true);
                         if (typeof updateLiveTargets === 'function') updateLiveTargets();
                     }
                     
@@ -21465,7 +21577,7 @@
                     console.log('📊 [API - חדש] יעד:', totalData.Goal.toLocaleString(), 'ש"ח');
                     // מיד מרעננים את כל התצוגות – getDisplayTotal ישתמש ב-API כשהמקומי נמוך משמעותית
                     updateHomeStats();
-                    updateLeadersList();
+                    updateLeadersList(true);
                     updateLiveTargets();
                     if (typeof updateLiveView === 'function') updateLiveView();
                     const diff = totalData.Donated - totalFromDonors;
@@ -21480,7 +21592,7 @@
                         const totalAfterSync = donors.reduce((s, d) => s + (d.amount || 0), 0);
                         const nowMatch = Math.abs(totalAfterSync - totalData.Donated) <= 1;
                         updateHomeStats();
-                        updateLeadersList();
+                        updateLeadersList(true);
                         updateLiveTargets();
                         if (typeof updateLiveView === 'function') updateLiveView();
                         if (!isAutoCall) {
@@ -21501,7 +21613,7 @@
                     NEDARIM_CONFIG.totalDonatedFromAPI = totalFromDonors;
                     NEDARIM_CONFIG.apiDataLoaded = true;
                     updateHomeStats();
-                    updateLeadersList();
+                    updateLeadersList(true);
                     updateLiveTargets();
                     if (typeof updateLiveView === 'function') updateLiveView();
                     console.log('ℹ️ [בדיקה] משתמש בסכום מהתרימים:', totalFromDonors.toLocaleString(), 'ש"ח');
@@ -21967,7 +22079,7 @@
                 updateGroupsDisplay();
                 updateHomeStats();
                 if (typeof updateLiveView === 'function') updateLiveView(true);
-                updateLeadersList();
+                updateLeadersList(true);
                 updateLiveTargets();
                 const totalAmount = donors.reduce((sum, d) => sum + (d.amount || 0), 0);
                 if (!silent) {
@@ -22069,9 +22181,15 @@
                 }
                 
                 // סכום כולל מהגליון – נטען גם במחשב חדש (אין localStorage)
+                // 🛡️ לא דורסים totalDonatedFromAPI עם ערך נמוך יותר ממה שכבר יש (מונע הבהוב אחרי סנכרון נדרים)
                 if (result.totalDonated != null || result.goal != null) {
                     if (typeof NEDARIM_CONFIG !== 'undefined') {
-                        NEDARIM_CONFIG.totalDonatedFromAPI = result.totalDonated != null ? Number(result.totalDonated) : NEDARIM_CONFIG.totalDonatedFromAPI;
+                        if (result.totalDonated != null) {
+                            const sheetTotal = Number(result.totalDonated);
+                            if (!NEDARIM_CONFIG.apiDataLoaded || sheetTotal >= (NEDARIM_CONFIG.totalDonatedFromAPI || 0)) {
+                                NEDARIM_CONFIG.totalDonatedFromAPI = sheetTotal;
+                            }
+                        }
                         NEDARIM_CONFIG.goalFromAPI = result.goal != null ? Number(result.goal) : NEDARIM_CONFIG.goalFromAPI;
                         NEDARIM_CONFIG.apiDataLoaded = true;
                         if (!silent) console.log('📊 [גליון] סכום כולל נטען:', (result.totalDonated || 0).toLocaleString(), 'ש"ח');
@@ -22243,10 +22361,7 @@
                     });
                     
                     // הוספת מתרימים חדשים מהגליון שלא קיימים מקומית (רק אם יש להם מספר מתרים תקין)
-                    // 🛡️ לא מוסיפים מתרימים שנמחקו במפורש – מונע "קפיצה חזרה"
                     donorsFromSheetByMatrimId.forEach((sheetDonor, matrimIdStr) => {
-                        if (deletedDonorMatrimIds && deletedDonorMatrimIds.has(matrimIdStr)) return;
-                        if (deletedDonorIds && sheetDonor.id && deletedDonorIds.has(String(sheetDonor.id))) return;
                         if (!existingMatrimIds.has(matrimIdStr)) {
                             // מתרים חדש מהגליון עם מספר מתרים תקין
                             updatedDonors.push(sheetDonor);
@@ -22256,11 +22371,6 @@
                     
                     // גם מתרים מהגליון לפי ID (אם אין להם מספר מתרים תקין)
                     donorsFromSheetById.forEach((sheetDonor, id) => {
-                        if (deletedDonorIds && deletedDonorIds.has(String(id))) return;
-                        if (deletedDonorMatrimIds && sheetDonor.nedarimMatrimId) {
-                            const m = String(sheetDonor.nedarimMatrimId).trim();
-                            if (/^\d+$/.test(m) && deletedDonorMatrimIds.has(m)) return;
-                        }
                         if (!existingIds.has(id)) {
                             const hasMatrimId = sheetDonor.nedarimMatrimId && /^\d+$/.test(String(sheetDonor.nedarimMatrimId).trim());
                             if (!hasMatrimId) {
@@ -22351,7 +22461,7 @@
                 updateGroupsDisplay();
                 updateHomeStats();
                 updateLiveView(true);
-                updateLeadersList();
+                updateLeadersList(true);
                 updateLiveTargets();
                 
                 const totalAmount = donors.reduce((sum, d) => sum + (d.amount || 0), 0);
@@ -22437,11 +22547,10 @@
                 if (!forceLoadWhenVisible && typeof isLiveViewActive === 'function' && isLiveViewActive()) return;
                 try {
                     const inLiveView = typeof isLiveViewActive === 'function' && isLiveViewActive();
-                    // 🛡️ מניעת הבהוב: תצוגת לייב + עדכון מקומי לאחרונה – לא לטעון (מונע דריסה)
-                    const recentLocalSync = (typeof _lastLocalSyncFromOtherTab !== 'undefined' && _lastLocalSyncFromOtherTab > 0 && (Date.now() - _lastLocalSyncFromOtherTab) < 180000);
-                    if (inLiveView && recentLocalSync && sheetSyncLoadEnabled) {
-                        console.log('⏭️ [סנכרון] דילוג – תצוגת לייב + עדכון מקומי לאחרונה (מונע הבהובים)');
-                        return; // לא מעדכן תצוגת לייב – רק בעדכון מתוזמן
+                    // 🛡️ בתצוגת לייב – לא לטעון מהגליון (מונע קפיצות בעמודת המובילים; הנתונים הטריים מגיעים מעדכון מתוזמן)
+                    if (inLiveView && sheetSyncLoadEnabled) {
+                        console.log('⏭️ [סנכרון] דילוג – בתצוגת לייב לא טוענים מהגליון (מונע קפיצות)');
+                        return;
                     }
                     if (sheetSyncLoadEnabled) {
                         if (isUpdatingDonorForNedarim) {
@@ -22492,6 +22601,34 @@
                 clearInterval(liveViewSyncIntervalId);
                 liveViewSyncIntervalId = null;
                 console.log('🛑 [סנכרון] סנכרון תקופתי הופסק');
+            }
+        }
+        
+        /** שמירה רק של מתרימים וקבוצות לגליון – מנגנון יחיד לעדכון ישיר. כל שינוי (שם, קבוצה, תרומה) עולה לגליון. */
+        async function saveDonorsAndGroupsToSheets() {
+            if (window._donorsGroupsToSheetDebounce) { clearTimeout(window._donorsGroupsToSheetDebounce); window._donorsGroupsToSheetDebounce = null; }
+            const urlInput = document.getElementById('googleSheetsWebAppUrl');
+            const url = (urlInput ? urlInput.value.trim() : '') ||
+                        (typeof googleSheetsWebAppUrl !== 'undefined' ? googleSheetsWebAppUrl : '') ||
+                        (typeof localStorage !== 'undefined' ? localStorage.getItem('googleSheetsWebAppUrl') : '') ||
+                        (typeof DEFAULT_GOOGLE_SHEETS_URL !== 'undefined' ? DEFAULT_GOOGLE_SHEETS_URL : '') || '';
+            if (!url || !url.trim()) return { success: false, error: 'אין URL' };
+            const bodyStr = JSON.stringify({ action: 'saveDonors', donors: donors, groups: groups });
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: bodyStr
+                });
+                const result = await response.json();
+                if (result && result.success) {
+                    if (typeof lastSaveToSheetsTime !== 'undefined') lastSaveToSheetsTime = Date.now();
+                    return { success: true };
+                }
+                return { success: false, error: (result && result.error) || 'שגיאה מהשרת' };
+            } catch (err) {
+                return { success: false, error: err && err.message ? err.message : String(err) };
             }
         }
         
