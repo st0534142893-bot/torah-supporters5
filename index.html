@@ -20076,10 +20076,15 @@
                     return;
                 }
 
-                const namesList = toDelete.map(t => (t.donor.displayName || t.donor.name || 'ללא שם')).join(', ');
+                const detailsList = toDelete.map(t => {
+                    const name = t.donor.displayName || t.donor.name || 'ללא שם';
+                    const amount = (t.donor.amount || 0);
+                    const amountStr = typeof amount === 'number' ? amount.toLocaleString() : String(amount);
+                    return `• ${name}: ${amountStr} ₪`;
+                }).join('\n');
                 const confirmMsg = `נמצאו ${toDelete.length} מתרימים שמופיעים בתוכנה אך לא בנדרים פלוס.\n\n` +
                     `הם יימחקו לצמיתות מהתוכנה ומהגליון.\n\n` +
-                    `דוגמאות: ${namesList.substring(0, 80)}${namesList.length > 80 ? '...' : ''}\n\n` +
+                    `רשימה מלאה (שם + סכום):\n${detailsList}\n\n` +
                     `האם להמשיך?`;
                 if (!confirm(confirmMsg)) {
                     showNedarimStatus('בוטל על ידי המשתמש', 'info');
